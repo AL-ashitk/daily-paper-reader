@@ -25,3 +25,55 @@ subscriptions:
     stage: A
     diff_threshold_pct: 15
   keyword_recall_mode: or
+  intent_profiles:
+    - tag: RL
+      description: 帮助用户查找强化学习领域的论文
+      enabled: true
+      paper_sources:
+        - arxiv
+      keywords:
+        - keyword: reinforcement learning
+          keyword_cn: 强化学习
+          query: papers on reinforcement learning
+        - keyword: deep reinforcement learning
+          keyword_cn: 深度强化学习
+          query: deep reinforcement learning research papers
+        - keyword: multi-agent reinforcement learning
+          keyword_cn: 多智能体强化学习
+          query: multi-agent reinforcement learning papers
+        - keyword: reinforcement learning algorithms
+          keyword_cn: 强化学习算法
+          query: algorithms for reinforcement learning
+        - keyword: model-based reinforcement learning
+          keyword_cn: 基于模型的强化学习
+          query: model-based reinforcement learning papers
+        - keyword: reinforcement learning theory
+          keyword_cn: 强化学习理论
+          query: theoretical foundations of reinforcement learning
+      intent_queries:
+        - query: Find academic papers on reinforcement learning.
+          query_cn: 寻找关于强化学习的学术论文。
+          enabled: true
+          source: manual
+          note: ''
+        - query: Show me survey papers and recent advances in reinforcement learning.
+          query_cn: 给我看强化学习的综述论文和最新进展。
+          enabled: true
+          source: manual
+          note: ''
+      updated_at: '2026-09-15T08:04:25.312Z'
+source_backends:
+  arxiv:
+    papers_table: arxiv_papers
+    use_vector_rpc: true
+    vector_rpc: match_arxiv_papers
+    vector_rpc_exact: match_arxiv_papers_exact
+    use_bm25_rpc: true
+    bm25_rpc: match_arxiv_papers_bm25
+    sync_table: arxiv_sync_status
+    sync_success_value: success
+    schema: public
+    kind: supabase
+    enabled: true
+    url: https://lyucdwgefyfbmaiopjbk.supabase.co
+    anon_key: sb_publishable_lX-oi64Uxyd7SIVv3_w2Uw_MTOojeKq
