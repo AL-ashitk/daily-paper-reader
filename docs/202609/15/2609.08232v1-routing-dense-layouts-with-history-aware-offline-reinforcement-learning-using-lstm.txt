@@ -1,0 +1,378 @@
+Title: Routing Dense Layouts with History-Aware Offline Reinforcement Learning using LSTM
+
+URL Source: https://arxiv.org/pdf/2609.08232v1
+
+Published Time: Wed, 09 Sep 2026 02:58:26 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# Routing Dense Layouts with History-Aware Offline Reinforcement Learning using LSTM 
+
+## Afsara Khan 
+
+atk331@nyu.edu New York University Brooklyn, New York, USA 
+
+## Austin Rovinski 
+
+rovinski@nyu.edu New York University Brooklyn, New York, USA 
+
+## Abstract 
+
+Detailed routing remains a dominant runtime bottleneck in phys-ical design due to increasing complexity of design rules. Modern routers can struggle to resolve persistent violations under dense operating conditions. While recent work leverages reinforcement learning (RL) to dynamically select costs for each routing iteration, we find that this technique struggles with high-density designs where routing solutions are significantly harder. To address this, we present a history-aware offline RL policy which predicts itera-tive cost weights in these dense regimes to improve convergence across placement densities by utilizing readily available features from the router. Our policy uses conservative Q-learning similarly to prior work; however, our key insight is that addition of a light-weight LSTM architecture and additional features can retain sequence context and improve routing convergence across multiple densities and route guide qualities. Our policy can be integrated into any cost-based router with minimal pipeline changes, as it does not interfere with the core search algorithm. We evaluate our policy on held-out density and adjustment settings, including difficult operating points induced by dense placement and low guide quality. Our policy reduces design rule violations (DRVs) by an average of 92% over the top public baseline while simultaneously reducing runtime by 10%. 
+
+## CCS Concepts 
+
+• Hardware → Wire routing ; • Computing methodologies →
+
+Partially-observable Markov decision processes .
+
+## Keywords 
+
+Detailed routing, Reinforcement learning, Physical design, Recur-rent Neural Networks (RNN), Long Short-Term Memory (LSTM) 
+
+## 1 Introduction 
+
+Detailed routing is often a very time-consuming step in the place & route flow. As technology nodes become more costly, achieving high logic density is critical to both reducing cost and improving performance. Modern routers rely on cost-driven iterative search and repair pathfinding algorithms, where the relative weighting of cost penalties can strongly influence the convergence behavior. Most public state-of-the-art work relies on fixed or manually de-signed cost schedules [1–3], where the algorithm continuously rips up and reroutes until it finds a set of costs that route cleanly, or it terminates with violations. As placement density increases, so too does the routing conges-tion. This leaves fewer open tracks available for the detailed router to perform rerouting, which increases the likelihood of stalls and persistent violations. Fixed cost schedules and simple regressions struggle with high density placements, because the best routing solution varies dramatically based on the local congestion and the current mix of violations, both of which can change from one rout-ing iteration to another. While tuning static costs can help improve results on a given design family or operating point, the cost map can be brittle and make other operating points worse. In this paper, we study iteration-level control of existing routing cost weights in high utilization regimes, when the detailed router is left with very limited resources for rerouting. We demonstrate our implementation using OpenROAD as a public reference point; however, any iterative cost-based detailed router can adopt the same technique with router-specific feature extraction and lightweight software integration. The broader methodology of using a learned policy to control routing cost weights at each iteration using built-in router features can be extended to dense regimes where open-source state-of-the-art routers fail, directly resolving layouts that are difficult to route with existing routing flows. Prior work [4] has shown that offline conservative Q-learning (CQL) can act as an intelligent cost weight generator and acceler-ate convergence in a fixed operating regime with superior results over public baselines. However, varying density and operating con-ditions introduce additional challenges, since layout features can change substantially even with small density shifts, causing dis-tribution shift between training and inference and pushing cost weight actions toward saturation. Alongside introducing an LSTM head for stronger sequential awareness, our method addresses these distributional issues through feature transformation, masking of density and adjustment inputs during training, and the use of ratios and logarithms for local signals whose absolute counts can vary widely. We demonstrate in Figure 1 that, while the CQL approach of prior work [4] degrades sharply as placement density rises, our model remains effective in these higher utilization regimes. The results show consistent improvements over a wide range of densities. The largest gains appear when a test density lies between training points, which is consistent with the broader tendency for learned models to behave more reliably in interpolation than in extrapolation [5]. However, the interpolated densities remain nontrivial in our setting, since even intermediate density values can induce materially different layouts and routing behavior (discussed further in Section 5). We train a conservative Q objective with a stochastic actor and add an LSTM head for the policy to better retain short routing history to link recent choices to their effects rather than react to a single snapshot. Each run is subject to strict limits: at most 65 routing iterations or 7 days of runtime. Runs that exceed either limit are not considered and we avoid extrapolating outcomes. Our work offers the following contributions: arXiv:2609.08232v1 [cs.AR] 8 Sep 2026 Afsara Khan and Austin Rovinski 0.5 0.6 010 20 30 40 50   
+
+> Iterations
+> 0.5 0.6 01000 2000 3000 4000
+> Runtime (s)
+> Placement Density
+> CQL CQL+LSTM (Ours)
+
+Figure 1: Routing performance for aes vs. placement den-sity. CQL denotes the approach from prior work [4] and CQL+LSTM is this work. 
+
+• Development of a detailed routing training dataset using perturbation sampling and random exploration techniques across various density and adjustment configurations, with emphasis on dense routing regimes 
+
+• Identification of critical routing state variables and reward components suitable for history-aware iterative control in detailed routing using reinforcement learning (RL) 
+
+• Implementation and evaluation of an offline RL approach using conservative Q-learning with LSTM based soft actor-critic network to predict improved cost weights for detailed routing that outperform public baselines. 
+
+• Demonstration of improved routing convergence for di-verse designs in high utilization regimes. 
+
+• The training and inference implementation are open sourced at https://github.com/realise-lab/RLDRT. The remainder of the paper is organized as follows. Section 2 dis-cusses related work, Section 3 discusses our methodology, Section 4 discusses our model architecture and training, Section 5 discusses the experimental results, and Section 6 provides our conclusions. 
+
+## 2 Related Work 2.1 Detailed Routers 
+
+The foundation of modern detailed routing traces back to Lee’s maze routing algorithm [6], a breadth-first search (BFS) that guar-anteed minimum cost paths. Rapid notable improvements on this base algorithm included the A* search using heuristics to guide the search [7, 8], along with techniques like line search [9] to speed up execution. Core strategies in modern routers include iterative rip-up and reroute [3] and sometimes leverage multicommodity flow concepts [10]. TritonRoute [3] utilizes the prior findings to employ an iterative A*-based search with partitions, enhanced by dynamic boundary adjustments. Similarly, Dr. CU [1] uses Dijk-stra’s algorithm coupled with a sparse grid-graph and partitioning to efficiently route nets. As newer technology nodes arrive, rout-ing research has shifted focus towards techniques like gridless pin access [11], routing under complex patterning like SADP [12, 13], minimum area-sensitive path search [14], and ILP-based formula-tions [10]. In terms of academic routers, OpenROAD [15] provides state-of-the-art performance, achieving 0 DRVs on the ISPD ‘18 [16] benchmark and 0 DRVs on all but one test case on ISPD ‘19 [17]. OpenROAD’s router is derived from TritonRoute [2, 3], but several enhancements have been made and it is actively maintained to continue improving detailed routing results. In the academic routing flows discussed above, the exposed cost weights that guide the iterative search are controlled by manually designed schedules rather than by the evolving routing state of the design. 
+
+## 2.2 Machine Learning Techniques in Routing 
+
+Several prior works have shown the benefits of applying traditional machine learning to global and detailed routing. Many works have focused on congestion and DRV hotspot prediction at the routing level [18, 19], while others have focused on predicting and avoid-ing pin access violations [20]. These predictions typically required secondary mechanisms to influence routing behavior. More direct guidance has been explored via reinforcement learning. For exam-ple, Chen et al. [21] propose an online RL framework that combines graph neural networks (GNNs) with PPO policy learning. Prior work [4] demonstrates that offline RL can learn effective cost weights to accelerate convergence in detailed routing. However, that work trains and evaluates at a single operating point. Density and adjustment changes shift the underlying feature distribution substantially, and a policy fit to a single density can no longer sustain convergence under that shift without deliberate feature and architectural engineering. Retaining the offline RL formulation from prior work [4], we introduce robust feature construction and transformation, masking of density and adjustment signals during training, and an LSTM that conditions on recent routing history rather than a single state. These additions fundamentally change the nature of the problem: from accelerating convergence at one operating point to sustaining it across dense layouts, including hard cases that do not converge at all under existing flows. While we demonstrate our formulation using OpenROAD, the technique can be adapted to any cost based router. To the best of our knowledge, no prior work has studied history aware offline RL for iterative cost weights across varying routing regimes in general detailed routing. 
+
+## 3 Methodology 3.1 Routing and Policy 
+
+We study detailed routing across varying placement utilization, with special attention to the difficult, higher-density cases. Global routing adjustment controls how aggressively the global router is allowed to use the available routing tracks. At 0.0, the global router may use all tracks, which packs nets tightly and leaves the detailed router with very limited resources to resolve violations. Higher adjustment restricts a higher fraction of track capacity from the global router, leaving more usable space for the detailed router that follows [3]. Lowering the global-routing adjustment is not universally required as density increases; it becomes necessary only when, at a given density, the global router would otherwise return a congested guide. In those situations, reducing adjustment leaves the global router with more usable tracks to resolve congestion and Routing Dense Layouts with History-Aware Offline Reinforcement Learning using LSTM 
+
+return a routing guide for the detailed router. However, this leaves fewer reserved detailed routing resources, as mentioned above, increasing the likelihood of stalls and persistent violations. The policy interfaces through the standard cost multipliers. At the end of iteration 𝑘 , the router aggregates a global feature snap-shot to calculate the feature vectors for the model. The agent then returns a shared set of cost multipliers for iteration 𝑘 +1: drcCost ,
+
+markerCost , fixedShapeCost , markerDecay . These multipliers con-trol TritonRoute’s routing search by acting as penalty weights: drc-Cost and markerCost penalize routing through Design Rule Check (DRC) violating regions and near existing violation markers, fixed-ShapeCost penalizes overlap with fixed obstructions, and markerDe-cay sets how quickly old violation markers lose influence [3, 4]. Rather than fixing these multipliers to a schedule as seen in the base-line router, our policy resets them each iteration from the current routing state. We adopt global iteration control to keep integra-tion lightweight and avoid additional coordination and overhead that per-partition control would require. At iteration 0, the router uses the default cost weights because no prior state history is yet available. The core search remains unchanged. Iteration count and total runtime are related but not identical. Each iteration activates multiple partitions across workers. When violations are stubborn, each partition requires longer time to rip up and repair its local region, so the iteration takes longer; easier violations finish faster. We tested cumulative DRV as a runtime proxy by correlating violation traces with measured time across designs and operating points. We define the cumulative count in Equation 1 as 
+
+𝑆 𝑘 =
+
+> 𝑘
+
+∑︁ 
+
+> 𝑡 =0
+
+DRV 𝑡 , (1) where DRV 𝑡 is the violation count at iteration 𝑡 . The correlation was inconsistent: per-iteration DRV often showed only weak asso-ciation with per-iteration runtime, and runs with similar total DRV sometimes had large runtime differences because a small number of late-stage, stubborn violations dominate cost. In addition, the router resolves multiple partitions in parallel [3], so a larger number of violations does not necessarily increase runtime linearly. 
+
+## 3.2 Data Generation 
+
+As with most reinforcement learning methods, data generation is central to performance. We generate data from 8 Nangate45 designs in the OpenROAD Design Suite [22] and span 6 placement densities per design. The densities are evenly spaced and start at the default utilization for the design suite. Global-routing adjustment varies from 0.0 to 0.3. Lower adjustments yield valuable but slow traces. Higher adjustments yield many more traces and can run in parallel with others. Most data therefore come from 0.10 to 0.30, with a smaller portion at 0.00 where runs are slower but informative. In total, about 10,000 routing runs were collected across designs and densities. Harder routing cases in the dataset arise naturally from plausible density and adjustment sweeps within the same routing flow, where higher density increases routing pressure and lower adjustment is sometimes needed to obtain a routable guide. A coarse grid over the die records a violation heatmap at each iteration. The grid also captures simple dynamics such as whether violations remain in place, migrate, or form clusters as routing proceeds. Figure 2 shows one region at iteration 0 and iteration 4. All signals come from the detailed router or from light transforms of those signals, so feature extraction overhead remains minimal relative to routing runtime, especially on complex designs. 0 2 4 6 8
+
+> Grid X Index
+> 02468
+> Grid Y Index Grid: 10x10 Total Violations: 13249
+> 0100 200 300 400 500 600
+> Violations per Cell
+
+(a) Iteration 0 0 2 4 6 8 
+
+> Grid X Index
+> 02468
+> Grid Y Index Grid: 10x10 Total Violations: 322
+> 010 20 30 40 50 60
+> Violations per Cell
+
+(b) Iteration 4 
+
+Figure 2: Example violation progress on aes in an 11-iteration routing run 
+
+Feature values are normalized to a common scale based on the training statistics. For features whose raw magnitudes can vary substantially across different routing settings, we prefer ratios or logarithmic transforms over raw counts. For example, current and initial DRV are log transformed, and progress is represented relative to the initial DRV from the first iteration. This practice provides a more stable signal across various densities and prevents the model from action saturation due to drastic distributional shifts in data. The action itself is part of the state: we include the previous iteration weights and their change rate. We categorize features into two types: 
+
+Dynamic Features :
+
+• Current violation count (normalized) 
+
+• Initial violation count (normalized) 
+
+• Stagnant violation regions which are based on coarse-grid cells whose aggregate local violation count does not de-crease across three consecutive iterations 
+
+• Change in the maximum local violation count and cluster-ing spread for the current iteration, where clustering spread measures how unevenly violations are distributed across active coarse-grid cells 
+
+• Violation type ratios for common classes: short, metal spac-ing, cut spacing, end-of-line spacing 
+
+• Previous weights, i.e. drcCost, markerCost, fixedShapeCost, markerDecay Afsara Khan and Austin Rovinski 
+
+Static Design Features :
+
+• Terminal count in log scale 
+
+• Die area in log scale 
+
+• Placement density 
+
+• Routing adjustment 
+
+• Interaction of density, adjustment, and terminal count (the goal is to signal that the same density can behave differently by design, and that the hardest cases arise from combina-tions such as high density with 0.0 adjustment and high terminal count) The underlying router parameters follow prior work [3], while the derived coarse grid and progress features are contributions introduced in this work. After each iteration, we sample each of these values as part of the state 𝑠 . A “sequence” 𝑆 is formed by a series of states {𝑠 1, 𝑠 2, ..., 𝑠 𝑛 },where 𝑛 is the number of iterations and forms from one full routing run that terminates either at DRV convergence or at the itera-tion/runtime cap. Each sequence forms a data point which is used to train our RL model. 
+
+## 4 Model Architecture 
+
+We frame weight selection as a sequential decision process. At the end of iteration 𝑘 , the routing engine emits a state vector 𝑠 𝑘 and the policy returns the cost multipliers for iteration 𝑘 +1. The episode starts at iteration 0 and terminates when DRV reaches 0 or when iteration exceeds 65. 
+
+Formulation. We adopt offline reinforcement learning with a con-servative Q objective as described by [23]. The network is based on a stochastic actor in the soft actor-critic (SAC) family with LSTM heads, and we model state as a sequence. Both policy and value functions consume short temporal windows so the agent can con-dition on recent routing history. The window length is a tuned hyperparameter (Table 1). Within an episode, the hidden state prop-agates across iterations and resets only between episodes, so the effective context reaches beyond the window itself. 
+
+State representation. The state contains the signals described in Section 3, including the previous iteration’s weights, and is fed to sequence encoders before the multilayer heads. An episode starts at iteration 0 and ends when DRV reaches 0 or when iteration exceeds 65. This sequence-aware formulation is a key change relative to non-recurrent baselines. 
+
+Stability of standard Q-learning. We also trained a standard Q-learning variant by setting the conservative weight to zero. Despite a broad hyperparameter search with Optuna over learning rates, discount, target update rate, batch size, entropy temperature, and gradient clipping, losses remained unstable. We observed sustained growth in the Bellman error, frequent gradient explosions, and pro-nounced overestimation on out-of-distribution actions drawn from the replay buffer. Double-Q critics with target networks slowed divergence but did not prevent it. The conservative Q objective provided the needed regularization and produced stable training curves on the same data. 
+
+Policy and critics. Both actor and critics are sequence aware. Each network uses 2 LSTM layers followed by a multilayer head. Hidden state propagates across iterations within an episode and resets at the start of the next episode. This captures short-range dependencies such as violation migration, hotspot persistence, and delayed effects of weight changes that may appear one or two iterations later. 
+
+Action space and safety. The action is a 4-dimensional vector that specifies the next iteration’s multipliers { drcCost , markerCost ,
+
+fixedShapeCost , markerDecay }. Outputs pass through a bounded squashing function into action ranges matched to the training data. This mapping avoids pathological values and keeps the downstream search stable. 
+
+Learning objective and Reward Function. We validated the chosen reward function offline on the collected dataset by applying to logged trajectories. The reward scalar clearly distinguished runs with the lowest iteration counts and the fastest average runtimes from the rest of the dataset. Motivated by the routing analysis in Section 3, we prioritize DRV reduction with an iteration penalty and hotspot term based on changes in the maximum local viola-tion count, since violation difficulty rather than count often drives runtime. The reward aggregates the following: 
+
+• Progress: improvement rate relative to the initial DRV. 
+
+• Speed: a convergence bonus when DRV = 0 and an itera-tion penalty that grows with 𝑘 , so earlier completion earns higher return. 
+
+• Difficulty-aware scaling: bonuses and penalties are scaled by a design or instance complexity factor built from log transformed terminal count and die area, together with a bounded density modulation, that may be expressed as: 
+
+𝐶 inst = (1 + 𝛼 log (𝑇 + 1) + 𝛽 log (𝐴 + 1)) 𝑔 (𝜌 ), (2) where 𝑇 is terminal count, 𝐴 is die area, 𝑟ℎ𝑜 is placement density, and 𝑔 (𝜌 ) is a bounded modulation term. This scal-ing ensures that identical absolute gains receive larger credit on harder instances. 
+
+• Locality: an explicit hotspot term based on changes in the maximum local violation count on the coarse grid. We intentionally do not include cumulative DRV in the training objective, and we do not use true runtime during training, since data generation runs in parallel across machines with variable load. Final runtime claims are based on isolated validation runs as stated in Section 3. 
+
+Training protocol. The replay buffer stores complete episodes and contiguous sequences so temporal order is preserved; within-episode shuffling is disabled. We regularize density and adjustment interactions with feature masking (feature dropout) on the input layer so the policy does not overfit to a single operating point and learns to adjust to distribution shifts [24]. For selected features, we form a masked view ˜x = x ⊙ m, 𝑚 𝑖 ∼ Bernoulli (1 − 𝑝 𝑖 ), (3) where 𝑝 𝑖 ∈ [ 0, 0.5] is the masking probability tuned during training and only a small subset of inputs is eligible for masking (placement density, adjustment signals, and their interaction). Masking is ap-plied to training episodes only. Validation and test use full features. We search 𝑝 𝑖 with Optuna over [0, 0.5] per masked feature and select the configuration that yields the best isolated runtime and iteration metrics on the validation set. Optimization uses Double-Q critics with target networks and a soft policy update. Inputs are normalized; ratios replace raw counts when ranges are wide; logs are used when growth is steep. Routing Dense Layouts with History-Aware Offline Reinforcement Learning using LSTM h5 dataset 
+
+> {Sequential State,
+> Reward}
+> Design A @
+> density X
+> adjustment Y
+> Critic Network
+> LSTM Layer
+> Actor Network
+> Action
+> Td Error + Conservative Penalty
+> Sequentially Stacked {State,Rewards}
+> Design B @
+> density X
+> adjustment Y
+> UniqueID =
+> design+run+
+> density+adj for
+> tracking trajectories
+> TorchScript
+> SAC Agent
+> State
+> Variable
+> Extraction
+> Stored
+> Policy
+> Feature Normalization
+> and Masking
+
+(a) Training Inference Agent   
+
+> Actor Net
+> TritonRoute Simulation
+> Load Policy
+> LSTM
+> Initial State History Buffer
+> Converged?
+> Done!
+> Weights
+> New State
+> No
+> Yes
+
+(b) Inference 
+
+Figure 3: Training and Inference Summarized Table 1: CQL Hyperparameter Values Hyperparameter Value 
+
+Critic and LSTM Dropout 1.00 × 10 −1
+
+Temporal Window (iters) 8
+
+Critic Hidden Units 512, 512, 256 
+
+Actor Learning Rate 1.00 × 10 −4
+
+Critic Learning Rate 3.00 × 10 −4
+
+Conservative Weight 2.44 × 10 0
+
+Batch Size 512 
+
+Initial Temperature 1.00 × 10 0
+
+Temperature LR 1.00 × 10 −4
+
+Tau (Polyak 𝜏 ) 1.00 × 10 −2
+
+Model Parameters and Hyperparameters. Our goal in tuning was to accelerate convergence in favorable weight regimes while avoiding overestimation, out-of-distribution drift, and gradient pathologies. Guided by findings in the original CQL [23] paper and d3rlpy [25] documentation, we ran 100 Optuna trials over stan-dard ranges and selected the configuration in Table 1. To prevent degradation or policy collapse, we employ three broad categories of early stopping checks evaluated every epoch, plus a simple sanity check on value magnitudes. If early stopping does not trigger, training proceeds to 20 epochs, based on prior trials indicating convergence by that point, to produce a full model for routing validation discussed below. 
+
+Loss explosion or divergence detection. We monitor critic loss, actor loss, conservative loss, and TD error for sustained growth that signals failure in the Q approximation or unstable bootstrapping. We allow transient overshoot early in training but stop when any tracked loss exceeds 100 × its initial value or shows a persistent up-ward trend across 10 consecutive epochs. This prevents unreliable actor gradients once the critic destabilizes. 
+
+Action difference monitoring. We track the d3rlpy action_diff 
+
+metric, with actions normalized to [0, 1] during training. Moderate 5 10 15 0.0 0.5 1.0 1.5           
+
+> Action Diff
+> 510 15 020 40 60
+> Actor Loss
+> 510 15 0200 400
+> Critic Loss
+> 510 15 20
+> 15
+> 10
+> 5
+> 0
+> Conservative Loss
+> 510 15 100
+> 80
+> 60
+> 40
+> 20
+> 0
+> Initial State Value
+> 510 15 050 100 150
+> Td Error Epoch Value
+
+Figure 4: Model Training Progress. 1 epoch = 10,000 timesteps 
+
+deviation from dataset actions is expected, but large divergence indicates poor generalization. Values above 1 .0 act as a warning threshold; we stop when the metric continues to increase across successive checkpoints. Figure 4 shows training metrics for the LSTM–CQL policy. Actor and critic losses drop sharply and then flatten near zero without overshoot. TD error decays rapidly and remains low. The conserva-tive loss rises monotonically from a large negative value towards zero as the policy places more mass on actions supported by the dataset. The initial state value increases smoothly and plateaus; there is no overshoot. Here, an epoch is a fixed budget of 10,000 policy/critic update steps sampled (with replacement) from the replay buffer, not a full pass over the dataset. All training was performed on CPU (320 cores @ 2.10 GHz) as per-epoch runtime was comparable to an H100, likely because the high core count removed the compute bottleneck for our data and sequence models. 
+
+Inference and integration. At runtime, the router calls the policy once per iteration boundary, provides the current state 𝑠 𝑘 , and ap-plies the returned multipliers in iteration 𝑘 +1. Integration touches only these 4 knobs. The underlying search remains unchanged, which keeps the approach portable across designs, densities, and ad-justment settings. Inference is integrated via TorchScript/LibTorch inside the C++ router. 
+
+## 5 Experimental Results 5.1 Methodology 
+
+We evaluate on OpenROAD design-suite circuits in the Nangate45 node so that placement utilization and routing adjustment can be Afsara Khan and Austin Rovinski 
+
+varied. ISPD ‘18 and ISPD ‘19 benchmarks ship fixed LEF/DEF and do not permit density sweeps, so they are not used for the high utilization study here. We consider two test regimes: 
+
+(A) Converging cases. The baseline converges to zero DRV within the standard cap, and we test whether the policy converges faster and in fewer iterations across unseen operating points. To induce a distribution shift, densities at test time are interleaved between the training densities (e.g., midpoints rather than the exact values used for training), while routing adjustment is fixed at a moderately difficult setting. The density sweeps in Figure 7 therefore form the core evaluation for these converging cases. By holding adjustment fixed, we isolate placement density as the primary variable and can measure how routing behavior and policy performance change with it. We also include a visual comparison of the same region of a design at two densities in Figure 5 to show that even moderate density changes can meaningfully alter topology, clustering, and blockage patterns.  
+
+> (a) Density=0.42 (b) Density=0.65
+
+Figure 5: Example layout ( aes ) with varying density. Core area is the same in (a) and (b), but clustering is tighter in (b). (B) Hard cases (baseline non-convergent). The baseline fails to reach zero DRV within 65 iterations. We report whether the policy (i) converges fully, or (ii) reduces terminal DRV versus the baseline when convergence is not reached under the same cap. These are deliberately harder operating points than those seen in training due to runtime constraints in data generation. In practice, many such failures occur at the lowest adjustment (e.g., 0 .0) for higher densities; some designs exhibit failure at higher adjustments as well. 
+
+## 5.2 Reporting format 
+
+For Case (A), we present a density sweep as a plot of iterations versus placement density with two curves (baseline and RL agent). Runtime is summarized separately using a paired scatter of baseline versus policy per density on the same axis. Following the reporting used in prior work [4], Table 2 reports metrics for a single density per design to enable direct comparison between our model and prior work. For Case (B), we present Table 3 with the terminal DRV count at the iteration cap; zero DRVs mean that convergence was achieved within the iteration cap. We also report runtime and wirelength. All inference overheads are included in policy runtimes. 0.50 0.60 0.70 01000 2000 3000 4000 5000   
+
+> DRV Count
+> 0.50 0.60 0.70 01234
+> Runtime (days)
+> Placement Density
+
+Figure 6: DRV and Runtime in aes 
+
+Our benchmarks were run on an AMD EPYC 9275F CPU @ 4.1 GHz with 768 GB of DDR5 RAM and 48 threads. The runtime for each benchmark was averaged over 10 runs for each configuration (default and RL-guided). Runtimes for our approach include policy inference overhead, which was measured to be about 3s total per run due to the LSTM overhead. 
+
+## 5.3 Benchmark Performance 
+
+Our experimental results are summarized in Tables 2 and 3. We begin with the converging cases. Table 2 reports a single density per design across 1) the baseline OpenROAD router 2) reported values from prior work [4] 3) our model. All three are compared on identical designs at the same operating point. Figure 7 then extends this to full density sweeps. For most designs, the iteration and runtime improvements from our model persist across held-out densities. While each design in this set is included in the training data, the specific density and adjustment configurations tested here were not present during training. Visual inspection of the generated layouts (Figure 5) confirms differences in placement topology between densities. Therefore, the results demonstrate the model’s ability to generalize across unseen routing settings which can induce dramatically different layout topologies on the same design rather than simply memorizing training examples. We then present Table 3 to show results across 1) the baseline OpenROAD detailed router and 2) our RL model for the harder non-converging cases. We omit prior work [4] here because it reports a single placement density and does not perform sweeps. Sweep-ing density or adjustment drastically shifts the distribution of the raw features a learned policy consumes, and a policy trained at one density on those raw features saturates under the shift. This out-of-distribution behavior is well documented by several works. Dakhmouche and Gorji [5] examine why machine learning models fail to extrapolate beyond their training distribution. Figure 1 fur-ther corroborates our claim that the prior approach [4] degrades sharply as density rises while our model with recurrent memory remains stable. The baseline, by contrast, is an expert curated cost schedule, not a learned policy, so it does not suffer such saturation. Using machine learning theory and Figure 1, we can accurately predict where the prior approach [4] degrades, but the same cannot be approximated for a human written baseline. Thus, we compare our performance with the static baseline that the prior approach [4] itself builds on. Table 3 also reports substantially higher runtimes than Table 2 since these cases route under minimal guide quality (adjustment=0.0), where the detailed router has fewer reserved resources and must Routing Dense Layouts with History-Aware Offline Reinforcement Learning using LSTM 0.45 0.65 0510 15                 
+
+> Iterations
+> aes
+> 0.30 0.40 0510
+> ariane136
+> 0.35 0.65 0510 15
+> bp_be
+> 0.30 0.55 0510
+> bp_fe
+> 0.34 0.60 0510 15
+> bp_multi
+> 0.75 1.00 0246
+> gcd
+> 0.65 0.95 02468
+> ibex
+> 0.59 0.77 0510 15
+> jpeg
+> 0.45 0.65 200 400 600
+> Runtime (s)
+> 0.30 0.40 200 300 400 500 600
+> 0.35 0.65 150 200 250
+> 0.30 0.55 75 100 125 150 175
+> 0.34 0.60 200 300 400
+> 0.75 1.00 6810 12 14
+> 0.65 0.95 120 140 160
+> 0.59 0.77 200 400 600
+> Placement Density
+> Baseline RL
+
+Figure 7: Density vs. routing iterations and runtime on dense benchmark designs. All designs finish with 0 DRVs. Table 2: Performance on OpenROAD Design Suite (default density. Values from the prior work [4] are taken from their published results; our model is evaluated on the same test set.) Design Density Iterations Runtime (s) Wirelength (um) Base [4] Ours Base [4] Ours Diff Base [4] Ours Diff 
+
+aes 0.53 6 5 4 55 46 42 -8.70% 309750 312744 304773 -2.55% 
+
+ariane136 0.30 6 4 4 147 143 130 -9.09% 8017226 8038308 8038338 0.00% 
+
+bp_be 0.36 15 11 9 115 56 48 -14.29% 3028121 3037392 3014477 -0.75% 
+
+bp_fe 0.31 13 7 4 80 43 36 -16.28% 2352172 2359893 2266409 -3.96% 
+
+bp_multi 0.35 11 5 5 132 110 109 -0.91% 4711286 4729301 4729973 0.01% 
+
+gcd 0.66 4 3 3 3 4 3 -25.00% 4786 4827 4791 -0.75% 
+
+ibex 0.61 5 4 4 27 28 22 -21.43% 330625 332567 332558 0.00% 
+
+jpeg 0.57 5 4 4 39 37 30 -18.92% 1163854 1169491 1164986 -0.39% 
+
+Total – 65 43 37 598 467 420 -10.06% 19917820 19984523 19856305 -0.64% 
+
+Table 3: Performance on OpenROAD Design Suite (augmented density). Prior work [4] omitted; see Section 5.3. Design Density DRVs Runtime (s) Wirelength (um) Base Ours Diff Base Ours Diff Base Ours Diff 
+
+aes 0.74 5342 486 -90.90% 362000 349040 -3.58% 371455 375030 0.96% 
+
+ariane136 0.52 0 0 – 464 232 -50.00% 6628779 6669617 0.62% 
+
+bp_be 0.70 1856 37 -98.01% 869618 800179 -7.99% 2698034 2627586 -2.61% 
+
+bp_fe 0.62 6882 542 -92.12% 402020 285869 -28.89% 1871959 1905874 1.81% 
+
+bp_multi 0.52 1086 89 -91.80% 399180 379243 -4.99% 3848245 3890018 1.09% 
+
+gcd 1.00 0 0 – 10 11 10.00% 5326 5372 0.86% 
+
+ibex 1.00 0 0 – 166 146 -12.05% 333569 330897 -0.80% 
+
+jpeg 0.80 601 61 -89.85% 126000 119700 -5.00% 1046000 1052050 0.58% 
+
+Total – 15767 1215 -92.29% 2159458 1934420 -10.42% 16803367 16856444 0.32% rip-up and reroute extensively, as discussed in Section 3. Figure 6 shows this runtime explosion when entering the hard regime in 
+
+aes . The only exceptions we found were ibex and gcd , which main-tained reasonable runtime under extreme conditions due to their simpler routing topologies. Across both regimes, our model consistently reduces iterations and runtime in the converging cases and significantly reduces DRVs in the non-converging cases. We see a 92% decrease in DRVs from the baseline alongside a 10% runtime improvement. Three cases in Table 3 stand out. ibex and gcd were evaluated at the maxi-mum possible density with the hardest adjustment settings but still converged. Notably, our model still achieves improvements over the baseline. For ariane136 , we were unable to identify a non-converging operating point within reasonable runtime constraints and therefore report results at the highest utilization settings we explored. Afsara Khan and Austin Rovinski 
+
+For gcd and ibex , the RL inference overhead dominates over the speedup from RL and thus total changes remain modest. However, in harder cases (e.g., higher cell count or extreme routing conges-tion) that motivate this work, the inference cost is well under 0.01% of total routing time and is negligible against the time this policy saves. Overall wirelength impact remains small, with a 0.32% total increase across the augmented density set. Any increases in wire-length over 1% are balanced by reducing DRV count over the base-line by >90%. We did not include wirelength in the reward function and therefore it was not an optimization target when selecting weights. 
+
+## 6 Conclusion 
+
+This paper presented a history aware RL agent for iterative cost con-trol under varying routing conditions for improved detailed routing convergence and quality. We introduce a novel offline RL model with LSTM to implement our methodology that can be extended to any router with iterative search. Our model integrates design fea-tures and DRV history to infer the router’s cost weights, making it portable and adaptable to any router which uses iterative cost-based algorithms. We evaluated 8 designs with augmented densities from the OpenROAD Design Suite, demonstrating an average 92% DRV reduction while achieving an average 10% runtime improvement over the baseline. Compared to the prior CQL-only approach [4], our LSTM-enhanced architecture better captures routing dynamics and improves convergence across densities. 
+
+## Acknowledgments 
+
+We thank Saik Anam Siam for helpful guidance on model saturation from distribution shift in machine learning. This work was partially funded by a Google charitable gift. 
+
+## References 
+
+[1] G. Chen, C.-W. Pui, H. Li, J. Chen, B. Jiang, and E. F. Y. Young, “Detailed Routing by Sparse Grid Graph and Minimum-Area-Captured Path Search,” in Proc. ASP-DAC ,ser. ASPDAC ’19. New York, NY, USA: Association for Computing Machinery, 2019, p. 754–760. [2] A. B. Kahng, L. Wang, and B. Xu, “TritonRoute: An Initial Detailed Router for Advanced VLSI Technologies,” in Proc. ICCAD . IEEE, 2018, pp. 1–8. [3] ——, “TritonRoute: The Open-Source Detailed Router,” IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems , vol. 40, no. 3, pp. 547–559, 2020. [4] A. Khan and A. Rovinski, “Accelerating Detailed Routing Convergence through Offline Reinforcement Learning,” in Proc. DATE , 2026, pp. 1–7. [5] R. Dakhmouche and H. Gorji, “Why Cannot Neural Networks Master Extrapo-lation? Insights from Physical Laws,” arXiv preprint https:// arxiv.org/ abs/ 2510. 04102 , 2025. [6] C. Y. Lee, “An Algorithm for Path Connections and Its Applications,” IRE Trans-actions on Electronic Computers , vol. EC-10, no. 3, pp. 346–365, 1961. [7] M. H. Arnold and W. S. Scott, “An Interactive Maze Router with Hints,” in Proc. DAC , ser. DAC ’88. Washington, DC, USA: IEEE Computer Society Press, 1988, p. 672–676. [8] H. Kaindl and G. Kainz, “Bidirectional Heuristic Search Reconsidered,” J. Artif. Int. Res. , vol. 7, no. 1, p. 283–317, Dec. 1997. [9] D. W. Hightower, “A Solution to Line-Routing Problems on the Continuous Plane,” in Proc. DAC , ser. DAC ’69. New York, NY, USA: Association for Computing Machinery, 1969, p. 1–24. [10] K. Han, A. B. Kahng, and H. Lee, “Evaluation of BEOL Design Rule Impacts Using an Optimal ILP-Based Detailed Router,” in Proc. DAC , ser. DAC ’15. New York, NY, USA: Association for Computing Machinery, 2015. [11] T. Nieberg, “Gridless Pin Access in Detailed Routing,” in Proc. DAC , ser. DAC ’11. New York, NY, USA: Association for Computing Machinery, 2011, p. 170–175. [12] Y. Ding, C. Chu, and W.-K. Mak, “Self-Aligned Double Patterning Lithogra-phy Aware Detailed Routing with Color Preassignment,” IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems , vol. 36, no. 8, pp. 1381–1394, 2017. [13] I.-J. Liu, S.-Y. Fang, and Y.-W. Chang, “Overlay-Aware Detailed Routing for Self-Aligned Double Patterning Lithography Using the Cut Process,” in Proc. DAC ,2014, pp. 1–6. [14] M. Ahrens, M. Gester, N. Klewinghaus, D. Muller, S. Peyer, C. Schulte, and G. Tellez, “Detailed Routing Algorithms for Advanced Technology Nodes,” IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems , vol. 34, no. 4, pp. 563–576, Apr. 2015. [15] T. Ajayi, D. Blaauw, T.-B. Chan, C.-K. Cheng, V. A. Chhabria, D. K. Choo, M. Coltella, S. Dobre, R. G. Dreslinski, M. Fogaça, S. Hashemi, A. Hosny, A. B. Kahng, M. Kim, J. Li, Z. Liang, U. Mallappa, P. Penzes, G. Pradipta, S. Reda, A. Rovinski, K. Samadi, S. S. Sapatnekar, L. Saul, C. Sechen, V. Srinivas, W. Swartz, D. Sylvester, D. Urquhart, L. Wang, M. Woo, and B. Xu, “OpenROAD: Toward a Self-Driving, Open-Source Digital Layout Implementation Tool Chain,” in 
+
+Proceedings of Government Microcircuit Applications and Critical Technology Con-ference , ser. GOMACTech ’19, 2019. [16] S. Mantik, G. Posser, W.-K. Chow, Y. Ding, and W.-H. Liu, “ISPD 2018 Initial Detailed Routing Contest and Benchmarks,” in Proc. ISPD , ser. ISPD ’18. New York, NY, USA: Association for Computing Machinery, 2018, p. 140–143. [17] W.-H. Liu, S. Mantik, W.-K. Chow, Y. Ding, A. Farshidi, and G. Posser, “ISPD 2019 Initial Detailed Routing Contest and Benchmark with Advanced Routing Rules,” in Proc. ISPD , ser. ISPD ’19. New York, NY, USA: Association for Computing Machinery, 2019, p. 147–151. [18] W. Zeng, A. Davoodi, and R. O. Topaloglu, “Explainable DRC Hotspot Prediction with Random Forest and SHAP Tree Explainer,” in Proc. DATE , 2020, pp. 1151– 1156. [19] H. Park, K. Baek, S. Kim, K. Choi, and T. Kim, “Pin Accessibility and Routing Congestion Aware DRC Hotspot Prediction for Designs in Advanced Technol-ogy Nodes with Consolidated Practical Applicability and Sustainability,” IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems , vol. 43, no. 12, pp. 4786–4799, 2024. [20] R. Liang, H. Xiang, D. Pandey, L. Reddy, S. Ramji, G.-J. Nam, and J. Hu, “DRC Hotspot Prediction at Sub-10nm Process Nodes Using Customized Convolutional Network,” in Proc. ISPD . New York, NY, USA: Association for Computing Machinery, 2020, p. 135–142. [21] H. Chen, K.-C. Hsu, W. J. Turner, P.-H. Wei, K. Zhu, D. Z. Pan, and H. Ren, “Reinforcement Learning Guided Detailed Routing for Custom Circuits,” in Proc. ISPD , ser. ISPD ’23. New York, NY, USA: Association for Computing Machinery, 2023, p. 26–34. [22] A. Rovinski, T. Ajayi, M. Kim, G. Wang, and M. Saligane, “Bridging Academic Open-Source EDA to Real-World Usability,” in Proc. ICCAD , 2020, pp. 1–7. [23] A. Kumar, A. Zhou, G. Tucker, and S. Levine, “Conservative Q-Learning for Offline Reinforcement Learning,” in Proc. NeurIPS , vol. 33. Curran Associates, Inc., 2020, pp. 1179–1191. [24] M. A. Haque, M. M. Kamol, I. Hossain, S. K. Amalapuram, V. Kreinovich, and M. S. Rahman, “CITADEL: A Semi-Supervised Active Learning Framework for Malware Detection under Continuous Distribution Drift,” arXiv preprint https: // arxiv.org/ abs/ 2511.11979 , 2025. [25] T. Seno and M. Imai, “d3rlpy: An Offline Deep Reinforcement Learning Library,” 
+
+Journal of Machine Learning Research , vol. 23, 2022.

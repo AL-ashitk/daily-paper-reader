@@ -48,17 +48,17 @@
 <section class="dpr-home-dashboard-card dpr-home-report-card">
   <div class="dpr-home-dashboard-header">
     <div>
-      <span class="dpr-home-dashboard-kicker">2026-09-06 ~ 2026-09-15</span>
+      <span class="dpr-home-dashboard-kicker">2026-09-15</span>
       <h3 class="dpr-home-dashboard-title">今日汇总</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">共 36 篇</strong>
+    <strong class="dpr-home-dashboard-count">共 17 篇</strong>
   </div>
   <dl class="dpr-home-dashboard-stats">
     <div class="dpr-home-dashboard-stat"><dt>累计更新</dt><dd>1 次</dd></div>
-    <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>25</dd></div>
+    <div class="dpr-home-dashboard-stat"><dt>精读</dt><dd>6</dd></div>
     <div class="dpr-home-dashboard-stat"><dt>速读</dt><dd>11</dd></div>
   </dl>
-  <p class="dpr-home-dashboard-body">最近更新：2026-09-15 08:21:20 UTC<br>状态：成功</p>
+  <p class="dpr-home-dashboard-body">最近更新：2026-09-15 18:48:49 UTC<br>状态：成功</p>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-brief-card">
   <div class="dpr-home-dashboard-header">
@@ -69,10 +69,9 @@
     <strong class="dpr-home-dashboard-count">AI</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<p>今日共生成 36 篇推荐（精读 25 篇，速读 11 篇）</p>
-<p>精读：《Graph-Based Safe Reinforcement Learning for Multi-Agent Systems with Time-Varying Topology》（10.0/10）, 《On BatchNorm Forward Modes in Value-Based Reinforcement Learning》（9.0/10）</p>
-<p>速读：《Stable-MM-R1: Anchoring Multimodal Reasoning Dynamics via Entropy-Guided Stratification》（8.0/10）, 《Temporal-Causal Inference for Reinforcement Learning via Automata Learning》（8.0/10）, 《Eliciting Self-Verification in Multimodal Reasoning Agents with Reinforcement Learning》（8.0/10）</p>
-<p>这些结果覆盖了当下较热的方向，建议先看精读区论文的关键问题与方法。</p>
+<p>今天从 17 篇推荐中精读 6 篇、速读 11 篇，重点锁定长程任务智能体强化学习与海上四旋翼自主降落两个 9.0 分方向。</p>
+<p>最值得看的是 T1 终端智能体强化学习如何应对长程任务，以及课程式对抗异构多智能体方法用于海上动态环境下的四旋翼降落。</p>
+<p>普通读者可先读这两篇精读的高分论文摘要，再按需扫一眼代码生成测试时强化学习与足式机器人执行器动力学课程等速读方向。</p>
   </div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-deep-card">
@@ -81,12 +80,12 @@
       <span class="dpr-home-dashboard-kicker">今日累计</span>
       <h3 class="dpr-home-dashboard-title">精读推荐</h3>
     </div>
-    <strong class="dpr-home-dashboard-count">25 篇</strong>
+    <strong class="dpr-home-dashboard-count">6 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="Graph-Based Safe Reinforcement Learning for Multi-Agent Systems with Time-Varying Topology">Graph-Based Safe Reinforcement Learning for Multi-Agent Systems with Time-Varying Topology</span></li><li><span class="dpr-home-dashboard-paper-title" title="On BatchNorm Forward Modes in Value-Based Reinforcement Learning">On BatchNorm Forward Modes in Value-Based Reinforcement Learning</span></li><li><span class="dpr-home-dashboard-paper-title" title="Local and Global Stability in Performative Reinforcement Learning">Local and Global Stability in Performative Reinforcement Learning</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="T1: Terminal Agent Reinforcement Learning for Long-Horizon Tasks">T1: Terminal Agent Reinforcement Learning for Long-Horizon Tasks</span></li><li><span class="dpr-home-dashboard-paper-title" title="Curriculum-Based Adversarial Heterogeneous Agent Reinforcement Learning for Autonomous Quad-Copter Landing in Maritime Settings">Curriculum-Based Adversarial Heterogeneous Agent Reinforcement Learning for Autonomous Quad-Copter Landing in Maritime Settings</span></li><li><span class="dpr-home-dashboard-paper-title" title="Groupoid-Based Internal State Representations for Reinforcement Learning with Local Symmetries">Groupoid-Based Internal State Representations for Reinforcement Learning with Local Symmetries</span></li></ul>
   </div>
-  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">rl <strong>25</strong></span></div>
+  <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">rl <strong>6</strong></span></div>
 </section>
 <section class="dpr-home-dashboard-card dpr-home-skim-card">
   <div class="dpr-home-dashboard-header">
@@ -97,7 +96,7 @@
     <strong class="dpr-home-dashboard-count">11 篇</strong>
   </div>
   <div class="dpr-home-dashboard-body">
-<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="Stable-MM-R1: Anchoring Multimodal Reasoning Dynamics via Entropy-Guided Stratification">Stable-MM-R1: Anchoring Multimodal Reasoning Dynamics via Entropy-Guided Stratification</span></li><li><span class="dpr-home-dashboard-paper-title" title="Temporal-Causal Inference for Reinforcement Learning via Automata Learning">Temporal-Causal Inference for Reinforcement Learning via Automata Learning</span></li><li><span class="dpr-home-dashboard-paper-title" title="Eliciting Self-Verification in Multimodal Reasoning Agents with Reinforcement Learning">Eliciting Self-Verification in Multimodal Reasoning Agents with Reinforcement Learning</span></li></ul>
+<ul class="dpr-home-dashboard-paper-list"><li><span class="dpr-home-dashboard-paper-title" title="Entropy-Regularized Rank-Masked Policy Optimization for Test-Time Reinforcement Learning in Code Generation">Entropy-Regularized Rank-Masked Policy Optimization for Test-Time Reinforcement Learning in Code Generation</span></li><li><span class="dpr-home-dashboard-paper-title" title="Actuator Dynamics Curricula for Narrow-Viability Tasks in Legged Robot Learning">Actuator Dynamics Curricula for Narrow-Viability Tasks in Legged Robot Learning</span></li><li><span class="dpr-home-dashboard-paper-title" title="TRACE: Training Reasoning Agents for Causal Exploration with Synthesized Rewards">TRACE: Training Reasoning Agents for Causal Exploration with Synthesized Rewards</span></li></ul>
   </div>
   <div class="dpr-home-dashboard-tags"><span class="dpr-home-dashboard-tag">rl <strong>11</strong></span></div>
 </section>

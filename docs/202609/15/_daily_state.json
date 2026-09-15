@@ -1,0 +1,281 @@
+{
+  "date": "20260915",
+  "date_label": "",
+  "generated_at": "2026-09-15 18:48:49 UTC",
+  "recommend_exists": true,
+  "run_count": 1,
+  "papers": [
+    {
+      "paper_id": "2609.11042v1",
+      "route": "202609/15/2609.11042v1-t1-terminal-agent-reinforcement-learning-for-long-horizon-tasks",
+      "title": "T1: Terminal Agent Reinforcement Learning for Long-Horizon Tasks",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "用强化学习训练长时程终端任务的智能体",
+      "first_seen_at": "2026-09-15 18:48:49 UTC",
+      "updated_at": "2026-09-15 18:48:49 UTC"
+    },
+    {
+      "paper_id": "2609.12758v1",
+      "route": "202609/15/2609.12758v1-curriculum-based-adversarial-heterogeneous-agent-reinforcement-learning-for-autonomous-quad-copter-landing-in-maritime-settings",
+      "title": "Curriculum-Based Adversarial Heterogeneous Agent Reinforcement Learning for Autonomous Quad-Copter Landing in Maritime Settings",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "使用HAPPO的多智能体异构智能体强化学习协同控制",
+      "first_seen_at": "2026-09-15 18:48:49 UTC",
+      "updated_at": "2026-09-15 18:48:49 UTC"
+    },
+    {
+      "paper_id": "2609.13035v1",
+      "route": "202609/15/2609.13035v1-groupoid-based-internal-state-representations-for-reinforcement-learning-with-local-symmetries",
+      "title": "Groupoid-Based Internal State Representations for Reinforcement Learning with Local Symmetries",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "基于群胚的局部对称性RL理论状态表示",
+      "first_seen_at": "2026-09-15 18:48:49 UTC",
+      "updated_at": "2026-09-15 18:48:49 UTC"
+    },
+    {
+      "paper_id": "2609.13050v1",
+      "route": "202609/15/2609.13050v1-a-unified-and-constrained-view-of-regularization-based-robust-reinforcement-learning",
+      "title": "A Unified and Constrained View of Regularization-Based Robust Reinforcement Learning",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "基于正则化的鲁棒深度RL统一理论界",
+      "first_seen_at": "2026-09-15 18:48:49 UTC",
+      "updated_at": "2026-09-15 18:48:49 UTC"
+    },
+    {
+      "paper_id": "2609.08232v1",
+      "route": "202609/15/2609.08232v1-routing-dense-layouts-with-history-aware-offline-reinforcement-learning-using-lstm",
+      "title": "Routing Dense Layouts with History-Aware Offline Reinforcement Learning using LSTM",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "面向布线的高密度离线强化学习策略",
+      "first_seen_at": "2026-09-15 18:48:49 UTC",
+      "updated_at": "2026-09-15 18:48:49 UTC"
+    },
+    {
+      "paper_id": "2609.09094v1",
+      "route": "202609/15/2609.09094v1-the-surprising-effectiveness-of-approximate-value-iteration-in-self-play",
+      "title": "The Surprising Effectiveness of Approximate Value Iteration in Self-Play",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "用于博弈的近似价值迭代自对弈算法",
+      "first_seen_at": "2026-09-15 18:48:49 UTC",
+      "updated_at": "2026-09-15 18:48:49 UTC"
+    },
+    {
+      "paper_id": "2609.09135v1",
+      "route": "202609/15/2609.09135v1-entropy-regularized-rank-masked-policy-optimization-for-test-time-reinforcement-learning-in-code-generation",
+      "title": "Entropy-Regularized Rank-Masked Policy Optimization for Test-Time Reinforcement Learning in Code Generation",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "面向测试时强化学习的策略优化算法",
+      "first_seen_at": "2026-09-15 18:48:49 UTC",
+      "updated_at": "2026-09-15 18:48:49 UTC"
+    },
+    {
+      "paper_id": "2609.09492v1",
+      "route": "202609/15/2609.09492v1-actuator-dynamics-curricula-for-narrow-viability-tasks-in-legged-robot-learning",
+      "title": "Actuator Dynamics Curricula for Narrow-Viability Tasks in Legged Robot Learning",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "面向足式机器人控制任务的强化学习课程",
+      "first_seen_at": "2026-09-15 18:48:49 UTC",
+      "updated_at": "2026-09-15 18:48:49 UTC"
+    },
+    {
+      "paper_id": "2609.10315v1",
+      "route": "202609/15/2609.10315v1-trace-training-reasoning-agents-for-causal-exploration-with-synthesized-rewards",
+      "title": "TRACE: Training Reasoning Agents for Causal Exploration with Synthesized Rewards",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "面向因果探索的可验证奖励强化学习",
+      "first_seen_at": "2026-09-15 18:48:49 UTC",
+      "updated_at": "2026-09-15 18:48:49 UTC"
+    },
+    {
+      "paper_id": "2609.11270v1",
+      "route": "202609/15/2609.11270v1-beyond-noise-steering-dual-latent-space-reinforcement-learning-for-generative-robot-policy",
+      "title": "Beyond Noise Steering: Dual-Latent Space Reinforcement Learning for Generative Robot Policy",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "控制生成式机器人策略潜空间的深度RL框架",
+      "first_seen_at": "2026-09-15 18:48:49 UTC",
+      "updated_at": "2026-09-15 18:48:49 UTC"
+    },
+    {
+      "paper_id": "2609.11433v1",
+      "route": "202609/15/2609.11433v1-safety-aware-skill-adaptation-for-reinforcement-learning-in-dynamic-environments",
+      "title": "Safety-aware Skill Adaptation for Reinforcement Learning in Dynamic Environments",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "面向机器人技能自适应的安全引导强化学习",
+      "first_seen_at": "2026-09-15 18:48:49 UTC",
+      "updated_at": "2026-09-15 18:48:49 UTC"
+    },
+    {
+      "paper_id": "2609.11815v1",
+      "route": "202609/15/2609.11815v1-predefined-time-resilient-integral-reinforcement-learning-for-input-constrained-unknown-nonlinear-systems-under-fdi-attacks-and-disturbances-a-fully-data-driven-approach",
+      "title": "Predefined-Time Resilient Integral Reinforcement Learning for Input-Constrained Unknown Nonlinear Systems Under FDI Attacks and Disturbances: A Fully Data-Driven Approach",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "面向未知非线性系统的积分强化学习框架",
+      "first_seen_at": "2026-09-15 18:48:49 UTC",
+      "updated_at": "2026-09-15 18:48:49 UTC"
+    },
+    {
+      "paper_id": "2609.12016v1",
+      "route": "202609/15/2609.12016v1-inverting-self-triggered-control-adversarial-reinforcement-learning-for-sparse-denial-of-service-attacks",
+      "title": "Inverting Self-Triggered Control: Adversarial Reinforcement Learning for Sparse Denial-of-Service Attacks",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "学习稀疏拒绝服务攻击的对抗强化学习",
+      "first_seen_at": "2026-09-15 18:48:49 UTC",
+      "updated_at": "2026-09-15 18:48:49 UTC"
+    },
+    {
+      "paper_id": "2609.13060v1",
+      "route": "202609/15/2609.13060v1-canvasanneal-curriculum-reinforcement-learning-for-diffusion-language-models",
+      "title": "CanvasAnneal: Curriculum Reinforcement Learning for Diffusion Language Models",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "课程引导的扩散模型强化学习框架",
+      "first_seen_at": "2026-09-15 18:48:49 UTC",
+      "updated_at": "2026-09-15 18:48:49 UTC"
+    },
+    {
+      "paper_id": "2609.12404v1",
+      "route": "202609/15/2609.12404v1-vrl-bench-benchmarking-agents-on-computer-control-tasks-under-finite-trial-budgets",
+      "title": "VRL-Bench: Benchmarking agents on computer control tasks under finite trial budgets",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 7.0,
+      "evidence": "面向言语强化学习试错智能体的基准测试",
+      "first_seen_at": "2026-09-15 18:48:49 UTC",
+      "updated_at": "2026-09-15 18:48:49 UTC"
+    },
+    {
+      "paper_id": "2609.12651v1",
+      "route": "202609/15/2609.12651v1-distortion-of-ai-alignment-revisited-rlhf-is-a-decent-utilitarian-aligner",
+      "title": "Distortion of AI Alignment Revisited: RLHF is a Decent Utilitarian Aligner",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 7.0,
+      "evidence": "对RLHF偏差的细粒度分析，属于人类反馈强化学习方法",
+      "first_seen_at": "2026-09-15 18:48:49 UTC",
+      "updated_at": "2026-09-15 18:48:49 UTC"
+    },
+    {
+      "paper_id": "2609.13048v1",
+      "route": "202609/15/2609.13048v1-mcrl2-multi-resource-cross-attention-based-representation-learning-augmented-reinforcement-learning-for-cloud-microservice-scheduling",
+      "title": "MCRL2: Multi-resource Cross-attention-based Representation Learning-augmented Reinforcement Learning for Cloud Microservice Scheduling",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 7.0,
+      "evidence": "表示学习增强的云微服务调度强化学习",
+      "first_seen_at": "2026-09-15 18:48:49 UTC",
+      "updated_at": "2026-09-15 18:48:49 UTC"
+    }
+  ]
+}

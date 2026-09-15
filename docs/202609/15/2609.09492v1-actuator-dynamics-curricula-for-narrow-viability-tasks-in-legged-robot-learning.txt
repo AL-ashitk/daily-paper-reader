@@ -1,0 +1,1061 @@
+Actuator Dynamics Curricula for Narrow-Viability
+Tasks in Legged Robot Learning
+Kousheek Chakraborty1,2, Chandan K. Rajendra1, Ayham Alharbat1,3, Abeje Y. Mersha1
+1 Saxion University of Applied Sciences, 2 University of Groningen, 3 University of Twente
+k.chakraborty@{saxion,rug}.nl
+Abstract: Reinforcement learning has produced capable controllers across a
+broad range of legged-robot tasks, but a subset of these tasks fail to converge under
+standard training: those for which most exploration trajectories terminate before
+producing useful gradient signal. To address such tasks we introduce the Actuator
+Dynamics Curriculum, a procedure that initializes joint stiffness at a high value
+and anneals it toward the system-identified value as completed episode lengths
+grow. Using a cart-pole system as a representative example, we show that higher
+closed-loop joint natural frequency under critical damping enlarges the viability
+kernel of the underlying Markov Decision Process, increasing the fraction of ini-
+tial states from which the task is feasible. We validate the kernel monotonicity on
+the cart-pole and apply the curriculum to a quadrupedal-to-handstand transition
+on the Boston Dynamics Spot, a narrow-viability task where training under fixed
+identified stiffness plateaus at a policy that never completes the transition. The
+trained policy executes the transition in simulation across 10 seeds and transfers
+to hardware. More broadly, our results suggest that simulated actuator dynamics
+is a useful axis along which to design curricula for tasks in which exploration is
+bottlenecked by termination conditions rather than by reward signal.
+Keywords: Legged Robots, Reinforcement Learning, Curriculum Learning
+(a) Simulation
+(b) Hardware
+Figure 1: Boston Dynamics’ Spot quadruped executing a transition to a handstand from a four-
+legged standing stance. The policy is trained and tested first in simulation (a) and transfers zero-shot
+to a physical Spot (b).
+1
+Introduction
+Reinforcement learning (RL) has enabled increasingly capable motion planners and controllers for
+legged robots, including locomotion across diverse terrains [1, 2, 3, 4, 5, 6], dynamic jumping [7],
+and bipedal balance on quadrupedal platforms [8, 9]. A common ingredient across these results is
+large-scale parallel simulation [10], which compensates for the sample inefficiency of policy gradi-
+ent methods by collecting orders of magnitude more environment interactions per wall-clock second.
+However, for a subset of robot learning tasks, parallelization alone is insufficient: the set of trajec-
+arXiv:2609.09492v1  [cs.RO]  8 Sep 2026
+
+
+tories that both pursue reward and avoid early termination is vanishingly small under any practical
+sampling budget [11]. We refer to these as narrow-viability tasks.
+A representative instance is the transition from a quadrupedal stance to a balanced handstand on the
+front legs of a Boston Dynamics Spot. The maneuver requires the body to tip forward by 90◦within
+roughly one second, during which the hind legs lose ground contact, and the front legs take the load
+and stabilize the robot’s body. Throughout this trajectory, the robot passes through a region of state
+space: mid-pitch, zero-contact, rotating, in which most actions cause the robot to fall and trigger an
+early termination of the training.
+One approach to address this class of tasks is imitation learning, which sidesteps the exploration
+problem by training from expert demonstrations [12, 13, 14, 15]. However, such demonstrations are
+unavailable for many platforms and behaviors of interest. A more general alternative is curriculum
+learning, which varies task difficulty during training [16]. In our setting, after system identification
+on the Spot [17], the natural choice was to train under the identified PD parameters, but we observed
+that training failed to converge under those gains, which prompted us to consider whether the sim-
+ulated actuator dynamics themselves could be varied as part of the curriculum. Specifically what
+we propose is that each joint is initialized with stiffness higher than its system-identified value and
+corresponding damping chosen to keep the closed-loop joint dynamics critically damped, and the
+stiffness is then annealed to the identified value as the policy improves.
+The intuition is that higher joint stiffness results in more aggressive tracking of commanded posi-
+tions, giving the policy more margin to recover from imperfect actions during early training; as the
+policy improves, the dynamics are returned to those of the hardware so that the deployed policy
+operates under the actuators it will actually see. We refer to this procedure as an Actuator Dynam-
+ics Curriculum. It is parametrized by a single physically meaningful scalar, the joint stiffness, and
+requires only that actuator dynamics can be varied at simulation time, a capability that is available
+in modern physics engines used for RL training [18].
+We support this approach by analyzing a representative cart-pole system in which the cart position
+is tracked by a PD controller. We show that increasing the closed-loop joint natural frequency under
+critical damping enlarges the viability kernel [19] of the task or the set of states from which task
+constraints can be satisfied indefinitely [11] and hence increases the fraction of initial states from
+which the task is feasible. This result provides a motivation for training under elevated stiffness
+because in the representative bounded-command system, higher natural frequency enlarges the set
+of states from which task constraints can be maintained. However, in the full RL setting, this result
+does not by itself establish viability-kernel enlargement as the mechanism responsible for improved
+policy learning. We investigate this empirically in Section 4. The statement and proof appear in
+Section 2 and Appendix 7.1.
+1.1
+Contributions
+This work makes the following contributions:
+1. We introduce the Actuator Dynamics Curriculum, a training procedure that anneals simu-
+lated joint stiffness from a high initial value to its system-identified hardware value while
+keeping the closed-loop joint dynamics critically damped (Section 3).
+2. We characterize narrow-viability as a class of robot learning tasks in which most trajec-
+tories under random exploration terminate early, leaving policy-gradient methods without
+sufficient learning signal to converge (Section 2).
+3. We give an analytical result on a representative cart-pole system: increasing the natural
+frequency of a position-tracking PD controller under critical damping enlarges the viability
+kernel and the fraction of initial states from which the task is feasible (Section 2, with proof
+in Appendix 7.1).
+4. We evaluate the method on the handstand task in simulation and demonstrate sim-to-real
+transfer of the resulting handstand transition policy on a physical Spot robot (Section 4).
+2
+
+
+Simulation
+Physical
+Generic Locomotion Policy
+(fixed command sequence)
+CMA-ES
+Motor Model
+PD
+Curriculum
+Manager
+Envs
+Envs
+Rollout
+Buffer
+PPO
+Policy
+Update
+Domain
+Randomize
+Spot
+Spot SDK
+Spot SDK
+IsaacLab
+System Identification
+Training
+Deployment
+Figure 2: System overview. System identification of actuator parameters K∗is performed via CMA-
+ES against trajectories collected on a Boston Dynamics Spot running a generic locomotion policy.
+Training proceeds in IsaacLab with PPO under the Actuator Dynamics Curriculum and domain
+randomization. The trained policy is deployed to an NVIDIA Jetson Nano onboard the robot, which
+communicates with the hardware via the Spot SDK.
+1.2
+Related Work
+Acrobatic and bipedal behaviors on quadrupedal robots have been studied through a range of meth-
+ods. Model-based trajectory optimization has been used to produce a 360° backflip on Mini Cheetah,
+by solving an offline optimization that respects the robot’s actuator limits [20]. Other approaches
+use reference motions to guide RL training. Adversarial motion priors [12] learn a set of switchable
+styles on a wheeled-legged quadruped, including transitions between quadrupedal and humanoid
+configurations, by imitating motion-capture data. The same family of methods has been applied
+to blind bipedal walking on a standard quadruped through a teacher-student framework [14], and
+to multigait and bipedal motions over uneven terrain through imitation [15]. Style-reward formu-
+lations have been used to enable a quadruped to switch between quadrupedal and bipedal locomo-
+tion modes within a single policy [21]. OPT-Mimic [13] replaces motion-capture references with
+trajectory-optimization rollouts and produces front hops, a 180° backflip, and biped stepping on a
+Solo 8 quadruped.
+Other agile behaviors have been learned without reference motions.
+An extreme-parkour con-
+troller [7] learns end-to-end from depth images on a curriculum of increasingly difficult terrains,
+producing high jumps, long jumps, and a handstand among its skills. TumblerNet [8] uses a center-
+of-mass/center-of-pressure estimator with a balance-targeting reward to learn bipedal locomotion on
+quadrupeds, and risk-adaptive distributional RL has been applied to bipedal walking on a Unitree
+Go2 [9].
+The choice of action representation and low-level control has also been studied in robot learning.
+Different action-space parameterizations have been compared for learning robot motor skills [22],
+and their effects on manipulation learning and sim-to-real transfer have been analyzed [23]. Low-
+level controller gains have likewise been shown to substantially affect policy learning [24]. Our
+approach instead explicitly schedules the closed-loop joint dynamics during training and anneals
+them toward the system-identified deployment values.
+The approach we present in this paper differs from the above in what is changed during training.
+Rather than giving the policy external information such as a precomputed reference trajectory, a
+motion-prior dataset, or a hand-tuned reward, we change the simulated robot’s actuator dynamics
+during training and anneal them back toward their system-identified values.
+3
+
+
+2
+Problem Formulation
+2.1
+Setup
+We model the robot and task as a Markov decision process Mκ = (S, A, Pκ, r, γ, ρ0, Sterm) param-
+eterized by the actuator parameters κ. States s ∈S and actions a ∈A are continuous, γ ∈[0, 1)
+is the discount factor, and ρ0 is the initial state distribution. The transition kernel Pκ(s′ | s, a) is
+induced by the rigid-body dynamics of the robot and the actuator model parameterized by κ such
+that varying κ changes the closed-loop dynamics of the actuators and consequently the distribution
+of states visited under a policy. The reward r : S × A →R is dense and shaped to reward task
+progress. The termination set Sterm ⊂S encodes safety violations such as illegal contact or body
+collision and entering Sterm ends the episode and truncates the return. We optimize a parameterized
+policy πθ(a | s) to maximize the expected discounted return,
+J(θ; κ) = Es0∼ρ0, τ∼πθ, Pκ
+" ∞
+X
+t=0
+γtr(st, at)
+#
+,
+(1)
+where trajectories are generated under dynamics Pκ.
+The policy outputs an action a ∈A ⊂Rn for a robot with n joints. The commanded joint position
+setpoints are defined as offsets from a nominal configuration q0 ∈Rn: qd = q0 + α a, where α > 0
+is a fixed scaling factor. In the experiments, actions are clipped component-wise to ai ∈[−1, 1],
+resulting in bounded relative joint-position commands. For each joint i, a low-level PD controller
+produces the actuator torque,
+τi = −Ki(qi −qd,i) −Bi ˙qi,
+(2)
+where Ki > 0 is the proportional gain (joint stiffness) and Bi > 0 is the derivative gain (joint
+damping). Under a per-joint idealization in which Mi denotes the effective inertia at joint i and
+cross-joint coupling is absorbed into τext,i, the closed-loop dynamics of joint i can be expressed as,
+Mi¨qi + Bi ˙qi + Ki(qi −qd,i) = τext,i,
+(3)
+where τext,i collects gravity, contacts, Coriolis terms, and inter-joint coupling. We parameterize
+the closed-loop joint dynamics by the natural frequency ωn,i =
+p
+Ki/Mi and the damping ratio
+ζi = Bi/(2√KiMi). Through Pκ, the closed-loop joint parameters enter both the viability kernel
+and the policy-gradient landscape of Mκ; the analysis in Section 2.2 exploits this dependence. The
+Actuator Dynamics Curriculum varies Ki during training while keeping ζi = 1 to remain critically
+damped, so that only the closed-loop joint bandwidth changes while the damping properties are
+preserved. The curriculum schedule is specified in Section 3.
+2.2
+Propositions
+We use the standard notion of the viability kernel introduced in [19], later adapted to RL in [11, 25,
+26], restated here in finite-horizon form.
+Definition 1 (Finite-horizon viability kernel). For horizon T ∈N, the finite-horizon viability kernel
+of Mκ is the set of states from which there exists a policy that keeps the trajectory out of the
+termination set for T steps with probability one,
+VT (Mκ) = {s ∈S : ∃π, Pπ,Pκ[st /∈Sterm ∀t ∈{0, . . . , T} | s0 = s] = 1} .
+(4)
+States outside VT (Mκ) cannot be guaranteed to remain outside Sterm for the full horizon T under
+any policy. Building on this, we formalize the notion of a narrow-viability task as follows.
+Definition 2 (ε-narrow-viable). For ε ∈(0, 1) and horizon T ∈N, a task is ε-narrow-viable with
+respect to an initial state distribution ρ0 if a state sampled from the state visitation distribution
+induced by uniform random exploration lies in the finite-horizon viability kernel with probability at
+most ε; formally,
+Ps∼dπu,ρ0
+T
+[s ∈VT (Mκ)] ≤ε,
+(5)
+where πu is the uniform random policy over the bounded action set A, and dπu,ρ0
+T
+is the state
+visitation distribution within T steps under πu starting from ρ0.
+4
+
+
+The proposition below is stated for a representative cart-pole system, linearized about the upright
+equilibrium, with Mωn denoting the resulting MDP at natural frequency ωn. The result specifically
+considers a bounded position-command interface, matching the relative position-command action
+spaces used in our experiments. The full setup, assumptions, and proof are in Appendix 7.1.
+Proposition 1 (Kernel monotonicity). For the representative cart-pole system considered in Ap-
+pendix 7.1, under the stated bounded-command feasibility assumptions, the finite-horizon viability
+kernel of Mωn is monotone non-decreasing with respect to the natural frequency:
+ωn,1 ≤ωn,2 =⇒VT (Mωn,1) ⊆VT (Mωn,2).
+(6)
+Intuitively, a higher natural frequency gives the controller more authority and responsiveness to drive
+the state back toward a reference in a given time, enlarging the set of states from which termination
+can be avoided over the horizon.
+Viable initial-state coverage.
+Define
+CT (ωn) ≜Ps0∼ρ0[s0 ∈VT (Mωn)] ,
+the probability that the initial state lies in the kernel. By Proposition 1, CT is non-decreasing in ωn:
+ωn,1 ≤ωn,2
+=⇒
+CT (ωn,1) ≤CT (ωn,2).
+Raising the natural frequency moves initial-state mass into the kernel and away from the narrow-
+viability regime of Definition 2.
+3
+Method
+Proposition 1 and the resulting monotonicity of CT motivate training at high ωn, but the policy must
+ultimately be deployed under the identified hardware value K∗. Motivated by this, the Actuator
+Dynamics Curriculum holds training in the high-stiffness regime K0, until episode length grows,
+then anneals toward K∗as training progresses. Damping is recomputed each iteration to maintain
+critical damping (ζ = 1), so that only the closed-loop joint bandwidth changes; the annealing is
+driven by an exponential moving average of completed episode lengths.
+The stiffness K(t) at training iteration t is set by
+K(t) = K0 + β(t)p (K∗−K0),
+(7)
+where β(t) ∈[0, 1] is the curriculum progress and p > 0 controls the shape of the annealing curve
+(we use p = 1, giving linear interpolation). The stiffness is applied uniformly to all joints; the
+damping at joint i is set to Bi(t) = 2
+p
+K(t) Mi to maintain critical damping per joint.
+The curriculum progress β(t) is computed from a running estimate ¯L(t) of the average length of
+completed episodes,
+β(t) = clip
+ ¯L(t) −Lmin
+Lmax −Lmin
+, 0, 1
+
+,
+(8)
+where Lmin and Lmax specify the episode-length range over which the schedule moves between K0
+and K∗. The estimate ¯L(t) is maintained as an exponential moving average over completed episodes
+with smoothing factor η ∈(0, 1). The full training procedure is summarized in Algorithm 1 and the
+curriculum hyperparameters used in the experiments are reported in Table 8.
+The curriculum holds training in the large-kernel regime until episode lengths grow, then transitions
+the dynamics to K∗, so that the deployed policy is trained on the actuator characteristics it will
+encounter on hardware.
+4
+Experimental Results
+4.1
+Experimental Setup
+Figure 2 summarizes the training and deployment pipeline. Policies are trained in simulation us-
+ing PPO [27] within the IsaacLab framework [28] with the RSL-RL library [29] on a workstation
+5
+
+
+−0.8
+−0.4
+0.0
+0.4
+0.8
+θ0 (rad)
+−4
+−2
+0
+2
+4̇
+θ0 (rad/s)
+ωn =2
+ωn =3
+ωn =10
+(a) Slice of VT (Mωn) at x0 = ˙x0 = 0 for three
+values of ωn.
+5
+10
+15
+20
+ωn (rad/s)
+35%
+40%
+45%
+50%
+55%
+60%
+65%
+70%
+Success rate p(ωn)
+Saturation p∞≈72.2%
+ωp =√g/L ≈4.43
+(b) Success rate p(ωn).
+Figure 3: The admissible region is {|x| ≤1 m, |θ| ≤π/2}. (a) The viable region grows monotoni-
+cally with ωn. (b) The success rate increases monotonically with ωn.
+equipped with an Intel Core i9 CPU, NVIDIA RTX 5000 Ada GPU, and 32GB of RAM. The full
+hyperparameter list can be found in Appendix 7.3. End-to-end training of the policy takes ap-
+proximately 1.5 hours of wall-clock time per seed. The system-identified joint parameters K∗are
+obtained using a CMA-ES approach as described in [17]. The system-identified stiffness K∗= 40
+represents the effective closed-loop stiffness of the assembled joint under the Spot control interface.
+We select K0 by increasing stiffness from K∗in increments of 5 and choosing the smallest value
+that exceeds a pre-specified 98% task-success threshold over 1000 simulation episodes, giving us
+K0 = 60. At deployment, the trained policy is copied to an NVIDIA Jetson Nano mounted on the
+Boston Dynamics Spot, which runs the inference pipeline and communicates with the robot via the
+Spot SDK.
+4.2
+Empirical Validation of Proposition 1
+We empirically validate Proposition 1 on the cart-pole system from Section 2.2. For a range of
+natural frequencies ωn under critical damping, we initialize the cart at the origin and sweep the pole
+angle θ0 ∈[−0.8, 0.8] rad and angular velocity ˙θ0 ∈[−5, 5] rad/s. For each initial condition we run
+a closed-loop simulation under an outer LQR designed on the linearized dynamics with the inner
+PD loop included in the plant model, and record whether the trajectory remains in the admissible
+region. Figure 3 shows the resulting viable region and success rate p(ωn) over the sampled grid.
+The viable region grows monotonically with ωn, consistent with Proposition 1.
+Algorithm 1 Actuator Dynamics curriculum
+1: Input: initial stiffness K0, target stiffness K∗, episode-length thresholds Lmin, Lmax, EMA
+factor α, exponent p, joint inertias {Mi}
+2: Initialize ¯L ←0, K ←K0, Bi ←2√KMi for each joint i
+3: for each training iteration t = 1, 2, . . . do
+4:
+Collect rollouts under policy πθ with actuator parameters (K, {Bi})
+5:
+Update πθ via policy gradient
+6:
+¯Lbatch ←mean length of completed episodes in this iteration
+7:
+¯L ←(1 −η) ¯L + η ¯Lbatch
+8:
+β ←clip
+ (¯L −Lmin)/(Lmax −Lmin), 0, 1
+
+9:
+K ←K0 + βp(K∗−K0)
+10:
+Bi ←2√KMi for each joint i
+11: end for
+6
+
+
+2000
+4000
+6000
+8000
+10000
+Iteration
+−30
+−25
+−20
+−15
+−10
+−5
+Mean Reward
+No Curricula
+Actuator Curricula
+2000
+4000
+6000
+8000
+10000
+Iteration
+0
+200
+400
+600
+800
+1000
+Mean Episode Length (steps)
+Figure 4: Training curves on the Spot handstand task with 10 seeds. Left: Mean reward. Right:
+Mean episode length. Without the curriculum, episode length remains around 400 steps after 10,000
+policy updates.
+4.3
+Spot Handstand
+The handstand transition task requires the Boston Dynamics Spot to rotate 90◦in pitch from a
+four-legged stance to a balanced handstand on its front legs. The policy is a multilayer perceptron
+(MLP) mapping a proprioceptive observation to 12 joint position offsets. The reward shapes for the
+handstand pose and penalizes excessive joint torques and rapid action changes, with a large terminal
+penalty for falls. Episodes terminate on illegal contact between any body link and the ground. The
+full task specification, including specific observations, reward terms, termination conditions and
+domain randomization [30], is in Appendix 7.2.
+We compare two training conditions: with curriculum, in which joint stiffness anneals from K0 to
+K∗according to Algorithm 1, and without curriculum, in which stiffness is fixed at the system-
+identified value K∗. Each condition is trained for 10 seeds; all other hyperparameters are identical.
+2000
+4000
+6000
+8000
+10000
+Iteration
+40.0
+42.5
+45.0
+47.5
+50.0
+52.5
+55.0
+57.5
+60.0
+Actuator Stiffness
+Figure 5: Stiffness K(t) during training un-
+der the Actuator Dynamics Curriculum.
+Figure 4 shows the resulting training curves. With-
+out the curriculum, mean episode length grows
+slightly but plateaus around 400 steps and reward
+remains low; rollouts terminate early enough that
+the policy gradient does not produce a coherent
+training signal, consistent with the narrow-viability
+characterization of Section 2. With the curriculum,
+both quantities rise monotonically and converge to
+their maximum values within 1.5 hours of wall-clock
+training. Figure 5 shows the corresponding stiffness
+trajectory K(t): the schedule anneals from K0 all
+the way to K∗over the course of training, so the con-
+verged policy operates under the system-identified
+actuator parameters. Figure 6 compares the two poli-
+cies qualitatively: the curriculum-trained policy exe-
+cutes a clean transition into the inverted equilibrium,
+while the baseline falls eventually. On hardware, we deployed all 10 curriculum-trained policies to
+the physical Spot as seen in Figure 1b. Each produced the handstand transition and held the inverted
+pose under physical disturbances applied by prodding the robot with a pole. On carpeted surfaces,
+the transition succeeded on the first attempt, while on padded surfaces it sometimes required a sec-
+ond attempt, which the policy executed as an emergent retry. Under significantly larger pushes the
+robot toppled onto its back and it could not recover from this configuration. In total, across approx-
+imately 20 recorded trials on surfaces including carpet, soft padding, and hardwood, all transitions
+succeeded. Representative deployments are included in the supplementary video.
+7
+
+
+Table 1: Ablation study on the Spot handstand task. Mean ± std across 10 seeds, each evaluated
+over 1000 episodes.
+Condition
+Episode Length
+Reward
+Train at K∗
+385 ± 47
+−42.1 ± 8.7
+Train at K0
+215 ± 38
+−68.5 ± 12.3
+Randomize K ∈[K∗, K0]
+658 ± 89
+−18.7 ± 6.2
+Time-based annealing schedule
+751 ± 62
+−12.3 ± 5.1
+No early termination
+547 ± 56
+−35.4 ± 7.4
+Ours (Actuator Dynamics curriculum)
+975 ± 12
+−4.76 ± 0.83
+(a) With curriculum
+(b) Without curriculum
+Figure 6: Snapshots of the handstand transition in simulation after 10000 policy updates. The
+curriculum-trained policy (a) executes a clean transition into the inverted equilibrium whereas the
+baseline (b) fails.
+4.4
+Ablation Study
+We compare the Actuator Dynamics Curriculum against five ablations stated in Table 1, each varying
+one design choice while keeping all other hyperparameters identical. Each condition is trained for
+10 seeds and evaluated over 1000 episodes under the system-identified deployment dynamics K∗.
+The final mean episode length and mean reward are reported in Table 1.
+We additionally test whether the benefit of ADC can be attributed to effective action scaling or
+exploration-noise annealing. These ablations are reported in Appendix 7.4.
+5
+Limitations
+The analytical result in Section 2.2 is established on a representative cart-pole system; lifting them to
+the full multi-rigid-body dynamics of a legged robot would close an interesting theoretical gap. The
+curriculum is currently demonstrated on the handstand transition task alone, but we are interested
+in characterizing its behavior on a broader class of narrow-viability tasks. Within the method itself,
+the schedule currently varies a single scalar stiffness uniformly across joints, with hyperparameters
+K0, Lmin, Lmax, α, and p chosen by hand; per-joint schedules with joint-specific targets, and princi-
+pled or adaptive hyperparameter selection, are possible extensions of this work. Finally, hardware
+deployment is currently reported qualitatively; a more rigorous evaluation with quantitative success
+metrics and an explicit failure-mode analysis would further validate the sim-to-real transfer.
+6
+Conclusion
+We observed that training a handstand transition policy on the Boston Dynamics Spot under system-
+identified actuator dynamics failed to converge, with most rollouts terminating before producing
+useful gradient signal. This work formalizes that observation through the notion of narrow-viability
+and addresses it with the Actuator Dynamics Curriculum, a method that initializes joint stiffness at a
+high value and anneals it toward the system-identified value as completed episode lengths grow. The
+8
+
+
+curriculum is motivated by a result on a representative cart-pole system where higher closed-loop
+joint natural frequency under critical damping enlarges the viability kernel and the fraction of initial
+states from which the task is feasible. Empirically, the curriculum converges on the handstand task
+and transfers zero-shot to hardware across different seeds. More broadly, our results suggest that
+simulated closed-loop joint dynamics is a useful axis along which to design curricula for tasks in
+which exploration is bottlenecked by termination conditions rather than by reward signal.
+9
+
+
+References
+[1] J. Hwangbo, J. Lee, A. Dosovitskiy, D. Bellicoso, V. Tsounis, V. Koltun, and M. Hutter. Learn-
+ing agile and dynamic motor skills for legged robots. Science Robotics, 4(26):eaau5872, Jan.
+2019. doi:10.1126/scirobotics.aau5872. URL https://www.science.org/doi/10.1126/
+scirobotics.aau5872.
+[2] J. Lee, J. Hwangbo, L. Wellhausen, V. Koltun, and M. Hutter. Learning quadrupedal locomo-
+tion over challenging terrain.
+Science Robotics, 5(47):eabc5986, Oct. 2020.
+doi:10.1126/
+scirobotics.abc5986.
+URL https://www.science.org/doi/10.1126/scirobotics.
+abc5986.
+[3] N. Rudin, J. He, J. Aurand, and M. Hutter. Parkour in the Wild: Learning a General and
+Extensible Agile Locomotion Policy Using Multi-expert Distillation and RL Fine-tuning, May
+2025. URL http://arxiv.org/abs/2505.11164. arXiv:2505.11164 [cs].
+[4] A. Kumar, Z. Fu, D. Pathak, and J. Malik. RMA: Rapid Motor Adaptation for Legged Robots,
+July 2021. URL http://arxiv.org/abs/2107.04034. arXiv:2107.04034 [cs.LG].
+[5] M. Zucker, J. Andrew Bagnell, C. G. Atkeson, and J. Kuffner. An optimization approach
+to rough terrain locomotion. In 2010 IEEE International Conference on Robotics and Au-
+tomation, pages 3589–3595, May 2010. doi:10.1109/ROBOT.2010.5509176. URL https:
+//ieeexplore.ieee.org/document/5509176. ISSN: 1050-4729.
+[6] M. A. Zucker, N. Ratliff, M. Stolle, J. Chestnutt, J. A. Bagnell, C. G. Atkeson, and J. Kuffner.
+Optimization and learning for rough terrain legged locomotion. Proceedings of International
+Journal of Robotics Research: Special Issue on Legged Locomotion, 30(2):175 – 191, Feb.
+2011.
+[7] X. Cheng, K. Shi, A. Agarwal, and D. Pathak. Extreme Parkour with Legged Robots. In 2024
+IEEE International Conference on Robotics and Automation (ICRA), pages 11443–11450, May
+2024. doi:10.1109/ICRA57147.2024.10610200. URL https://ieeexplore.ieee.org/
+document/10610200.
+[8] E. Xiao, Y. Dong, J. Lam, and P. Lu. Learning stable bipedal locomotion skills for quadrupedal
+robots on challenging terrains with automatic fall recovery.
+npj Robotics, 3(1):22, Aug.
+2025. ISSN 2731-4278. doi:10.1038/s44182-025-00043-2. URL https://www.nature.
+com/articles/s44182-025-00043-2.
+[9] Y. Zhang, R. Corcodel, and D. Zhao. Bipedalism for Quadrupedal Robots: Versatile Loco-
+Manipulation through Risk-Adaptive Reinforcement Learning, July 2025.
+URL http://
+arxiv.org/abs/2507.20382. arXiv:2507.20382 [cs.RO].
+[10] N. Rudin, D. Hoeller, P. Reist, and M. Hutter. Learning to Walk in Minutes Using Massively
+Parallel Deep Reinforcement Learning. In Proceedings of the 5th Conference on Robot Learn-
+ing, pages 91–100. PMLR, Jan. 2022.
+URL https://proceedings.mlr.press/v164/
+rudin22a.html.
+[11] S. Heim and A. Spr¨owitz.
+Learning from Outside the Viability Kernel: Why we Should
+Build Robots that can Fall with Grace.
+In 2018 IEEE International Conference on Simu-
+lation, Modeling, and Programming for Autonomous Robots (SIMPAR), pages 55–61, May
+2018. doi:10.1109/SIMPAR.2018.8376271. URL http://arxiv.org/abs/1806.06569.
+arXiv:1806.06569 [cs.AI].
+[12] E. Vollenweider, M. Bjelonic, V. Klemm, N. Rudin, J. Lee, and M. Hutter. Advanced Skills
+through Multiple Adversarial Motion Priors in Reinforcement Learning. In 2023 IEEE Inter-
+national Conference on Robotics and Automation (ICRA), pages 5120–5126, May 2023. doi:
+10.1109/ICRA48891.2023.10160751. URL https://ieeexplore.ieee.org/document/
+10160751.
+10
+
+
+[13] Y. Fuchioka, Z. Xie, and M. Van de Panne. OPT-Mimic: Imitation of Optimized Trajectories
+for Dynamic Quadruped Behaviors. In 2023 IEEE International Conference on Robotics and
+Automation (ICRA), pages 5092–5098, May 2023. doi:10.1109/ICRA48891.2023.10160562.
+URL https://ieeexplore.ieee.org/document/10160562.
+[14] T. Peng, L. Bao, J. Humphreys, A. M. Delfaki, D. Kanoulas, and C. Zhou. Learning Bipedal
+Walking on a Quadruped Robot via Adversarial Motion Priors. In M. N. Huda, M. Wang, and
+T. Kalganova, editors, Towards Autonomous Robotic Systems, pages 118–129, Cham, 2025.
+Springer Nature Switzerland. ISBN 978-3-031-72062-8. doi:10.1007/978-3-031-72062-8 11.
+[15] E. Xiao, Y. Dong, J. Ma, and P. Lu. Stable Imitation of Multigait and Bipedal Motions for
+Quadrupedal Robots Over Uneven Terrains. Advanced Robotics Research, page 202500036,
+July 2025.
+ISSN 2943-9973.
+doi:10.1002/adrr.202500036.
+URL https://advanced.
+onlinelibrary.wiley.com/doi/10.1002/adrr.202500036.
+[16] S. Narvekar, B. Peng, M. Leonetti, J. Sinapov, M. E. Taylor, and P. Stone. Curriculum Learning
+for Reinforcement Learning Domains: A Framework and Survey. Journal of Machine Learn-
+ing Research, 21(181):1–50, 2020. ISSN 1533-7928. URL http://jmlr.org/papers/v21/
+20-212.html.
+[17] A. J. Miller, F. Yu, M. Brauckmann, and F. Farshidian. High-Performance Reinforcement
+Learning on Spot: Optimizing Simulation Parameters with Distributional Measures, July 2025.
+URL http://arxiv.org/abs/2504.17857. arXiv:2504.17857 [cs.LG].
+[18] NVIDIA. Isaac Sim. URL https://github.com/isaac-sim/IsaacSim.
+[19] J.-P. Aubin.
+Viability Theory.
+Birkh¨auser, Boston, 2009.
+ISBN 978-0-8176-4909-8 978-
+0-8176-4910-4. doi:10.1007/978-0-8176-4910-4. URL http://link.springer.com/10.
+1007/978-0-8176-4910-4.
+[20] B. Katz, J. D. Carlo, and S. Kim. Mini Cheetah: A Platform for Pushing the Limits of Dynamic
+Quadruped Control. In 2019 International Conference on Robotics and Automation (ICRA),
+pages 6295–6301, Montreal, QC, Canada, May 2019. IEEE Press. doi:10.1109/ICRA.2019.
+8793865. URL https://doi.org/10.1109/ICRA.2019.8793865.
+[21] W. Que, Y. Sui, N. He, and Z. Yang. Learning Human-Like Bipedal Locomotion for Quadruped
+Robot. In 2025 5th International Conference on Artificial Intelligence, Robotics, and Commu-
+nication (ICAIRC), pages 443–446, Nov. 2025. doi:10.1109/ICAIRC68035.2025.11385025.
+URL https://ieeexplore.ieee.org/document/11385025.
+[22] J. Eßer, G. B. Margolis, O. Urbann, S. Kerner, and P. Agrawal.
+Action Space Design in
+Reinforcement Learning for Robot Motor Skills. In Proceedings of The 8th Conference on
+Robot Learning, pages 4021–4032. PMLR, Jan. 2025. URL https://proceedings.mlr.
+press/v270/esser25a.html.
+[23] E. Aljalbout, F. Frank, M. Karl, and P. van der Smagt. On the Role of the Action Space
+in Robot Manipulation Learning and Sim-to-Real Transfer. IEEE Robotics and Automation
+Letters, 9(6):5895–5902, June 2024. ISSN 2377-3766. doi:10.1109/LRA.2024.3398428. URL
+https://ieeexplore.ieee.org/document/10522877/.
+[24] A. Bronars, Y. Park, and P. Agrawal. Tune to Learn: How Controller Gains Shape Robot
+Policy Learning, Apr. 2026. URL http://arxiv.org/abs/2604.02523. arXiv:2604.02523
+[cs.RO].
+[25] M. Shafiee, G. Bellegarda, and A. Ijspeert. Viability leads to the emergence of gait transitions
+in learning agile quadrupedal locomotion on challenging terrains. Nature Communications,
+15(1):3073, Apr. 2024. ISSN 2041-1723. doi:10.1038/s41467-024-47443-w. URL https:
+//www.nature.com/articles/s41467-024-47443-w.
+11
+
+
+[26] P.-F. Massiani, A. v. Rohr, L. Haverbeck, and S. Trimpe.
+Viability of Future Actions:
+Robust Reinforcement Learning via Entropy Regularization.
+Oct. 2024.
+URL https:
+//openreview.net/forum?id=zP9hpDEzPq.
+[27] J. Schulman, F. Wolski, P. Dhariwal, A. Radford, and O. Klimov. Proximal Policy Optimization
+Algorithms, Aug. 2017. URL http://arxiv.org/abs/1707.06347. arXiv:1707.06347
+[cs.LG].
+[28] NVIDIA, M. Mittal, P. Roth, J. Tigue, A. Richard, O. Zhang, P. Du, A. Serrano-Mu˜noz, X. Yao,
+R. Zurbr¨ugg, N. Rudin, L. Wawrzyniak, M. Rakhsha, A. Denzler, E. Heiden, A. Borovicka,
+O. Ahmed, I. Akinola, A. Anwar, M. T. Carlson, J. Y. Feng, A. Garg, R. Gasoto, L. Gulich,
+Y. Guo, M. Gussert, A. Hansen, M. Kulkarni, C. Li, W. Liu, V. Makoviychuk, G. Malczyk,
+H. Mazhar, M. Moghani, A. Murali, M. Noseworthy, A. Poddubny, N. Ratliff, W. Rehberg,
+C. Schwarke, R. Singh, J. L. Smith, B. Tang, R. Thaker, M. Trepte, K. V. Wyk, F. Yu,
+A. Millane, V. Ramasamy, R. Steiner, S. Subramanian, C. Volk, C. Y. Chen, N. Jawale,
+A. V. Kuruttukulam, M. A. Lin, A. Mandlekar, K. Patzwaldt, J. Welsh, H. Zhao, F. Anes,
+J.-F. Lafleche, N. Mo¨enne-Loccoz, S. Park, R. Stepinski, D. V. Gelder, C. Amevor, J. Car-
+ius, J. Chang, A. H. Chen, P. d. H. Ciechomski, G. Daviet, M. Mohajerani, J. v. Muralt,
+V. Reutskyy, M. Sauter, S. Schirm, E. L. Shi, P. Terdiman, K. Vilella, T. Widmer, G. Yeo-
+man, T. Chen, S. Grizan, C. Li, L. Li, C. Smith, R. Wiltz, K. Alexis, Y. Chang, D. Chu,
+L. J. Fan, F. Farshidian, A. Handa, S. Huang, M. Hutter, Y. Narang, S. Pouya, S. Sheng,
+Y. Zhu, M. Macklin, A. Moravanszky, P. Reist, Y. Guo, D. Hoeller, and G. State. Isaac Lab: A
+GPU-Accelerated Simulation Framework for Multi-Modal Robot Learning, Nov. 2025. URL
+http://arxiv.org/abs/2511.04831. arXiv:2511.04831 [cs].
+[29] C. Schwarke, M. Mittal, N. Rudin, D. Hoeller, and M. Hutter.
+RSL-RL: A Learning Li-
+brary for Robotics Research, Sept. 2025.
+URL http://arxiv.org/abs/2509.10771.
+arXiv:2509.10771 [cs].
+[30] J. Tobin, R. Fong, A. Ray, J. Schneider, W. Zaremba, and P. Abbeel. Domain randomization for
+transferring deep neural networks from simulation to the real world. In 2017 IEEE/RSJ Interna-
+tional Conference on Intelligent Robots and Systems (IROS), pages 23–30, Sept. 2017. doi:10.
+1109/IROS.2017.8202133.
+URL https://ieeexplore.ieee.org/document/8202133.
+ISSN: 2153-0866.
+12
+
+
+xd
+M
+m
+θ
+l
+g
+O
+x
+xd
+Figure 7: Cart-pole with PD control
+7
+Appendix
+7.1
+Proofs
+Representative system.
+We instantiate Mωn on a cart–pole with cart mass M, pole mass m, and
+pole length l as shown in Figure 7. The action is the commanded cart position xd, drawn from a
+bounded set |xd| ≤¯xd. A PD controller on the cart with gains (K, B) generates the cart force. We
+set K = Mω2
+n and B = 2Mωn, so that the closed-loop cart dynamics are critically damped (ζ = 1)
+with natural frequency ωn. With state s = (x, ˙x, θ, ˙θ), the closed-loop dynamics are
+¨x = Mω2
+n(xd −x) −2Mωn ˙x + ml sin θ ˙θ2 −mg sin θ cos θ
+M + m sin2 θ
+,
+(9)
+¨θ = (M + m)g sin θ −cos θ
+ Mω2
+n(xd −x) −2Mωn ˙x + ml sin θ ˙θ2
+l(M + m sin2 θ)
+.
+(10)
+The termination set is the complement of the admissible box X = { |x| ≤¯x, |θ| ≤¯θ}, and
+VT (Mωn) is as in Definition 1.
+Bounded-command feasibility assumptions.
+The proof of Proposition 1 uses two assumptions
+on the bounded-command feasibility of the kernel:
+(A1) Command margin. Every s0 ∈VT (Mωn,1) admits a viable command x(1)
+d (·) with margin
+δ > 0, i.e. |x(1)
+d (t)| ≤¯xd −δ for t ∈[0, T].
+(A2) Closeness. The pair (ωn,1, ωn,2) satisfies ∆(ωn,1, ωn,2) ≤δ, where ∆is the inversion-
+correction bound defined in the proof.
+7.1.1
+Proof of Proposition 1
+Linearizing about the upright equilibrium (θ, ˙θ) = (0, 0) reduces the dynamics to
+¨x = ω2
+n(xd −x) −2ωn ˙x −mg
+M θ,
+(11)
+¨θ = g
+l θ −1
+l ¨x.
+(12)
+In particular, ωn enters only the cart equation (11), while the pole equation (12) depends on the
+actuator solely through ¨x. Inverting (11) for the command that produces a given ¨x,
+xd = x +
+2
+ωn ˙x +
+1
+ω2n ¨x +
+mg
+Mω2n θ.
+(13)
+Proof. Fix ωn,1 ≤ωn,2 and s0 ∈VT (Mωn,1). By Definition 1 and (A1), some x(1)
+d (·) keeps the
+trajectory
+ x(·), ˙x(·), θ(·), ˙θ(·)
+
+in X for t ∈[0, T] with |x(1)
+d (t)| ≤¯xd −δ. Let x(2)
+d (t) be (13)
+13
+
+
+evaluated at ωn,2 along the same trajectory. Substituting into (11) at ωn,2 recovers the same ¨x,
+and (12) then yields the same ¨θ; with identical initial conditions, the trajectory is reproduced under
+ωn,2 and stays in X on [0, T].
+For admissibility, subtracting (13) at the two frequencies gives
+|x(2)
+d (t) −x(1)
+d (t)| ≤∆(ωn,1, ωn,2),
+where ∆→0 as ωn,2 →ωn,1 and is bounded on viable trajectories. By (A2), ∆≤δ, hence
+|x(2)
+d (t)| ≤(¯xd −δ) + δ = ¯xd.
+Therefore s0 ∈VT (Mωn,2), and since s0 was arbitrary,
+VT (Mωn,1) ⊆VT (Mωn,2).
+7.2
+Task MDP Specification
+7.2.1
+Observations
+At each control step the policy receives a single concatenated observation vector ot ∈R45, summa-
+rized in Table 2. The base linear and angular velocities together with the projected gravity vector
+encode the base motion and orientation and joint positions are expressed relative to the robot’s de-
+fault standing pose.
+Table 2: Observation terms.
+Term
+Symbol
+Dim
+Base linear velocity
+vb
+3
+Base angular velocity
+ωb
+3
+Projected gravity on base frame
+ˆg
+3
+Joint positions
+q −q0
+12
+Joint velocities
+˙q
+12
+Previous action
+at−1
+12
+Total
+ot
+45
+7.2.2
+Actions
+The policy outputs 12 relative joint-position commands a ∈A. Actions are clipped component-wise
+to ai ∈[−1, 1] and converted to joint-position setpoints according to
+qd = q0 + αa,
+(14)
+where q0 is the nominal standing configuration and α is the action scale used throughout training.
+7.2.3
+Rewards
+The reward function is a weighted sum of penalty terms. The policy is rewarded for maintaining
+the handstand pose at the target height and orientation, keeping the hind feet off the ground, and
+producing smooth low-effort actions. The terms and their weights are listed in Table 3.
+Table 3: Reward terms and weights.
+Term
+Description
+Weight
+Base orientation
+Deviation from target orientation (L2)
+−1.0
+Base height
+Deviation from target height (L2)
+−0.5
+Hind-foot contact
+Either hind foot contacting the ground
+−10.0
+Base linear velocity
+Linear velocity of the base (L2)
+−0.01
+Base angular velocity
+Angular velocity of the base (L2)
+−0.05
+Joint torques
+Joint torque magnitudes (L2)
+−5 × 10−4
+Action rate
+Change in commanded action between steps (L2)
+−0.01
+Termination
+Body or any upper leg link contacts the ground
+−500
+14
+
+
+7.2.4
+Domain Randomization
+To improve transfer from simulation to hardware, several physical parameters are randomized during
+training. Randomizations are applied at three points: once at environment startup, at every episode
+reset, and at random intervals during episodes. The full list is given in Table 4.
+Table 4: Domain randomization parameters. All ranges are sampled uniformly.
+Parameter
+Range
+Startup
+Robot static friction
+[0.3, 1.0]
+Robot dynamic friction
+[0.3, 0.8]
+Base mass perturbation
+±2.5 kg
+Reset
+Base position (x, y)
+±0.5 m
+Base yaw
+±π rad
+Base linear velocity
+(±1.5, ±1.0, ±0.5) m/s
+Base angular velocity
+(±0.7, ±0.7, ±1.0) rad/s
+Joint position offset
+±0.2 rad
+Joint velocity
+±2.5 rad/s
+Interval
+Push interval
+[2, 5] s
+Push velocity
+±0.5 m/s
+7.3
+Training and Simulation Parameters
+Table 5: IsaacSim Environment Configuration
+Simulation Parameters
+Physics timestep
+0.002 s (500 Hz)
+Control decimation
+10
+Episode length
+20 s (1000 policy steps)
+Parallel environments
+4096
+Table 6: PPO Configuration
+PPO Hyperparameters
+Rollouts
+24
+Learning epochs
+5
+Mini batches
+4
+Discount factor (γ)
+0.99
+GAE lambda (λ)
+0.95
+Learning rate
+1 × 10−3
+Learning rate scheduler
+Adaptive (KL-based)
+KL threshold (scheduler)
+0.01
+Ratio clip
+0.2
+Value clip
+0.2
+Entropy loss scale
+0.0025
+Value loss scale
+0.5
+Gradient norm clip
+1.0
+Initial policy noise std
+1.0
+Total training iterations
+10,000
+15
+
+
+Table 7: Network Configuration
+Network Architecture
+Policy network
+Input
+ot
+Observation normalization
+disabled
+Hidden layers
+[512, 256, 128]
+Activations
+elu
+Output
+at
+Value network
+Input
+ot
+Observation normalization
+disabled
+Hidden layers
+[512, 256, 128]
+Activations
+elu
+Output
+V (ot)
+(value estimate)
+Table 8: Actuator Dynamics Curriculum hyperparameters.
+Parameter
+Value
+Initial stiffness K0
+60
+Target stiffness K∗
+40
+Episode-length threshold Lmin
+0
+Episode-length threshold Lmax
+1000
+EMA smoothing factor η
+0.05
+Annealing exponent p
+1
+7.4
+Additional Ablations
+We evaluate whether ADC’s benefit can be explained by action scaling or exploration noise using
+three additional ablations: retuned action scaling at K∗, action-normalized ADC with K(t)α(t) =
+K∗α∗, and an episode-length-driven action-noise curriculum. Training curves are shown in Fig. 8
+and final results in Table 9. The normalized-action ADC performs close to the original ADC, while
+the other two conditions provide only modest gains over the baseline.
+2000
+4000
+6000
+8000
+10000
+Iteration
+−35
+−30
+−25
+−20
+−15
+−10
+−5
+Mean Reward
+No ADC, K *, α *
+No ADC, K *, α=1.5α *
+ADC, α normalised
+ANC, σ anneal
+ADC
+2000
+4000
+6000
+8000
+10000
+Iteration
+0
+200
+400
+600
+800
+1000
+Mean Episode Length (steps)
+2000
+4000
+6000
+8000
+10000
+Iteration
+40
+45
+50
+55
+60
+Actuator Stiffness
+2000
+4000
+6000
+8000
+10000
+Iteration
+0.13
+0.14
+0.15
+0.16
+0.17
+0.18
+0.19
+0.20
+Action Scale
+2000
+4000
+6000
+8000
+10000
+Iteration
+1.1
+1.2
+1.3
+1.4
+1.5
+Policy Noise Std
+Figure 8: Training curves for the additional controlled ablations.
+16
+
+
+Table 9: Additional controlled ablations on action scaling and exploration noise. Mean ± standard
+deviation across 10 seeds, with each policy evaluated over 1000 episodes under the system-identified
+dynamics K∗.
+Condition
+Ep. Length
+Reward
+Train at K∗(baseline)
+385 ± 47
+−42.1 ± 8.7
+Train at K∗, retuned α
+453 ± 52
+−37.4 ± 7.4
+Train at K∗, noise curriculum
+447 ± 48
+−32.1 ± 6.3
+Ours, normalised α
+952 ± 40
+−5.4 ± 1.5
+Ours (ADC)
+975 ± 12
+−4.76 ± 0.83
+17
