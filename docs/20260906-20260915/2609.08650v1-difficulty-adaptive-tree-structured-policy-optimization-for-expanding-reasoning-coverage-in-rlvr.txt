@@ -1,0 +1,1451 @@
+Title: Difficulty-Adaptive Tree-Structured Policy Optimization for Expanding Reasoning Coverage in RLVR
+
+URL Source: https://arxiv.org/pdf/2609.08650v1
+
+Published Time: Wed, 09 Sep 2026 03:14:21 GMT
+
+Number of Pages: 27
+
+Markdown Content:
+Difficulty-Adaptive Tree-Structured Policy Optimization for Expanding Reasoning Coverage in RLVR 
+
+Youngjun Yu Sanghwan Jang Hwanjo Yu *
+
+Pohang University of Science and Technology (POSTECH) 
+
+{colin31472, s.jang, hwanjoyu}@postech.ac.kr 
+
+Abstract 
+
+Reinforcement Learning with Verifiable Re-wards (RLVR) has been central to the recent success of Large Reasoning Models. How-ever, while RLVR significantly improves single-sample accuracy, it often fails to expand the model’s intrinsic reasoning coverage (pass@ k)due to limited exploration during training. To address this, we optimize the structural design of train-time rollouts to enhance pass@ k. Our analysis identifies three key design principles: (1) difficulty-adaptive rollout can play an im-portant role in expanding pass@k, beyond serv-ing as an efficiency heuristic; (2) tree-based rollout outperforms parallel sampling in dis-covering correct answers; and (3) sentence-entropy-guided forking overcomes the local-ization phenomenon of token-level branch-ing to maximize semantic diversity. Build-ing on these insights, we propose DATPO 
+
+(Difficulty-Adaptive Sentence-entropy-guided 
+
+Tree-structured Policy Optimization). DATPO integrates difficulty-adaptive tree search with a sibling-diversity advantage term, explicitly promoting semantic diversity to expand reason-ing coverage during training. Experiments on mathematical reasoning benchmarks demon-strate that DATPO outperforms baselines espe-cially in pass@ k, which directly translates to superior test-time scaling performance. 1
+
+1 Introduction 
+
+The paradigm of Large Reasoning Models (LRMs) has achieved remarkable success in eliciting rigor-ous problem-solving capabilities from foundation models (Jaech et al., 2024; Team et al., 2025). A key mechanism behind this is Reinforcement Learn-ing with Verifiable Rewards (RLVR), exemplified by DeepSeek-R1 (Guo et al., 2025) through its suc-cessful application of the Group Relative Policy Optimization (GRPO) (Shao et al., 2024).  
+
+> *Corresponding author.
+> 1Code: https://github.com/colin31472/DATPO
+
+In parallel, LRM research has increasingly em-phasized test-time scaling strategies, including CoT (Wei et al., 2022), majority voting (Wang et al., 2022), best-of-N (Stiennon et al., 2020), and Monte Carlo Tree Search (MCTS) (Ha et al., 2025). Fundamentally, the effectiveness of these methods is limited by the model’s intrinsic rea-soning coverage—the breadth of valid reasoning paths the model can explore, typically measured by pass@ k. Without sufficient reasoning coverage, even large candidate sets are unlikely to include a correct reasoning path, causing test-time scaling to aggregate or select among recurring errors (Brown et al., 2024; Zhao et al., 2025). However, recent studies (Yue et al., 2025; Dang et al., 2025; Wu et al., 2025) argue that RLVR often fails to unlock new reasoning capabilities beyond the reasoning coverage of the base model. This limitation stems from a lack of explicit exploration strategies that steer the learning or sampling pro-cess toward underexplored regions. Without such guidance, the model merely exploits known solu-tions rather than discovering novel ones. While recent studies introduce exploration strate-gies to expand reasoning coverage (Walder and Karkhanis, 2025; Yao et al., 2025; Wang et al., 2025), they largely focus on optimization-level in-terventions, leaving the train-time rollout as a fixed parallel structure. Tree-based frameworks (Hou et al., 2025; Liu et al., 2025a) have begun to move beyond standard parallel sampling. However, these methods primarily utilize tree structures for credit assignment or computational efficiency. Conse-quently, it remains underexplored which structural choices in train-time rollouts actually expand the model’s reasoning coverage. To bridge this gap, we conduct a systematic em-pirical analysis of train-time rollouts, revealing three core design principles to maximize reason-ing coverage, extending beyond improvements in single-sample accuracy. First, difficulty-adaptive arXiv:2609.08650v1 [cs.LG] 8 Sep 2026 56 58 60 62   
+
+> Base Model pass@256
+> 61.4 57.9 56.7
+> pass@256 avg@256 4816
+
+Rollout Budget (G)  
+
+> 20 21
+> Base Model avg@256
+> 20.5 21.0 21.2
+
+(a) Models trained on Easy dataset 59 61 63 65   
+
+> Base Model pass@256
+> 59.2 64.7 61.2
+> pass@256 avg@256 4816
+
+Rollout Budget (G)     
+
+> 20 21 Base Model avg@256
+> 20.4 20.8 21.2
+
+(b) Models trained on Medium dataset 58 59 60 61   
+
+> Base Model pass@256
+> 57.9 60.4 61.0
+> pass@256 avg@256 4816
+
+Rollout Budget (G)    
+
+> 20 21
+> Base Model avg@256
+> 20.4 20.5 20.6
+
+(c) Models trained on Hard dataset 
+
+Figure 1: avg@256 and pass@256 performance across different rollout budgets for models trained on different difficulty subsets. 
+
+rollout is an important factor in expanding pass@k, rather than merely an efficiency heuris-tic. While increasing the rollout budget improves pass@ k when training on hard problems, we ob-serve that it can actually degrade pass@ k when training on easy problems. Second, tree-based rollout outperforms parallel sampling in discov-ering correct answers by efficiently utilizing limited computational budgets. Finally, we observe that conventional token-guided forking suffers from lo-calization , where high-entropy tokens cluster in narrow segments and trap exploration. To over-come this, forking decisions must be elevated to a broader semantic level to discover genuinely diverse reasoning paths. Building on these insights, we propose 
+
+DATPO (Difficulty-Adaptive Sentence-entropy-guided Tree-structured Policy Optimization). For train-time exploration, DATPO combines the structural advantages of tree-based search with difficulty-adaptive rollout to expand reasoning cov-erage. Forking points are selected using sentence-level entropy signals, broadening the granularity of uncertainty estimation to avoid localization . Fur-thermore, to maximize coverage-expanding bene-fits, we augment the advantage function with an annealed sibling-diversity term. This explicitly re-wards semantically diverse reasoning branches, en-couraging the model to explore a wider range of valid reasoning paths. Extensive experiments on mathematical rea-soning benchmarks demonstrate the effectiveness of DATPO, which achieves the highest average pass@ k among the compared methods. Further-more, this expanded reasoning coverage directly translates to superior test-time scaling with major-ity voting (maj@ k). In summary, our main contributions are as fol-lows: • We reveal key structural principles for expand-ing reasoning coverage: difficulty-adaptive rollout is a key factor, and tree-structured roll-outs inherently outperform parallel sampling, with sentence-entropy forking further ampli-fying this structural advantage. • We propose DATPO, a novel RLVR frame-work that integrates these structural insights with a diversity-augmented advantage to max-imize coverage-expanding benefits. Experi-ments on mathematical reasoning benchmarks validate our approach, showing notable im-provements in pass@ k.
+
+2 Analyzing the Structural Design of Train-time Rollouts 
+
+Despite extensive research on expanding reason-ing coverage, the structural design of train-time 
+
+rollouts remains underexplored. This section in-vestigates optimal rollout structures to maximize not only single-sample accuracy (avg@ k) but also broader reasoning coverage (pass@ k). Our analy-sis is driven by three primary research questions: (1) Difficulty-Adaptive Allocation: How should compute budgets be allocated across problems of varying difficulty to expand reasoning coverage?; (2) Topology of Search Space: Which search space structure (tree-based or parallel rollout) more efficiently discovers correct reasoning trajectories?; and (3) Optimal Forking Strategy: Where should forking (branching) occur in tree-based rollouts to effectively promote diverse reasoning paths? 2.1 Necessity of Difficulty-Adaptive Rollout 
+
+Standard RLVR algorithms, notably GRPO (Shao et al., 2024) and its variants (Yu et al., 2025b; Liu et al., 2025b), typically generate a uniform number of rollouts regardless of problem difficulty. While existing difficulty-adaptive rollout strategies prior-itize computational efficiency (Liu et al., 2025a; Liao et al., 2025; Zhang et al., 2025; Zheng et al., 2025a; Li et al., 2025b), we challenge this perspec-tive by demonstrating that adaptive allocation is not merely a resource-saving heuristic but a crucial factor in expanding reasoning coverage. 
+
+2.1.1 Empirical Analysis 
+
+We first partitioned the training dataset into Easy, Medium, and Hard subsets based on the accuracy of the base model. Using GRPO (Shao et al., 2024), we conduct a total of 9 training runs. For each dif-ficulty subset, we vary the rollout budget by adjust-ing the GRPO group size, G ∈ { 4, 8, 16 }. The re-sulting 9 models are evaluated on 3 different bench-marks, reporting both avg@256 and pass@256 met-rics (detailed in Appendix B). The aggregated results, as illustrated in Figure 1, reveal two key insights. First, avg@256 shows consistent, yet marginal, improvements with in-creased rollout budgets ( G) across all difficul-ties. We attribute this to more stable exploitation; larger GRPO group sizes reduce variance in advan-tage estimation and yield more frequent meaningful learning signals, effectively solidifying the policy distribution around correct solutions. Second, the impact of increasing rollouts on pass@256 shifts from detrimental to benefi-cial depending on the difficulty of the training dataset. For models trained on the Easy dataset (Figure 1a), larger budgets degrade pass@256. This occurs because the model over-exploits spe-cific, easy templates, overfitting to familiar prob-lems while failing entirely on harder ones. Since pass@256 requires only a single correct path, gen-erating redundant successes for easy problems pro-vides no coverage benefit. Consequently, despite marginal gains in avg@256, pass@256 decreases as the rollout budget increases. Conversely, for models trained on the Hard dataset (Figure 1c), where valid paths are scarce, larger budgets pro-mote broader exploration without overfitting to nar-row patterns, consistently improving pass@256. Between these opposing behaviors, models trained on the Medium dataset (Figure 1b) exhibit a non-monotonic trend, peaking at G = 8 by effectively 5 10 15 20 25 
+
+> Inference Tokens (×10³)
+> 510 15 20 25
+> PassRate (%)
+> Tree (fixed-seg) Tree (random) Parallel
+> Figure 2: Comparison of PassRate against inference token consumption between parallel and two tree-structured sampling using different forking strategies.
+
+balancing exploration and over-exploitation. These findings suggest that difficulty-adaptive rollout is not merely a heuristic for compute effi-ciency, but a strategic necessity for balancing the exploitation-exploration trade-off and maximizing the model’s reasoning coverage. Comprehensive theoretical analysis is provided in Appendix A. 
+
+2.2 Tree vs. Parallel Rollout 
+
+In RLVR, the primary challenge in expanding rea-soning coverage is the scarcity of positive learn-ing signals on complex problems. These signals emerge only when the model discovers a correct reasoning path. To address this, we investigate the properties of train-time rollout structures by comparing the conventional parallel rollout with a tree-structured rollout strategy, aiming to deter-mine which topology more efficiently discovers correct trajectories. 
+
+2.2.1 Tree Rollout Algorithm 
+
+We employ a generalized and simplified variant of the two-phase tree rollout strategy originally pro-posed by Hou et al. (2025). In the first phase, the model generates N independent base rollouts in parallel. Subsequently, in the second phase, we apply a forking point selection algorithm to iden-tify K forking points within each base trajectory. From each selected forking point, we generate B
+
+additional branch rollouts, thereby expanding the exploration scope. Detailed algorithmic procedures are provided in Appendix C.1. 
+
+2.2.2 Empirical Analysis 
+
+To analyze cost-efficiency during inference, we compare standard parallel sampling against two tree-structured rollout variants by analyzing PassRate—the probability of obtaining at least one correct solution—as a function of token consump-tion during generation. These variants include fixed-seg , which selects the K forking points at equidistant intervals, and random , which se-lects them uniformly at random (detailed in Ap-pendix C.2). As shown in Figure 2, both tree-structured vari-ants achieve higher token efficiency than parallel sampling. Specifically, their performance curves demonstrate a steeper growth rate, yielding a higher PassRate for the same number of generated tokens. This enhanced efficiency stems from prefix sharing in tree structures, which avoids redundant regener-ation of identical early segments and enables the exploration of alternative continuations within the same token budget (Tran et al., 2025; Hou et al., 2025). Furthermore, the choice of forking strategy also affects performance within tree-structured methods. While both fixed-seg and random outperform par-allel sampling, fixed-seg consistently achieves a higher PassRate under comparable token budgets. This demonstrates that the effectiveness of tree-based exploration depends not only on its structure but also on the placement of branching points. 
+
+2.3 Forking Point Selection in Tree Search 
+
+Section 2.2 shows that the performance of tree-structured rollouts varies substantially across dif-ferent forking strategies. In this section, we in-vestigate which forking strategies most effectively identify correct solutions and promote semantically diverse reasoning paths. 
+
+2.3.1 The Localization Phenomenon and Sentence-level Forking 
+
+Previous studies primarily select top-k high-entropy tokens as forking points (Hou et al., 2025; Zheng et al., 2025b; Cao et al., 2026), as they capture highly uncertain words that act as pivotal branching points (Wang et al., 2025; Cheng et al., 2025). However, we identify a critical limitation in this approach: the localization phenomenon (Fig-ure 8). High-entropy tokens tend to densely cluster within narrow, highly uncertain segments of the reasoning trajectory. Consequently, the search bud-get is monopolized by repeated resampling within a localized cluster, which limits the structural reach of the search tree. To mitigate localization, we propose a sentence-level forking strategy ( sent-entropy ), which ex-pands the granularity of entropy estimation. In this approach, sentence entropy is calculated as the av-erage entropy of its tokens, and the starting points 
+
+Method PassRate SibDiv 
+
+random 10.0 0.0796 
+
+fixed-seg 13.3 0.0853 
+
+ATB 14.7 0.0874 
+
+tok-entropy 12.0 0.1065 
+
+sent-entropy 17.3 0.1049   
+
+> Table 1: Comparison of forking point selection strate-gies when applied during inference. Best results are in
+> bold , and second-best results are underlined.
+
+of the top-k high-entropy sentences are selected as forking points. This strategy naturally evades localization while still targeting the most uncertain regions. We compare this approach with the con-ventional token-level method ( tok-entropy ) and three baselines: random , fixed-segment selection (fixed-seg ), and Attention-based Tree Branch-ing ( ATB ) (Liu et al., 2025a), which branches at steps receiving the highest attention weights. De-tailed algorithmic procedures are provided in Ap-pendix D.1. 
+
+2.3.2 Metrics for Measuring Diversity 
+
+While PassRate effectively captures task success, comprehensively evaluating these forking strate-gies also requires measuring whether the generated paths are semantically diverse. To directly quantify exploration diversity, we introduce an embedding-based metric, Sibling Diversity (SibDiv). We first partition the reasoning tree into contiguous text blocks bounded by forking points or the end of the trajectory. SibDiv then computes the average pairwise cosine distance (i.e., 1−cosine similarity) between the embeddings of sibling blocks originat-ing from the same forking point. By aggregating these values, this metric effectively evaluates how well the forking points promote semantically di-verse reasoning branches. Formal definitions are provided in Appendix D.3. 
+
+2.3.3 Empirical Analysis 
+
+We evaluated each forking strategy by generating reasoning trees under a fixed inference budget, mea-suring PassRate and SibDiv (see Appendix D.4 for detailed experimental setups). The results are summarized in Table 1. First, 
+
+tok-entropy achieves the highest SibDiv because performing additional sampling at the model’s most uncertain points naturally generates diverse imme-diate sibling blocks. However, due to the local-ization phenomenon, this high SibDiv is strictly confined to a narrow segment of the reasoning path. The search fails to expand into meaning-ful structural differences across the entire reason-ing tree, resulting in a low PassRate. By simply expanding the granularity of the entropy estima-tion, sent-entropy shows the highest PassRate while incurring minimal loss in SibDiv. In con-trast, baselines such as fixed-seg and ATB inher-ently avoid localization, yielding higher PassRates than tok-entropy , but exhibit lower SibDiv since they do not utilize uncertainty signals. Ultimately, 
+
+sent-entropy emerges as the most effective strat-egy by successfully translating high semantic di-versity into a high PassRate. 
+
+3 Methodology 
+
+Building upon the empirical insights from Sec-tion 2, we propose DATPO (Difficulty-Adaptive Sentence-entropy-guided Tree-structured Policy 
+
+Optimization) to expand a model’s intrinsic rea-soning coverage (pass@ k). An overview of the proposed framework is illustrated in Figure 3. 
+
+3.1 Difficulty-Adaptive Tree Search at Train-time 
+
+Building on the tree algorithm proposed in Sec-tion 2.2.1, we introduce a difficulty-adaptive tree search to dynamically allocate the search budget. The procedure operates in two phases. First, we generate N independent base rollouts and estimate the empirical difficulty of the prompt through their average verifiable reward V (root) ∈ [0 , 1] .Second, we scale the tree expansion proportion-ally to this difficulty, where a lower V (root) indi-cates a more challenging problem, thus allocating more search budget. Given maximum budgets for forking points Kmax and branch rollouts Bmax , the adaptive parameters are computed as: 
+
+ˆK = ⌈Kmax (1 − V (root)) ⌉ (1) 
+
+ˆB = ⌈Bmax (1 − V (root)) ⌉ (2) Using the sent-entropy (Section 2.3.1), we identify ˆK forking points within each base trajec-tory and generate ˆB branches from each point. This mechanism entirely bypasses expansion only when V (root) = 1 . For harder problems, it expands the search space up to N (1 + ˆK ˆB) leaves. By scaling expansion based on difficulty, this strat-egy concentrates exploration on unsolved problems to maximize reasoning coverage. 
+
+> Figure 3: Overview of the proposed DATPO framework.
+
+3.2 Block-level Diversity-augmented Advantage Estimation 
+
+To optimize the policy, we partition trajectories into contiguous blocks bounded by forking points or the end of the trajectory. Advantages are computed and assigned at this block level. Since our tree search generates multiple branches from intermediate states, we reliably esti-mate state values using Monte Carlo (MC) returns (Kazemnejad et al., 2024). For a state s at any fork-ing point, ˆVM C (s) is the average verifiable reward of all its descending terminal blocks. For a terminal state sT without further rollouts, ˆVM C (sT ) = 0 .For a block b spanning from s(b) 
+
+> start
+
+to s(b)
+
+> end
+
+, the base advantage is formulated as: 
+
+ˆAbase (b) = r(b) + ˆVM C (s(b)
+
+> end
+
+) − ˆVM C (s(b)
+
+> start
+
+) (3) where the verifiable reward r(b) ∈ { 0, 1} is as-signed exclusively to terminal blocks; otherwise, it is 0. All tokens within b share this identical advan-tage. This block-level advantage assigns precise credit to intermediate steps, effectively facilitating implicit process supervision. To maximize the coverage-expanding benefits, we augment the base advantage with a sibling-diversity term Div sib (b), inspired by the SibDiv metric. Specifically, sibling blocks refer to the child blocks generated from a shared forking point. Div sib (b) is defined as the average cosine distance between the embedding of block b and its sibling blocks, effectively encouraging the model to dis-cover distinct reasoning paths. Crucially, we apply this bonus exclusively to blocks with positive base advantages to avoid incentivizing the exploration of incorrect paths. The augmented advantage is: 
+
+ˆA(b) = ˆAbase (b) + I( ˆAbase (b) > 0) · α · Div sib (b)
+
+(4) Method MATH500 AIME26 AIME25 AIME24 AMC23 Average                                                                                                                                                            
+
+> avg@8 pass@8 avg@64 pass@64 avg@64 pass@64 avg@64 pass@64 avg@64 pass@64 avg@ kpass@ k
+> Qwen2.5-3B-Base
+> Base 26.3 64.7 0.4 8.9 0.2 12.2 1.0 22.2 10.0 78.3 7.6 37.3 GRPO 61.8 79.8 1.7 21.1 0.7 24.4 3.6 30.0 35.9 85.8 20.7 48.2 Dr.GRPO 61.3 78.7 3.0 23.3 1.4 27.8 5.1 27.8 37.9 83.3 21.7 48.2 TreeRL 61.7 80.7 2.4 22.2 1.7 20.0 4.2 24.4 38.7 83.3 21.7 46.1 AttnRL 62.0 82.1 1.9 32.2 1.5 25.6 5.2 34.4 35.7 90.8 21.3 53.0 DATPO (Ours) 63.5 81.7 2.4 33.3 1.6 33.3 4.8 35.6 39.8 90.8 22.4 54.9 Qwen3-4B-Base
+> Base 39.9 79.4 1.7 21.1 1.1 32.2 2.8 38.9 17.2 84.2 12.5 51.2 GRPO 75.5 87.4 7.1 32.2 10.3 38.9 9.6 41.1 47.9 91.7 30.1 58.3 Dr.GRPO 75.2 86.2 7.8 25.6 7.7 35.6 9.7 40.0 46.6 90.8 29.4 55.6 TreeRL 75.3 86.2 7.9 28.9 9.4 36.7 9.4 41.1 49.4 90.8 30.3 56.7 AttnRL 74.7 87.5 7.1 28.9 8.2 36.7 11.0 42.2 52.5 91.7 30.7 57.4 DATPO (Ours) 76.4 87.9 6.5 33.3 10.9 42.2 14.0 46.7 48.4 91.7 31.3 60.4
+
+Table 2: Evaluation results on mathematical reasoning benchmarks. We report avg@ k and pass@ k for each dataset. 
+
+where I(·) is the indicator function, and the co-efficient α is linearly annealed during training to gradually decay the exploration incentive, allowing the model to refine its learned reasoning paths. Finally, we optimize the policy directly across the generated tree topology. Given a set of contigu-ous blocks B generated for a prompt q, the DATPO objective is formulated as: 
+
+JDATPO (θ) = Eq∼Q ,B∼ πθold 
+
+"
+
+1
+
+P 
+
+> b∈B
+
+|b|
+
+X
+
+> b∈B |b|
+
+X
+
+> t=1
+
+min 
+
+
+
+ρb,t (θ) ˆA(b), clip  ρb,t (θ),
+
+1 − ϵ, 1 + ϵ ˆA(b)
+
+#
+
+,
+
+(5) where |b| is the sequence length of block b, and 
+
+ˆA(b) is the block-level augmented advantage. Com-prehensive algorithmic details and training proce-dures are provided in Appendix E. 
+
+4 Experiments 
+
+4.1 Experimental Setup Models and Datasets We use Qwen2.5-3B-Base (Yang et al., 2024) and Qwen3-4B-Base (Yang et al., 2025) as base models. For training, we use the MATH dataset (Hendrycks et al., 2021). 
+
+Evaluation We evaluate the trained models on mathematical reasoning benchmarks, specifically MATH500 (Hendrycks et al., 2021), AIME26, AIME25, AIME24, and AMC23. Using a tem-perature of 1.0, we report avg@ k as the primary 0 100 200 300 400 500 600 700 
+
+> Training Step
+> 55 58 61 64
+> MATH500 Accuracy (%)
+> DATPO (Ours) AttnRL TreeRL
+
+Figure 4: Learning curves of MATH500 accuracy over training steps for tree-based methods. (Smoothed) 
+
+evaluation metric across all benchmarks. Addi-tionally, we report pass@ k to assess the reasoning coverage of the trained models. For robustness, the pass@ k results are computed by averaging over three independent evaluation runs. 
+
+Baselines We compare DATPO against the Base 
+
+model and several advanced RLVR baselines. These include GRPO (Shao et al., 2024) (enhanced with clip-higher and token-level loss (Yu et al., 2025b)) and its variant, Dr.GRPO (Liu et al., 2025b). Furthermore, we evaluate two tree-based methods: TreeRL (Hou et al., 2025), which utilizes top-k high-entropy forking and combined local-global advantages, and AttnRL (Liu et al., 2025a), which leverages attention-based forking, adaptive sampling, and a one-step off-policy for enhanced ef-ficiency. To ensure a fair comparison, we maintain a comparable total number of generated tokens per problem across all methods while adopting the tree-expansion hyperparameters reported in the original TreeRL and AttnRL papers. Comprehensive details for experiments are provided in Appendix F. Level 1 Level 2 Level 3 Level 4 Level 5  
+
+> 0816 24 32
+> Avg. Leaves
+> DATPO AttnRL TreeRL
+> 70 75 80 85 90 95 100 PassRate (%)
+> DATPO AttnRL TreeRL
+
+Figure 5: Comparison of average leaf count generated at train-time and PassRate across difficulty levels for tree-based methods. 
+
+4.2 Main Results Mathematical Reasoning Performance As re-ported in Table 2, DATPO achieves the best ag-gregate avg@k and pass@k across the evaluated benchmarks. Notably, while the improvements in single-sample accuracy (avg@ k) are marginal compared to the strongest baseline, AttnRL (e.g., +1.1 and +0.6 on Qwen2.5-3B-Base and Qwen3-4B-Base, respectively), DATPO achieves substan-tial gains in pass@ k, outperforming AttnRL by +1.9 and +3.0, respectively. This indicates that DATPO’s difficulty-adaptive rollout and sibling-diversity term successfully expand the model’s in-trinsic reasoning coverage. 
+
+Analysis of Training Dynamics We first exam-ine the MATH500 accuracy over training steps (Fig-ure 4). While all three tree-based methods exhibit similar accuracy gains during the initial training steps, TreeRL and AttnRL fail to sustain this up-ward trend, eventually plateauing or even suffer-ing performance degradation. In contrast, DATPO shows a consistent upward trend throughout the training. This stability can be attributed to the an-nealed sibling-diversity term, which injects seman-tic diversity early in training to prevent premature convergence. Furthermore, we analyze the search behavior dur-ing training by comparing the average leaf count and PassRate across the difficulty levels of the MATH dataset (Figure 5). Note that these diffi-culty labels are used strictly for this analysis and were not provided to the model during training. Unlike TreeRL, which maintains a fixed leaf count across all difficulties, DATPO and AttnRL employ difficulty-adaptive rollouts. However, DATPO al-locates fewer rollouts to easy problems and signifi-cantly more rollouts to hard problems compared to AttnRL. The latter’s adaptive strategy relies heavily GRPO Dr.GRPO TreeRL AttnRL DATPO    
+
+> 18 20 22 24 26 28 30
+> Accuracy (%)
+> +5.9 +4.6 +4.5 +6.2 +7.2
+> avg@k maj@k
+
+Figure 6: Test-time scaling performance using majority voting (maj@ k). The green arrows indicate the perfor-mance improvement of maj@ k over avg@ k.
+
+on an attention-based filtering mechanism that sim-ply discards problems with below-average attention scores to maximize computational efficiency. Be-cause this approach acts as a rigid cut-off, it fails to concentrate computational resources on the most challenging problems. Consequently, DATPO’s highly adaptive resource allocation enables it to achieve a higher PassRate on harder problems (Lev-els 4 and 5) compared to other tree-based methods. 
+
+4.3 Test-time Scaling Performance 
+
+In this section, we investigate whether the sub-stantial gains in pass@ k directly translate into improved test-time scaling performance. To this end, we apply majority voting (maj@ k) (Wang et al., 2022)—one of the simplest and most widely adopted test-time scaling strategies—to compare the methods applied to Qwen2.5-3B-Base. We evaluate the effectiveness of these methods across five mathematical reasoning benchmarks, applying 
+
+k = 8 for MATH500 and k = 64 for the remain-ing datasets. For robustness, all maj@ k results are computed as the average over three independent evaluation runs. As illustrated by the average performance across five benchmarks in Figure 6, DATPO, which achieved the highest pass@ k during training, also shows the largest maj@ k gain, improving by +7.2 over its avg@ k. This demonstrates that expand-ing a model’s reasoning coverage during training directly enhances test-time scaling performance. 
+
+4.4 Ablation Studies Effect of Forking Strategies Building upon the analysis during inference presented in Sec-tion 2.3, we further investigate the impact of differ-ent forking strategies during training. We compare DATPO’s default sent-entropy strategy against Method MATH500 avg@8 pass@8           
+
+> random 61.5 81.6
+> fixed-seg 61.1 80.6
+> ATB 62.1 80.7
+> tok-entropy 61.3 80.3
+> sent-entropy 63.5 81.7
+> Table 3: Ablation study on different forking strategies.
+
+four alternatives: random , fixed-seg , ATB , and 
+
+tok-entropy , evaluating their performance on the MATH500 benchmark. As reported in Table 3, the sent-entropy yields the highest performance. This confirms our hypothesis: the sent-entropy 
+
+effectively guides exploration using the model’s uncertainty, while avoiding localization that limits 
+
+tok-entropy .
+
+Effect of Sibling-Diversity To evaluate the ef-fect of the sibling-diversity term, we conduct an ablation study by varying the coefficient α, and evaluate the performance on the MATH500 bench-mark, as summarized in Table 4. The results show that the 0.2 → 0 schedule is the most effective, surpassing both the baseline without diversity ( 0 → 0) and a higher initial coefficient (0.4 → 0). Furthermore, applying the diversity bonus to all blocks ( 0.2 → 0, all ) degrades perfor-mance compared to the baseline without diversity, highlighting the need to reward diversity exclu-sively on valid paths. Annealing is also critical: a constant α (0.2 → 0.2) severely degrades avg@8 despite slight pass@8 gains. Conversely, anneal-ing α to a negative value ( 0.2 → − 0.2) improves avg@8 but noticeably harms pass@8, confirming that penalizing diversity in the later stages of train-ing restricts the model’s reasoning coverage. 
+
+5 Related Work 
+
+Reinforcement Learning for LLM Reasoning 
+
+RLVR has become the standard for post-training of reasoning LLMs. A representative method is Group Relative Policy Optimization (GRPO) (Shao et al., 2024), which replaces the costly critic model of PPO (Schulman et al., 2017) with efficient group-based advantage estimation. Recent studies build on this framework to enhance stability and resolve optimization issues: DAPO (Yu et al., 2025b) pre-vents mode collapse through decoupled clipping and dynamic sampling, while Dr.GRPO (Liu et al.,                               
+
+> αMATH500 avg@8 pass@8
+> 0→062.1 81.4
+> 0.2 →063.5 81.7 0.4 →061.9 81.3 0.2 →0, all 61.6 81.3 0.2 →0.2 61.5 82.0
+> 0.2 →-0.2 63.4 81.0
+> Table 4: Ablation study on the diversity coefficient α.The right arrow ( →) indicates the linear annealing sched-ule during training. The all applies the diversity term to all blocks, rather than exclusively to those with positive base advantages.
+
+2025b) corrects inherent structural biases in the advantage computation. 
+
+Exploration Strategies in RLVR RLVR often fails to expand a model’s intrinsic reasoning ca-pacity (pass@ k) beyond its base capabilities (Yue et al., 2025; Dang et al., 2025; Wu et al., 2025). To overcome this exploration bottleneck, recent studies introduce explicit mechanisms to diversify search. PKPO (Walder and Karkhanis, 2025) di-rectly optimizes pass@ k to solve harder instances, while R1-zero-Div (Yao et al., 2025) and FOR (Yu et al., 2025a) use diversity-aware objectives and divergent reasoning flows to prevent trajectory col-lapse. 
+
+Tree-based Search in Reinforcement Learning 
+
+Proven in RL milestones like AlphaGo (Silver et al., 2016), tree-based search is now adapted to LLMs to enable systematic exploration. TreeRL (Hou et al., 2025) pioneers this with an on-policy framework using entropy-guided branching. To address computational bottlenecks, AttnRL (Liu et al., 2025a) improves efficiency by leveraging difficulty-aware adaptive sampling within a one-step off-policy pipeline. While these methods use trees primarily for credit assignment or computa-tional efficiency, we leverage them to expand the model’s reasoning coverage. 
+
+6 Conclusion 
+
+In this work, we investigate the structural design of train-time rollouts in RLVR to expand the intrin-sic reasoning coverage. Our analysis reveals that expanding reasoning coverage can benefit from moving beyond uniform parallel sampling toward difficulty-adaptive resource allocation and the struc-tural advantages of sentence-entropy-guided tree search. Integrating these principles, we propose DATPO, which explicitly encourages semantic ex-ploration through a sibling-diversity term. Exper-iments on mathematical benchmarks validate our approach, showing significant improvements in pass@ k.
+
+Limitations 
+
+While DATPO significantly expands reasoning cov-erage, calculating the sibling-diversity term re-quires additional forward passes through an ex-ternal embedding model, which introduces compu-tational overhead. Additionally, while our block-level formulation effectively assigns process-level credit across the tree topology, it relies on small sample sizes. Deriv-ing both the empirical difficulty and Monte Carlo state values from a limited number of rollouts (e.g., 
+
+N = 4 , B = 4 ) can inject noise into the estima-tions, occasionally yielding high variance during policy updates. Finally, resource limitations restricted our empir-ical validation to the 3B-4B parameter regime, leav-ing DATPO’s scalability to larger models ( ≥ 7B) unverified. Furthermore, as our evaluation primar-ily focuses on mathematical reasoning, the frame-work’s direct effectiveness in other rigorous do-mains, such as complex logical reasoning or code generation, requires further investigation. 
+
+Acknowledgments 
+
+This work was supported by the Institute of In-formation & Communications Technology Plan-ning & Evaluation (IITP) grants funded by the Ko-rea government (MSIT) (No. RS-2019-II191906, Artificial Intelligence Graduate School Program (POSTECH); IITP-2026-RS-2026-25616370, AI Star Fellowship Support Program) and by the Na-tional Research Foundation of Korea (NRF) grant funded by the Korea government (MSIT) (No. RS-2024-00335873). 
+
+References 
+
+Bradley Brown, Jordan Juravsky, Ryan Ehrlich, Ronald Clark, Quoc V Le, Christopher Ré, and Azalia Mirho-seini. 2024. Large language monkeys: Scaling infer-ence compute with repeated sampling. arXiv preprint arXiv:2407.21787 .Lang Cao, Hui Ruan, Yongqian Li, Peng Chao, Wu Ning, Haonan Song, Renhong Chen, and Yi-tong Li. 2026. Treeadv: Tree-structured advantage redistribution for group-based rl. arXiv preprint arXiv:2601.03703 .Jianlyu Chen, Shitao Xiao, Peitian Zhang, Kun Luo, Defu Lian, and Zheng Liu. 2024. M3-embedding: Multi-linguality, multi-functionality, multi-granularity text embeddings through self-knowledge distillation. In Findings of the Asso-ciation for Computational Linguistics: ACL 2024 ,pages 2318–2335, Bangkok, Thailand. Association for Computational Linguistics. Daixuan Cheng, Shaohan Huang, Xuekai Zhu, Bo Dai, Wayne Xin Zhao, Zhenliang Zhang, and Furu Wei. 2025. Reasoning with exploration: An entropy per-spective. arXiv preprint arXiv:2506.14758 .Xingyu Dang, Christina Baek, J Zico Kolter, and Aditi Raghunathan. 2025. Assessing diversity collapse in reasoning. In Scaling Self-Improving Foundation Models without Human Supervision .Daya Guo, Dejian Yang, Haowei Zhang, Junxiao Song, Peiyi Wang, Qihao Zhu, Runxin Xu, Ruoyu Zhang, Shirong Ma, Xiao Bi, and 1 others. 2025. Deepseek-r1: Incentivizing reasoning capability in llms via reinforcement learning. arXiv preprint arXiv:2501.12948 .Rui Ha, Chaozhuo Li, Rui Pu, Litian Zhang, Xi Zhang, and Sen Su. 2025. DSG-MCTS: A dynamic strategy-guided Monte Carlo tree search for diversified reason-ing in large language models. In Proceedings of the 2025 Conference on Empirical Methods in Natural Language Processing , pages 10530–10544, Suzhou, China. Association for Computational Linguistics. Dan Hendrycks, Collin Burns, Saurav Kadavath, Akul Arora, Steven Basart, Eric Tang, Dawn Song, and Ja-cob Steinhardt. 2021. Measuring mathematical prob-lem solving with the math dataset. arXiv preprint arXiv:2103.03874 .Zhenyu Hou, Ziniu Hu, Yujiang Li, Rui Lu, Jie Tang, and Yuxiao Dong. 2025. Treerl: Llm reinforcement learning with on-policy tree search. arXiv preprint arXiv:2506.11902 .Aaron Jaech, Adam Kalai, Adam Lerer, Adam Richard-son, Ahmed El-Kishky, Aiden Low, Alec Helyar, Aleksander Madry, Alex Beutel, Alex Carney, and 1 others. 2024. Openai o1 system card. arXiv preprint arXiv:2412.16720 .Zishang Jiang, Jinyi Han, Tingyun Li, Xinyi Wang, Si-hang Jiang, Jiaqing Liang, Zhaoqian Dai, Shuguang Ma, Fei Yu, and Yanghua Xiao. 2025. Selective ex-pert guidance for effective and diverse exploration in reinforcement learning of llms. arXiv preprint arXiv:2510.04140 .Amirhossein Kazemnejad, Milad Aghajohari, Eva Portelance, Alessandro Sordoni, Siva Reddy, Aaron Courville, and Nicolas Le Roux. 2024. Vineppo: Re-fining credit assignment in rl training of llms. arXiv preprint arXiv:2410.01679 .Yizhi Li, Qingshui Gu, Zhoufutu Wen, Ziniu Li, Tianshun Xing, Shuyue Guo, Tianyu Zheng, Xin Zhou, Xingwei Qu, Wangchunshu Zhou, and 1 oth-ers. 2025a. Treepo: Bridging the gap of policy optimization and efficacy and inference efficiency with heuristic tree-based modeling. arXiv preprint arXiv:2508.17445 .Ziniu Li, Congliang Chen, Tianyun Yang, Tian Ding, Ruoyu Sun, Ge Zhang, Wenhao Huang, and Zhi-Quan Luo. 2025b. Knapsack rl: Unlocking explo-ration of llms via optimizing budget allocation. arXiv preprint arXiv:2509.25849 .Mengqi Liao, Xiangyu Xi, Chen Ruinian, Jia Leng, Yan-gen Hu, Ke Zeng, Shuai Liu, and Huaiyu Wan. 2025. Enhancing efficiency and exploration in reinforce-ment learning for LLMs. In Proceedings of the 2025 Conference on Empirical Methods in Natural Lan-guage Processing , pages 1451–1463, Suzhou, China. Association for Computational Linguistics. Runze Liu, Jiakang Wang, Yuling Shi, Zhihui Xie, Chenxin An, Kaiyan Zhang, Jian Zhao, Xiaodong Gu, Lei Lin, Wenping Hu, and 1 others. 2025a. Atten-tion as a compass: Efficient exploration for process-supervised rl in reasoning models. arXiv preprint arXiv:2509.26628 .Zichen Liu, Changyu Chen, Wenjun Li, Penghui Qi, Tianyu Pang, Chao Du, Wee Sun Lee, and Min Lin. 2025b. Understanding r1-zero-like training: A criti-cal perspective. arXiv preprint arXiv:2503.20783 .Nils Reimers and Iryna Gurevych. 2019. Sentence-BERT: Sentence embeddings using Siamese BERT-networks. In Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natu-ral Language Processing (EMNLP-IJCNLP) , pages 3982–3992, Hong Kong, China. Association for Com-putational Linguistics. David Rein, Betty Li Hou, Asa Cooper Stickland, Jack-son Petty, Richard Yuanzhe Pang, Julien Dirani, Ju-lian Michael, and Samuel R Bowman. 2023. Gpqa: A graduate-level google-proof q&a benchmark. arXiv preprint arXiv:2311.12022 .Nipun Sadvilkar and Mark Neumann. 2020. PySBD: Pragmatic sentence boundary disambiguation. In 
+
+Proceedings of Second Workshop for NLP Open Source Software (NLP-OSS) , pages 110–114, Online. Association for Computational Linguistics. John Schulman, Filip Wolski, Prafulla Dhariwal, Alec Radford, and Oleg Klimov. 2017. Proxi-mal policy optimization algorithms. arXiv preprint arXiv:1707.06347 .Zhihong Shao, Peiyi Wang, Qihao Zhu, Runxin Xu, Junxiao Song, Xiao Bi, Haowei Zhang, Mingchuan Zhang, YK Li, Yang Wu, and 1 others. 2024. Deepseekmath: Pushing the limits of mathematical reasoning in open language models. arXiv preprint arXiv:2402.03300 .David Silver, Aja Huang, Chris J Maddison, Arthur Guez, Laurent Sifre, George Van Den Driessche, Ju-lian Schrittwieser, Ioannis Antonoglou, Veda Pan-neershelvam, Marc Lanctot, and 1 others. 2016. Mas-tering the game of go with deep neural networks and tree search. nature , 529(7587):484–489. Nisan Stiennon, Long Ouyang, Jeffrey Wu, Daniel Ziegler, Ryan Lowe, Chelsea Voss, Alec Radford, Dario Amodei, and Paul F Christiano. 2020. Learn-ing to summarize with human feedback. Advances in neural information processing systems , 33:3008– 3021. Kimi Team, Angang Du, Bofei Gao, Bowei Xing, Changjiu Jiang, Cheng Chen, Cheng Li, Chenjun Xiao, Chenzhuang Du, Chonghua Liao, Chuning Tang, Congcong Wang, Dehao Zhang, Enming Yuan, Enzhe Lu, Fengxiang Tang, Flood Sung, Guangda Wei, Guokun Lai, and 77 others. 2025. Kimi k1.5: Scaling reinforcement learning with llms. Preprint ,arXiv:2501.12599. Hieu Tran, Zonghai Yao, and Hong Yu. 2025. Exploit-ing tree structure for credit assignment in rl training of llms. arXiv preprint arXiv:2509.18314 .Christian Walder and Deep Karkhanis. 2025. Pass@ k policy optimization: Solving harder reinforcement learning problems. arXiv preprint arXiv:2505.15201 .Shenzhi Wang, Le Yu, Chang Gao, Chujie Zheng, Shix-uan Liu, Rui Lu, Kai Dang, Xionghui Chen, Jianxin Yang, Zhenru Zhang, and 1 others. 2025. Beyond the 80/20 rule: High-entropy minority tokens drive effective reinforcement learning for llm reasoning. 
+
+arXiv preprint arXiv:2506.01939 .Xuezhi Wang, Jason Wei, Dale Schuurmans, Quoc Le, Ed Chi, Sharan Narang, Aakanksha Chowdhery, and Denny Zhou. 2022. Self-consistency improves chain of thought reasoning in language models. arXiv preprint arXiv:2203.11171 .Yubo Wang, Xueguang Ma, Ge Zhang, Yuansheng Ni, Abhranil Chandra, Shiguang Guo, Weiming Ren, Aaran Arulraj, Xuan He, Ziyan Jiang, and 1 others. 2024. Mmlu-pro: A more robust and challenging multi-task language understanding benchmark. Ad-vances in Neural Information Processing Systems ,37:95266–95290. Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, Fei Xia, Ed Chi, Quoc V Le, Denny Zhou, and 1 others. 2022. Chain-of-thought prompting elic-its reasoning in large language models. Advances in neural information processing systems , 35:24824– 24837. Fang Wu, Weihao Xuan, Ximing Lu, Mingjie Liu, Yi Dong, Zaid Harchaoui, and Yejin Choi. 2025. The invisible leash: Why rlvr may or may not escape its origin. arXiv preprint arXiv:2507.14843 .Shangyu Xing, Siyuan Wang, Chenyuan Yang, Xinyu Dai, and Xiang Ren. 2025. Lookahead tree-based rollouts for enhanced trajectory-level exploration in reinforcement learning with verifiable rewards. arXiv preprint arXiv:2510.24302 .An Yang, Anfeng Li, Baosong Yang, Beichen Zhang, Binyuan Hui, Bo Zheng, Bowen Yu, Chang Gao, Chengen Huang, Chenxu Lv, Chujie Zheng, Dayi-heng Liu, Fan Zhou, Fei Huang, Feng Hu, Hao Ge, Haoran Wei, Huan Lin, Jialong Tang, and 41 oth-ers. 2025. Qwen3 technical report. arXiv preprint arXiv:2505.09388 .An Yang, Baosong Yang, Beichen Zhang, Binyuan Hui, Bo Zheng, Bowen Yu, Chengyuan Li, Dayiheng Liu, Fei Huang, Haoran Wei, Huan Lin, Jian Yang, Jian-hong Tu, Jianwei Zhang, Jianxin Yang, Jiaxi Yang, Jingren Zhou, Junyang Lin, Kai Dang, and 22 oth-ers. 2024. Qwen2.5 technical report. arXiv preprint arXiv:2412.15115 .Jian Yao, Ran Cheng, Xingyu Wu, Jibin Wu, and Kay Chen Tan. 2025. Diversity-aware policy op-timization for large language model reasoning. arXiv preprint arXiv:2505.23433 .Fangxu Yu, Lai Jiang, Haoqiang Kang, Shibo Hao, and Lianhui Qin. 2025a. Flow of reasoning: Training llms for divergent reasoning with minimal exam-ples. In Forty-second International Conference on Machine Learning .Qiying Yu, Zheng Zhang, Ruofei Zhu, Yufeng Yuan, Xi-aochen Zuo, Yu Yue, Weinan Dai, Tiantian Fan, Gao-hong Liu, Lingjun Liu, and 1 others. 2025b. Dapo: An open-source llm reinforcement learning system at scale. arXiv preprint arXiv:2503.14476 .Yang Yue, Zhiqi Chen, Rui Lu, Andrew Zhao, Zhaokai Wang, Shiji Song, and Gao Huang. 2025. Does re-inforcement learning really incentivize reasoning ca-pacity in llms beyond the base model? arXiv preprint arXiv:2504.13837 .Xin Zhang, Yanzhao Zhang, Dingkun Long, Wen Xie, Ziqi Dai, Jialong Tang, Huan Lin, Baosong Yang, Pengjun Xie, Fei Huang, Meishan Zhang, Wenjie Li, and Min Zhang. 2024. mGTE: Generalized long-context text representation and reranking models for multilingual text retrieval. In Proceedings of the 2024 Conference on Empirical Methods in Natural Lan-guage Processing: Industry Track , pages 1393–1412, Miami, Florida, US. Association for Computational Linguistics. Yuheng Zhang, Wenlin Yao, Changlong Yu, Yao Liu, Qingyu Yin, Bing Yin, Hyokun Yun, and Lihong Li. 2025. Improving sampling efficiency in rlvr through adaptive rollout and response reuse. arXiv preprint arXiv:2509.25808 .Eric Zhao, Pranjal Awasthi, and Sreenivas Gollapudi. 2025. Sample, scrutinize and scale: Effective inference-time search by scaling verification. arXiv preprint arXiv:2502.01839 .Haizhong Zheng, Yang Zhou, Brian R Bartoldson, Bhavya Kailkhura, Fan Lai, Jiawei Zhao, and Beidi Chen. 2025a. Act only when it pays: Efficient re-inforcement learning for llm reasoning via selective rollouts. arXiv preprint arXiv:2506.02177 .Tianyu Zheng, Tianshun Xing, Qingshui Gu, Taoran Liang, Xingwei Qu, Xin Zhou, Yizhi Li, Zhoufutu Wen, Chenghua Lin, Wenhao Huang, and 1 others. 2025b. First return, entropy-eliciting explore. arXiv preprint arXiv:2507.07017 .A Theoretical Analysis of Difficulty-Adaptive Rollout 
+
+We provide a theoretical analysis of the empirical findings in Section 2.1. In particular, we explain why increasing the rollout budget G consistently improves the expected avg@ k, while the behavior of pass@ k can vary across difficulty subsets. 
+
+Notation. For a prompt x and a policy πθ, let 
+
+px(θ) := Pr  
+
+> y∼πθ(·| x)
+
+[r(y) = 1] 
+
+denote the single-sample correctness probability under a binary verifiable reward r(y) ∈ { 0, 1}.In empirical evaluations, metrics are computed over a finite set of k independent samples Y =(y(1) , . . . , y (k)) i.i.d.
+
+∼ πθ(· | x). We define the em-pirical estimators as: 
+
+\avg@k x(θ) := 1
+
+k
+
+> k
+
+X
+
+> j=1
+
+r
+
+
+
+y(j)
+
+,
+
+\pass@k x(θ) := I
+
+
+
+> k
+
+X
+
+> j=1
+
+r
+
+
+
+y(j)
+
+≥ 1
+
+ .
+
+However, to rigorously analyze the optimization dynamics, we focus on their expected values with respect to the policy. Throughout this analysis, we omit the hat notation and define avg@k x(θ) and pass@k x(θ) strictly as these theoretical expecta-tions: avg@k x(θ) := EY∼ πθ
+
+h \avg@k x(θ)
+
+i
+
+= px(θ)
+
+and pass@k x(θ) := EY∼ πθ
+
+h \pass@k x(θ)
+
+i
+
+= 1 −  1 − px(θ)k.
+
+By formulating these metrics as expectations, the theoretical avg@ k rigorously simplifies to the single-sample success probability px(θ).For the analysis below, given the current policy parameters θ, let 
+
+θ+ 
+
+> G
+
+:= θ + ηˆgG(x)
+
+denote one GRPO update with rollout group size 
+
+G, learning rate η, and stochastic gradient estima-tor ˆgG(x). We consider only the reward-advantage component of the GRPO update, excluding auxil-iary regularization terms. 
+
+Theorem A.1 (One-step expected avg@ k im-provement with rollout budget ). Fix a prompt 
+
+x and a policy πθ. Let p := px(θ) ∈ (0 , 1) , and let SG ∼ Binomial( G, p ) denote the number of correct responses in a rollout group size G ≥ 2.Assume px(·) is twice continuously differentiable with a bounded Hessian, and the gradient estimator satisfies E[∥ˆgG(x)∥2] < ∞. Further assume: 
+
+A1. The update vanishes if all group rewards are identical: ˆgG(x) = 0 almost surely if SG ∈{0, G }.
+
+A2. The expected update direction on mixed-reward batches is a positive constant cx > 0
+
+independent of G:
+
+E[⟨∇ θpx(θ), ˆgG(x)⟩ | 1 ≤ SG ≤ G − 1] = cx.
+
+Then, for sufficiently small η, the expected cor-rectness probability satisfies: 
+
+E[px(θ+
+
+> G
+
+)] = px(θ) + ηc xΨG(p) + OG(η2),
+
+where ΨG(p) := 1 − pG − (1 − p)G.Consequently, for any finite set of rollout budgets 
+
+G, there exists η0 > 0 such that for all η ∈ (0 , η 0)
+
+and any G1, G 2 ∈ G with G2 > G 1:
+
+E[px(θ+ 
+
+> G2
+
+)] > E[px(θ+ 
+
+> G1
+
+)] .
+
+Furthermore, the first-order gain coefficient ΨG(p)
+
+is strictly increasing in G with diminishing returns. Proof. By definition, theoretical expected avg@k simplifies to the single-sample correctness proba-bility px(θ). Let EG := {1 ≤ SG ≤ G − 1} be the event of a mixed-reward batch, which occurs with probability Pr( EG) = 1 −(1 −p)G −pG = Ψ G(p).By A1, the update is zero outside EG. Applying A2, the expected directional derivative is: 
+
+E[⟨∇ θpx(θ), ˆgG(x)⟩]= Pr( EG)E[⟨∇ θpx(θ), ˆgG(x)⟩ | EG]= cxΨG(p).
+
+Since px(·) has a bounded Hessian on the update region, Taylor’s theorem gives 
+
+px(θ+
+
+> G
+
+) = px(θ) + η ⟨∇ θpx(θ), ˆgG(x)⟩ + RG(η),
+
+where, for some Hessian bound L < ∞,
+
+|RG(η)| ≤ L 
+
+> 2
+
+η2∥ˆgG(x)∥2. Taking expectations and using E[∥ˆgG(x)∥2] < ∞ gives E[RG(η)] = 
+
+OG(η2), completing the first claim. To establish monotonicity, we evaluate the marginal increase in ΨG(p) for p ∈ (0 , 1) :
+
+ΨG+1 (p) − ΨG(p) = p(1 − p)G + (1 − p)pG > 0,
+
+confirming ΨG(p) strictly increases with G.For any G2 > G1, the first-order difference 
+
+ηc x(Ψ G2 (p)−ΨG1 (p)) is strictly positive and dom-inates the OG1,G 2 (η2) remainder term for η strictly less than some threshold η0(G1, G 2) > 0. Taking the minimum η0 across all pairs in the finite set G
+
+establishes the strict ordering simultaneously. Finally, the second difference of ΨG(p) is 
+
+−p2(1 − p)G − (1 − p)2pG < 0, confirming di-minishing returns. 
+
+Remark on Assumption 2. A2 serves as an idealized first-order approximation to isolate the core mechanism: larger groups increase the mixed-reward probability ΨG(p), thereby provid-ing nonzero relative reward signals more frequently. In practice, GRPO normalizes advantages relative to the group (e.g., the positive advantage scales as p(G − s)/s ), meaning the exact expected mag-nitude cx technically depends on G. However, this assumption keeps the mechanism analytically transparent and highlights a plausible first-order driver of the empirical monotonicity observed dur-ing training. 
+
+Remark on advantage-estimation variance. 
+
+Our analysis isolates the signal-availability mech-anism, demonstrating that a larger G yields more frequent informative updates. We do not explicitly model the variance reduction in advantage estima-tion to avoid complex distributional assumptions. Therefore, this theorem formalizes one core driver of the avg@ k improvement, acknowledging that other statistical benefits also contribute. 
+
+Extension to Dataset-Level Notation. While Theorem A.1 characterizes the optimization dy-namics of a single prompt, explaining the difficulty-dependent behavior requires dataset-level formal-ization. Let px,d (G) denote the single-sample cor-rectness probability on a test prompt x ∈ D for a policy trained on difficulty subset d using rollout budget G. We define the expected average cor-rectness ( μd(G)) and pass@ k over the dataset D
+
+as: 
+
+μd(G) := Ex∼D [px,d (G)] ,
+
+pass@k (d) 
+
+> D
+
+(G) := Ex∼D 
+
+h
+
+1 −  1 − px,d (G)ki
+
+.
+
+Theorem A.2 (Variance Penalty Decomposition of pass@ k). Fix k ≥ 2. Let fk(p) := 1 − (1 − p)k
+
+and define the Jensen gap 
+
+Jk,d (G) := fk
+
+ μd(G) − pass@k (d) 
+
+> D
+
+(G).
+
+Then the following hold: 1. Jk,d (G) ≥ 0, with equality if and only if 
+
+px,d (G) is constant almost surely over x ∼ D .2. For any two rollout budgets G2 > G 1,pass@k (d) 
+
+> D
+
+(G2) − pass@k (d) 
+
+> D
+
+(G1)= fk
+
+ μd(G2) − fk
+
+ μd(G1)| {z }
+
+> gain from higher avg@k D
+
+−  Jk,d (G2) − Jk,d (G1)| {z }
+
+> loss from test-set prompt heterogeneity
+
+.
+
+Moreover, if σ2
+
+> d
+
+(G) := Var x∼D [px,d (G)] , then 
+
+Jk,d (G) = k(k − 1) 2
+
+ 1 − μd(G)k−2σ2
+
+> d
+
+(G)+ O Ex∼D 
+
+|px,d (G) − μd(G)|3 .
+
+Hence, to second order, the penalty term is con-trolled by the cross-prompt dispersion of one-sample success probabilities on the test set. Proof. For k ≥ 2 and p ∈ (0 , 1) ,
+
+f ′
+
+> k
+
+(p) = k(1 − p)k−1 > 0,f ′′  
+
+> k
+
+(p) = −k(k − 1)(1 − p)k−2 < 0,
+
+so fk is strictly increasing and strictly concave on 
+
+(0 , 1) .By definition, the expected mean is 
+
+μd(G) = Ex∼D [px,d (G)] ,
+
+and the expected pass rate is pass@k (d) 
+
+> D
+
+(G) = Ex∼D [fk(px,d (G))] .
+
+Applying Jensen’s inequality to the concave func-tion fk,pass@k (d) 
+
+> D
+
+(G) = Ex∼D [fk(px,d (G))] 
+
+≤ fk(Ex∼D [px,d (G)]) = fk
+
+ μd(G).
+
+Thus Jk,d (G) ≥ 0. Since fk is strictly concave, equality holds if and only if px,d (G) is constant almost surely. Now rewrite pass@k (d) 
+
+> D
+
+(G) = fk
+
+ μd(G) − Jk,d (G).
+
+Subtracting the identities for G2 and G1 yields pass@k (d) 
+
+> D
+
+(G2) − pass@k (d) 
+
+> D
+
+(G1)=
+
+
+
+fk
+
+ μd(G2) − fk
+
+ μd(G1)
+
+−
+
+
+
+Jk,d (G2) − Jk,d (G1)
+
+
+
+,
+
+which gives the exact decomposition. For the second-order approximation, apply Tay-lor’s theorem around μd(G):
+
+fk(px,d (G)) = fk
+
+ μd(G)
+
++ f ′
+
+> k
+
+ μd(G)  px,d (G) − μd(G)
+
++ 12 f ′′ 
+
+> k
+
+ μd(G)  px,d (G) − μd(G)2
+
++ O(|px,d (G) − μd(G)|3).
+
+Taking the expectation over x ∼ D , the linear term vanishes because Ex∼D [px,d (G) − μd(G)] = 0 .Hence 
+
+Ex∼D [fk(px,d (G))] = fk
+
+ μd(G)
+
++ 12 f ′′ 
+
+> k
+
+ μd(G)σ2
+
+> d
+
+(G)+ O
+
+
+
+Ex∼D 
+
+|px,d (G)
+
+− μd(G)|3
+
+.
+
+Rearranging gives 
+
+Jk,d (G) = − 12 f ′′ 
+
+> k
+
+ μd(G)σ2
+
+> d
+
+(G)+ O
+
+
+
+Ex∼D 
+
+|px,d (G) − μd(G)|3
+
+,
+
+and substituting f ′′  
+
+> k
+
+(μ) = −k(k − 1)(1 − μ)k−2
+
+completes the proof. 
+
+Connection to Empirical Regimes. Rather than positing a universal law applicable to all training en-vironments, Theorem A.2 provides a rigorous ana-lytical lens to interpret the specific empirical obser-vations reported in Section 2.1. Specifically, while the theorem formally establishes the mathematical 
+
+mechanism —that the dynamics of pass@k D are entirely governed by a trade-off between the mean improvement gain ( ∆fk) and the cross-prompt vari-ance penalty ( ∆Jk,d )—the actual increase of this variance ( σ2
+
+> d
+
+(G)) is an empirical characteristic dic-tated by the intrinsic difficulty of the dataset and specific training dynamics. Consequently, while these exact behavioral patterns may not identically manifest in every setup, bridging this theoretical mechanism with our specific findings allows us to formally characterize the three observed regimes as follows: 
+
+Easy : ∆GJk, Easy (G) > ∆Gfk, Easy (G)=⇒ pass@k (Easy ) 
+
+> D
+
+(G + 1) < pass@k (Easy ) 
+
+> D
+
+(G),
+
+Hard : ∆GJk, Hard (G) < ∆Gfk, Hard (G)=⇒ pass@k (Hard ) 
+
+> D
+
+(G + 1) > pass@k (Hard ) 
+
+> D
+
+(G),
+
+Medium : ∆GJk, Medium (G)
+
+crosses ∆Gfk, Medium (G)=⇒ pass@k (Medium ) 
+
+> D
+
+(G) is non-monotonic .
+
+where ∆GJk,d (G) = Jk,d (G + 1) − Jk,d (G) and 
+
+∆Gfk,d (G) = fk(μd(G + 1)) − fk(μd(G)) .Analytically, the second-order approximation reveals that the penalty term Jk,d (G) is directly proportional to the cross-prompt variance σ2
+
+> d
+
+(G).This theoretically explains the paradoxical degra-dation in pass@k D observed when training on the 
+
+Easy dataset. When the rollout budget G is large, the policy over-exploits specific, easily solvable templates rather than learning generalizable rea-soning skills. Evaluated on a general test set, this causes severe polarization: the success probability 
+
+px,d (G) converges to 1 for familiar easy prompts but remains near 0 for unseen or harder problems. Consequently, the surge in the variance penalty (∆GJk, Easy (G)) outweighs the marginal gains in mean performance ( ∆Gfk, Easy (G)), resulting in a decrease in the overall pass@k D.Conversely, on the Hard dataset, valid reasoning paths are scarce. An increased rollout budget pro-motes broader exploration, enabling the model to internalize more generalizable reasoning patterns. This uniformly improves the test-set mean μd(G)
+
+across prompts, maintaining low cross-prompt vari-ance and keeping the associated penalty minimal. 
+
+B Experimental Details of Section 2.1 
+
+We train Qwen2.5-3B-Instruct (Yang et al., 2024) on the MATH (Hendrycks et al., 2021) dataset, which we partition into Easy, Medium, and Hard subsets based on the base model’s empirical accu-racy. Specifically, for each problem, we sample 12 independent solutions from the base model and categorize problems according to the number of Training Configuration Wall Clock (Hours) 
+
+Easy / G = 4 5.0 Easy / G = 8 9.2 Easy / G = 16 16.4 Medium / G = 4 5.4 Medium / G = 8 9.4 Medium / G = 16 16.6 Hard / G = 4 5.5 Hard / G = 8 9.9 Hard / G = 16 17.5 
+
+> Table 5: Wall Clock Time for each difficulty subset and rollout budget.
+
+correct samples. Problems for which all 12 sam-ples are either entirely correct or entirely incorrect are excluded, as they provide no informative signal for distinguishing difficulty. Among the remain-ing problems, those with 1–4 correct samples are categorized as Hard , 5–8 as Medium , and 9–11 as 
+
+Easy . This results in 2,217 Easy, 1,433 Medium, and 1,712 Hard problems. To ensure a balanced training distribution, we subsample each subset to 1,400 problems. The model was trained for 5 epochs on each difficulty-specific dataset. Using GRPO (Shao et al., 2024), we conduct a total of 9 training runs, applying rollout budgets of G ∈ { 4, 8, 16 } for each difficulty subset. Our implementation is based on a modified version of the GRPO-Zero repository 2, which adopts a token-level policy gradient without KL regularization or clipping. We use a binary verifiable reward, as-signing 1 to correct final answers and 0 otherwise. During training, all samples are generated with tem-perature 1.0 and a maximum generation length of 1024 tokens. We fix all optimization hyperparame-ters, including a batch size of 256, while adjusting the number of problems per batch (64, 32, 16) to realize group sizes of 4, 8, and 16, respectively. All experiments are conducted on a single A100 GPU. The wall-clock times for each training configura-tion are reported in Table 5. We evaluate the resulting 9 models on three benchmarks: MATH500, AIME25, and AIME24. For each problem, we generate 256 reasoning paths in parallel. We compute pass@ k for k ∈{1, 2, 4, 8, 16 , 32 , 64 , 128 , 256 }, and report results for each model trained under different difficulty 
+
+> 2https://github.com/policy-gradient/GRPO-Zero
+
+Algorithm 1 Tree Rollout 
+
+Input: Policy πθ, Prompt x, Base rollouts N ,Forking points K, Branch rollouts B, Selection 
+
+method .
+
+Output: Trajectory set T
+
+Initialize R ← ∅ , T ← ∅ 
+
+Phase 1: Base Rollouts for i = 1 to N do 
+
+Sample base trajectory τ (i) ∼ πθ(· | x)
+
+R ← R ∪ { τ (i)}T ← T ∪ { τ (i)}
+
+end for Phase 2: Branch Rollouts for each τ ∈ R do 
+
+Select K forking points F ⊂ { 1, . . . , |τ |} via Algorithm 2 
+
+for each f ∈ F do 
+
+Extract trajectory prefix xf ← [x; τ1: f ]
+
+for j = 1 to B do 
+
+Sample continuation τ ′(j) 
+
+> f
+
+∼ πθ(· | xf )˜τ (j) 
+
+> f
+
+← [τ1: f ; τ ′(j) 
+
+> f
+
+]
+
+T ← T ∪ { ˜τ (j) 
+
+> f
+
+}
+
+end for end for end for 
+
+subsets and rollout budgets (Figure 7). In addition, we aggregate results across the three benchmarks and report the averaged avg@256 and pass@256, as shown in Figure 1. 
+
+C Details on Tree-Structured Rollout (Section 2.2) 
+
+C.1 Tree Algorithm Details 
+
+Algorithm 1 provides the detailed procedure of the two-phase tree rollout strategy. 
+
+C.2 Experimental Details of Section 2.2.2 
+
+To evaluate cost-efficiency during inference, we measure the PassRate—the probability of discover-ing at least one correct solution—against token consumption on the AIME25 benchmark using Qwen2.5-3B-Instruct. We compare standard par-allel sampling with two tree-structured variants: 
+
+fixed-seg (equidistant branching) and random 
+
+(uniform random branching). Detailed procedures for these forking strategies are provided in Ap-pendix D.1. 1 2 4 8 16 32 64 128 256 
+
+> k (log scale)
+> 55 60 65 70 75 80 85 90 95
+> pass@k (%)
+> easy_4 easy_8 easy_16
+
+(a) Easy / MATH500 1 2 4 8 16 32 64 128 256  
+
+> k (log scale)
+> 010 20 30 40 50
+> pass@k (%)
+> easy_4 easy_8 easy_16
+
+(b) Easy / AIME25 1 2 4 8 16 32 64 128 256  
+
+> k (log scale)
+> 510 15 20 25 30 35 40
+> pass@k (%)
+> easy_4 easy_8 easy_16
+
+(c) Easy / AIME24 1 2 4 8 16 32 64 128 256 
+
+> k (log scale)
+> 55 60 65 70 75 80 85 90 95
+> pass@k (%)
+> medium_4 medium_8 medium_16
+
+(d) Medium / MATH500 1 2 4 8 16 32 64 128 256  
+
+> k (log scale)
+> 010 20 30 40 50
+> pass@k (%)
+> medium_4 medium_8 medium_16
+
+(e) Medium / AIME25 1 2 4 8 16 32 64 128 256  
+
+> k (log scale)
+> 510 15 20 25 30 35 40 45
+> pass@k (%)
+> medium_4 medium_8 medium_16
+
+(f) Medium / AIME24 1 2 4 8 16 32 64 128 256 
+
+> k (log scale)
+> 55 60 65 70 75 80 85 90 95
+> pass@k (%)
+> hard_4 hard_8 hard_16
+
+(g) Hard / MATH500 1 2 4 8 16 32 64 128 256  
+
+> k (log scale)
+> 010 20 30 40
+> pass@k (%)
+> hard_4 hard_8 hard_16
+
+(h) Hard / AIME25 1 2 4 8 16 32 64 128 256  
+
+> k (log scale)
+> 10 20 30 40 50
+> pass@k (%)
+> hard_4 hard_8 hard_16
+
+(i) Hard / AIME24 
+
+Figure 7: pass@ k performance on evaluation benchmarks for models trained on different difficulty subsets. Labels such as easy_8 denote models trained on the Easy subset with group size G = 8 .
+
+Formal Definition of PassRate For parallel sam-pling, the model generates M independent trajec-tories, Tparallel = {τ (1) , . . . , τ (M )}. The PassRate is defined as: PassRate parallel = I
+
+MX
+
+i=1 
+
+r(τ (i)) ≥ 1
+
+!
+
+where r(·) ∈ { 0, 1} is the verifiable binary reward. Token consumption scales linearly with M .For tree-structured rollouts, generating N base rollouts, K forking points per base, and B branches per forking point yields a set of leaf trajectories 
+
+Ttree . The total number of terminal paths is N (1 + 
+
+KB ). The PassRate is evaluated over these leaves: PassRate tree = I X
+
+τ ∈T tree 
+
+r(τ ) ≥ 1
+
+!
+
+Unlike parallel sampling, tree rollouts consume tokens sub-linearly relative to the number of ter-minal paths, as context prefixes up to each forking point are computed only once and shared across branches. 
+
+Configurations To analyze PassRate against to-ken consumption (Figure 2), we varied the com-putational budget for both methods. For parallel sampling, we evaluated independent rollout counts of M ∈ { 4, 8, 16 , 32 }. For tree rollouts, we fixed the branching parameters at K = 2 and B = 2 ,and scaled the base rollouts N ∈ { 2, 4, 8}. These configuration tuples (N, K, B ) yield 10, 20, and 40 terminal paths, respectively, enabling a direct comparison of exploration efficiency relative to to-ken expenditure. Detailed forking point selection algorithms are provided in Appendix D.1. 
+
+D Details on Forking Point Selection Strategies (Section 2.3) 
+
+D.1 Forking Point Selection Algorithms 
+
+We detail the five forking point selection algorithms in Algorithm 2, which is utilized in Phase 2 Branch Rollouts. Let a trajectory be denoted as a sequence of tokens τ = ( y1, y 2, . . . , y |τ |). For entropy-based methods, let Ht denote the token-level entropy Algorithm 2 Forking Points Selection Algorithms 
+
+Input: Trajectory τ , Number of forking points 
+
+K, Selection method , Token entropies {Ht}|τ |
+
+> t=1
+
+,Parsed sentences S = {S1, . . . , S M }, Sen-tence entropies {HSm}Mm=1 , Parsed steps Z =
+
+{Z1, . . . , Z L}, Step-level FCI scores {yl}Ll=1 .
+
+Output: Forking points F ⊂ { 1, . . . , |τ |} , where 
+
+|F| = K
+
+if method is random then 
+
+Sample F ⊂ { 1, . . . , |τ |} uniformly at ran-dom 
+
+else if method is fixed-seg then 
+
+F ← 
+
+nj 
+
+k · |τ |
+
+> K+1
+
+k
+
+k = 1 , . . . , K 
+
+o
+
+else if method is ATB then 
+
+C ← { l ∈ { 1, . . . , L } | 
+
+yl ≥ Quantile (y1, . . . , y L, 0.8) }L∗ ← the K smallest indices (earliest steps) from CF ← { νl | l ∈ L ∗}
+
+else if method is tok-entropy then 
+
+F ← arg top −K 
+
+> t∈{ 1,..., |τ|}
+
+Ht
+
+else if method is sent-entropy then 
+
+M∗ ← arg top −K 
+
+> m∈{ 1,...,M }
+
+HSm
+
+F ← { μm | m ∈ M ∗}
+
+end if return F
+
+at step t, which is computed using the language model’s probability distribution over the vocabu-lary V :
+
+Ht = − X
+
+> v∈V
+
+P (v | y<t ) log P (v | y<t )
+
+For the sentence-level method, we parse the tra-jectory into M sentences, S = {S1, S 2, . . . , S M },by aligning character-level sentence boundaries de-tected via PySBD (Sadvilkar and Neumann, 2020) with the tokenizer’s offset mapping. Each sentence 
+
+Sm represents a contiguous span of token indices, and μm denotes the start token index of Sm. The sentence entropy HSm is defined as the average to-ken entropy within that sentence to mitigate length bias: 
+
+HSm = 1
+
+|Sm|
+
+X
+
+> t∈Sm
+
+Ht
+
+Attention-based Tree Branching ( ATB ) operates on the premise that attention scores serve as mean-ingful metrics to identify important reasoning be-haviors. To leverage this insight, the trajectory is                    
+
+> Metric random sent-entropy tok-entropy
+> NND ↓0.157 0.130 0.106
+> MPD ↓0.337 0.296 0.251
+> WCR@5 ↑8.9 12.9 23.6
+> WCR@10 ↑16.4 25.3 35.3
+> Table 6: Quantitative comparison of forking-point lo-calization across different selection strategies. Arrows indicate stronger localization.
+
+first segmented into L discrete steps (e.g., delim-ited by line breaks), denoted as Z = {Z1, . . . , Z L},where νl represents the start token index of step Zl.ATB then computes a Forward Context Influence (FCI) score yl for each step, quantifying its influ-ence on subsequent tokens by aggregating attention weights. When selecting forking points, ATB first isolates a candidate set consisting of the top 20% of steps with the highest FCI scores. From this set, it selects the K earliest steps as the final forking points. Lastly, the operator arg top −K denotes the ex-traction of the subset of indices that correspond to the K highest values of a given metric. 
+
+D.2 Quantitative and Qualitative Analysis of Forking-Point Localization 
+
+As illustrated in Figure 8, high-entropy tokens tend to densely cluster within narrow, highly uncertain segments of the reasoning trajectory. Consequently, the search budget is monopolized by repeated re-sampling at a single localized point, which severely limits the structural reach of the search tree. To quantitatively characterize the localization phenomenon, we measure the distribution of se-lected forking points using three metrics: Nearest Neighbor Distance (NND), the average distance to the closest forking point; Mean Pairwise Distance (MPD), the average pairwise distance among all se-lected points; and Window-based Clustering Ratio (WCR@ P ), the percentage of forking-point pairs whose distance falls within P % of the trajectory length. Lower NND and MPD and higher WCR indicate stronger localization. As shown in Table 6, tok-entropy exhibits the strongest localization, with the lowest NND (0.106) and MPD (0.251) and the highest WCR@5 (23.6%) and WCR@10 (35.3%). In comparison, 
+
+sent-entropy increases NND and MPD to 0.130 and 0.296, respectively, while reducing WCR@5 and WCR@10 to 12.9% and 25.3%, quantitatively demonstrating that sentence-level entropy mitigates the localization of forking points. To further observe how the selected tokens differ across forking strategies, we conducted a case study comparing tok-entropy , sent-entropy , and ATB .Figure 9 visualizes the forking points ( K = 4 ) se-lected by each method along a single, fixed reason-ing path. The tok-entropy method suffers from localization, trapping the selected points within a narrow segment. In contrast, sent-entropy still targets the model’s uncertain regions but distributes the forking points much more evenly, operating at a broader semantic level. Meanwhile, ATB se-lects steps receiving the highest attention weights; while this can be meaningful for dividing logical reasoning steps, it operates independently of the model’s uncertainty. As shown in Figure 9, ATB of-ten selects highly deterministic points to branch from. Performing additional sampling at these points yields low SibDiv and, consequently, a lim-ited PassRate, as reflected in Table 1. Based on these observations, sent-entropy proves to be the most effective forking strategy by successfully leveraging uncertainty signals while resolving the localization issue. 
+
+D.3 Formal Definitions of SibDiv 
+
+Because recent studies emphasize semantic diver-sity for effective exploration (Jiang et al., 2025; Yao et al., 2025), it is critical to rigorously quan-tify the divergence of the explored reasoning paths discussed in Section 2.3.2. To this end, we model the generated reasoning tree as a collection of text segments, referred to as blocks . Formally, a block 
+
+is defined as a contiguous sequence of reasoning spanning from the root to the first forking point, between two consecutive forking points, or from a final forking point to a leaf. Let F denote the set of all forking points and B
+
+denote the set of all blocks within a single gener-ated reasoning tree. We extract a dense semantic representation eb for each block b ∈ B utilizing the 
+
+gte-large-en-v1.5 model (Zhang et al., 2024). Sibling Diversity (SibDiv) is formulated as the com-plement of the average pairwise cosine similarity among sibling blocks: 
+
+SibDiv = 1 − 1
+
+|F| 
+
+X 
+
+> f∈F
+
+P   
+
+> bi,b j∈B(f), i<j
+
+cos( ebi , ebj )
+
+ |B(f )|
+
+> 2
+
+
+
+(6) where B(f ) ⊂ B represents the specific subset of child blocks branching directly from a given                   
+
+> Method PassRate SibDiv
+> random 10.0 0.0796
+> fixed-seg 13.3 0.0853
+> ATB 14.7 0.0874
+> tok-entropy 12.0 0.1065
+> tok-entropy w/ 5% dist. 14.0 0.1041
+> tok-entropy w/ 10% dist. 15.3 0.1007
+> sent-entropy 17.3 0.1049
+> Table 7: Comparison of forking-point selection strate-gies, including distance-forced token-entropy baselines.
+
+forking point f , and cos( ·, ·) denotes the cosine similarity function. A higher SibDiv score indicates that the model successfully generates semantically distinct con-tinuations from its forking points. By aggregating this localized diversity, SibDiv effectively captures the degree of semantic exploration and reasoning diversity across the entire tree. 
+
+D.4 Experimental Details of Section 2.3.3 
+
+We evaluated each forking strategy by generating reasoning trees under a fixed inference budget, mea-suring SibDiv and PassRate. Specifically, we con-ducted inference on the AIME26 benchmark using the Qwen2.5-3B-Instruct model. To isolate the ef-fect of the forking point selection strategy from the inherent randomness of language model gener-ation, we generated and fixed a single base rollout for each problem. We then applied each selection method to identify K = 4 distinct forking points along this fixed base trajectory. From each identi-fied forking point, we generated B = 4 additional branch rollouts. This procedure ensures a strictly controlled environment, yielding exactly 17 termi-nal leaves (1 base + 16 new branches) per problem across all methods. Finally, we calculated the Pass-Rate and SibDiv across these 17 leaves and aver-aged the metrics over the entire dataset. To ensure the robustness of our findings, we repeated this en-tire experimental procedure five independent times and report the final averaged results in Table 1. 
+
+D.5 Analyzing the Benefits of Sentence-Level Entropy 
+
+While sent-entropy substantially improves Pass-Rate over tok-entropy , it remains unclear whether this gain arises simply from mitigating localization or from identifying more semantically meaningful decision points. To disentangle these effects, we introduce distance-forced tok-entropy To solve the problem of finding the number of positive integer pal ind rom es written in base $ 10 $ with no zero digits and whose digits add up to $ 1 3 $, we need to consider the structure of pal ind rom es and the constraints given .### Step [space x1] 1 : Structure of Pal ind rom es A palindrome with an odd number of digits can be written as \( \ over line { a _ 1 a _ 2\ ld ots a _k a _{ k + 1 }} \ ), where \( a _ 1 = a _{ k + 1 }, a _ 2 = a_{ k }, \ ld ots , a _k = a _ 1 \ ). For an even number of digits , it is written as \( \ over line { a _ 1 a _ 2 \ ld ots a _k } \ ). ### Step [space x1] 2 : Constraints The digits must be non -zero ( i .e ., \( [space x1] 1 , [space x1] 2 , [space x1] 3 , [space x1] 4 , [space x1] 5 , [space x1] 6 , [space x1] 7 , [space x1] 8 , [space x1] 9 \ )) and their sum must equal \( [space x1] 1 3 \ ). ### Step [space x1] 3 : Case 3 Analysis We need to consider the number of digits ( length 1 ) of the palindrome .#### Case [space x1] 1 : Pal indrome with [space x1] 1 digit This 4 is not possible since the digits 2 must be non -zero and their sum must be \( [space x1] 1 3\ ). #### Case [space x1] 2 : Pal indrome with [space x1] 3 digits The palindrome has the form \( \ over line { aba } \ ). Thus , the equation is \( a + b+ a = [space x1] 1 3 \ ), simpl ifying to \( [space x1] 2 a + b = [space x1] 1 3 \ ). We need \( a \ ) and \( b \ ) to be non -zero digits ( i .e ., \( a , b \ in \ {1 , [space x1] 2 , [space x1] 3 , [space x1] 4 , [space x1] 5 , [space x1] 6 , [space x1] 7 ,[space x1] 8 , [space x1] 9 \ } \ )) .- \( a = [space x1] 6 \ ) gives \( b = [space x1] 1 \ ) ( valid ). - \( a = [space x1] 5 \ ) gives \( b = [space x1] 3 \ ) ( valid ). - \( a = [space x1] 4 \ ) gives \( b = [space x1] 5 \ ) ( valid ). - \( a = [space x1] 3 \ ) gives \( b = [space x1] 7 \ ) ( valid ). - \( a = [space x1] 2 \ ) gives \( b = [space x1] 9 \ ) ( valid ). - \( a = [space x1] 1 \ ) gives \( b = [space x1] 1 1 \ ) ( invalid since [space x1] 1 1is not a valid digit ). Thus , there are \( [space x1] 5 \ ) valid pal ind rom es : \( [space x1] 6 1 6 , [space x1] 5 3 5 , [space x1] 4 5 4 , [space x1] 3 7 3 , [space x1] 2 9 2 \ ). #### Case [space x1] 3 : Pal indrome with [space x1] 5 digits The palindrome has the form \( \ over line { abc ba } \ ). Thus , the equation is \( a +b + c + b + a = [space x1] 1 3 \ ), simpl ifying to \( [space x1] 2 a + [space x1] 2 b+ c = [space x1] 1 3 \ ). We need \( a , b , c \ in \ { 1 , [space x1] 2 ,[space x1] 3 , [space x1] 4 , [space x1] 5 , [space x1] 6 , [space x1] 7 , [space x1] 8 , [space x1] 9 \ } \ ). - \( a = [space x1] 4 \ ) gives \( [space x1] 2 \ cdot [space x1] 4 + [space x1] 2 b + c= [space x1] 1 3 \ Rightarrow [space x1] 8 + [space x1] 2 b + c = [space x1] 1 3 \ Rightarrow [space x1] 2 b + c = [space x1] 5 \ ): [space x1] - \( b = [space x1] 1 \ ) gives \( c = [space x1] 3 \ ) ( valid ): \( [space x1] 4 1 4 1 4 \ ). [space x1] - \( b = [space x1] 2 \ ) gives \( c = [space x1] 1 \ ) ( valid ): \( [space x1] 4 2 2 4 4 \ ). - \( a = [space x1] 3 \ ) gives \( [space x1] 2 \ cdot [space x1] 3 + [space x1] 2 b + c= [space x1] 1 3 \ Rightarrow [space x1] 6 + [space x1] 2 b + c = [space x1] 1 3 \ Rightarrow [space x1] 2 b + c = [space x1] 7 \ ): [space x1] - \( b = [space x1] 1 \ ) gives \( c = [space x1] 5 \ ) ( valid ): \( [space x1] 3 1 3 1 3 \ ). [space x1] - \( b = [space x1] 2 \ ) gives \( c = [space x1] 3 \ ) ( valid ): \( [space x1] 3 2 2 3 3 \ ). - \( a = [space x1] 2 \ ) gives \( [space x1] 2 \ cdot [space x1] 2 + [space x1] 2 b + c= [space x1] 1 3 \ Rightarrow [space x1] 4 + [space x1] 2 b + c = [space x1] 1 3 \ Rightarrow [space x1] 2 b + c = [space x1] 9 \ ): [space x1] - \( b = [space x1] 1 \ ) gives \( c = [space x1] 7 \ ) ( valid ): \( [space x1] 2 1 2 1 2 \ ). [space x1] - \( b = [space x1] 2 \ ) gives \( c = [space x1] 5 \ ) ( valid ): \( [space x1] 2 2 5 2 2 \ ). [space x1] - \( b = [space x1] 3 \ ) gives \( c = [space x1] 3 \ ) ( valid ): \( [space x1] 2 3 3 2 3 \ ). - \( a = [space x1] 1 \ ) gives \( [space x1] 2 \ cdot [space x1] 1 + [space x1] 2 b + c= [space x1] 1 3 \ Rightarrow [space x1] 2 + [space x1] 2 b + c = [space x1] 1 3 \ Rightarrow [space x1] 2 b + c = [space x1] 1 1 \ ): [space x1] - \( b = [space x1] 1 \ ) gives \( c = [space x1] 9 \ ) ( valid ): \( [space x1] 1 1 9 1 1 \ ). [space x1] - \( b = [space x1] 2 \ ) gives \( c = [space x1] 7 \ ) ( valid ): \( [space x1] 1 2 7 1 2 \ ). [space x1] - \( b = [space x1] 3 \ ) gives \( c = [space x1] 5 \ ) ( valid ): \( [space x1] 1 3 5 1 3 \ ). [space x1] - \( b = [space x1] 4 \ ) gives \( c = [space x1] 3 \ ) ( valid ): \( [space x1] 1 4 3 1 4 \ ). Thus , there are \( [space x1] 9 \ ) valid pal ind rom es .#### Case [space x1] 4 : Pal indrome with [space x1] 7 digits The palindrome has the form \( \ over line { abc de ed cba } \ ). Thus , the equation is \( a + b + c + d + e + d + c + b + a = [space x1] 1 3 \ ), simpl ifying to \( [space x1] 2 a + [space x1] 2 b + [space x1] 2 c + [space x1] 2 d + e = [space x1] 1 3 \), or \( [space x1] 2 (a + b + c + d ) + e = [space x1] 1 3 \ ). - \( a + b + c + d = [space x1] 6 \ ) and \( e = [space x1] 1 \ ) ( valid ): [space x1] - \( a = [space x1] 1 , b = [space x1] 1 , c = [space x1] 2 , d = [space x1] 2\ ): \( [space x1] 1 1 2 2 1 1 1 \ ). [space x1] - \( a = [space x1] 1 , b = [space x1] 1 , c = [space x1] 1 , d = [space x1] 3\ ): \( [space x1] 1 1 3 3 1 1 1 \ ). [space x1] - \( a = [space x1] 1 , b = [space x1] 1 , c = [space x1] 1 , d = [space x1] 2, e = [space x1] 0 \ ) ( invalid since \( e \ ) must be [space x1] 1 ). Thus , there are \( [space x1] 2 \ ) valid pal ind rom es .### Conclusion Sum mar izing the valid pal ind rom es from all cases : \( [space x1] 5 \ ) from [space x1] 3digits , \( [space x1] 9 \ ) from [space x1] 5 digits , and \( [space x1] 2 \ ) from [space x1] 7 digits . Therefore , the total number of such pal ind rom es is \( [space x1] 5 + [space x1] 9 + [space x1] 2 = [space x1] 1 6 \ ). \ [\ boxed { 1 6 }\ ] <|im_end|> 
+
+Non-selected entropy 
+
+low 0.000 top-4 floor 1.497 
+
+Selected Top-4 High Entropy Tokens 
+
+dark red + black box To solve this problem , we need to count the number of valid paths the bug can take from point \( A \ ) to point \( B \ ) on the grid . The bug can only move right or up , and it cannot move diagon ally or from right to left . Let 1 's denote 2 the grid as follows , where each point 4 represents 3 a vertex :\ [\ begin { array }{ cccc cccc cc }& & & & & & & & & A \\ & & & & & & & & B \\ \ end { array }\ ]The grid has [space x1] 1 0 squares in a row , so the bug needs to make exactly [space x1] 10 moves to the right ( R ) and [space x1] 1 0 moves up ( U ) to get from \( A \ )to \( B \ ). The total number of moves is [space x1] 2 0 , and we need to choose [space x1] 1 0 of these moves to be right ( or equival ently , [space x1] 1 0 moves to be up ). This is a comb inator ial problem where we need to find the number of ways to arrange [space x1] 1 0R 's and [space x1] 1 0 U 's in a sequence of [space x1] 2 0 moves .The number of such sequences is given by the bin omial coefficient :\ [N = \ bin om { 2 0 }{ 1 0 } = \ frac { 2 0 ! }{ 1 0 ! 1 0 ! }\ ]Now , we need to calculate \( \ sqrt { N } \ ). First , we compute \( \ bin om { 2 0}{ 1 0 } \ ): \ [\ bin om { 2 0 }{ 1 0 } = \ frac { 2 0 ! }{ 1 0 ! 1 0 ! } = \ frac { 2 0\ times [space x1] 1 9 \ times [space x1] 1 8 \ times [space x1] 1 7 \ times [space x1] 1 6 \times [space x1] 1 5 \ times [space x1] 1 4 \ times [space x1] 1 3 \ times [space x1] 1 2 \ times [space x1] 1 1 }{ 1 0 \ times [space x1] 9 \ times [space x1] 8 \ times [space x1] 7 \ times [space x1] 6 \ times [space x1] 5 \ times [space x1] 4 \ times [space x1] 3 \ times [space x1] 2 \times [space x1] 1 } = [space x1] 1 8 4 7 5 6\ ]Next , we find the square root of [space x1] 1 8 4 7 5 6 :\ [\ sqrt { 1 8 4 7 5 6 } = [space x1] 4 3 0\ ]Thus , the final answer is :\ [\ boxed { 4 3 0 }\ ] <|im_end|> 
+
+Non-selected entropy 
+
+low 0.000 top-4 floor 1.327 
+
+Selected Top-4 High Entropy Tokens 
+
+dark red + black box To solve this problem , we need to determine the probability that Alice and Bob each receive at least two coins before Carol receives any coins when a standard fair six -sided die is rolled repeatedly .First , note the probabilities for each outcome :- The probability of rolling a [space x1] 1 or [space x1] 2 ( Alice 's coin ) is \ (\ frac {2 }{ 6 } = \ frac { 1 }{ 3 }\ ). - The probability of rolling a [space x1] 3 or [space x1] 4 ( Bob 's coin ) is \ (\ frac { 2}{ 6 } = \ frac { 1 }{ 3 }\ ). - The probability of rolling a [space x1] 5 or [space x1] 6 ( Carol 's coin ) is \ (\ frac {2 }{ 6 } = \ frac { 1 }{ 3 }\ ). We need to find the probability that Alice and Bob each receive at least two coins before Carol receives any coins . This can be approached by calculating the probability that the first two coins belong to Alice and Bob , and the third coin belongs to Carol , and then continuing this pattern .Let 's denote the probability that Alice and Bob each receive at least two coins before Carol receives any coins as \( P \ ). Consider the sequence of outcomes :1 . The first roll is Alice 's coin ( probability \ (\ frac { 1 }{ 3 }\ )). 2 . The second roll is Bob 's coin ( probability \ (\ frac { 1 }{ 3 }\ )). 3 . The third roll is Carol 's coin ( probability \ (\ frac { 1 }{ 3 }\ )) .Given these first three rolls , the sequence restart s , and we need to repeat the process until we have at least two Alice coins , two Bob coins , and no Carol coins . The probability of this specific sequence occurring is :\ [\ left (\ frac { 1 }{ 3 }\ right ) \ times \ left (\ frac { 1 }{ 3 }\ right ) \ times \left (\ frac { 1 }{ 3 }\ right ) = \ left (\ frac { 1 }{ 3 }\ right )^ 3 = \ frac { 1}{ 2 7 }\ ]To 1 find the overall probability \( P \ ), we note that the sequence can start in various 4 ways , but the structure 2 remains the same . The probability of starting with Alice and Bob receiving 3
+
+coins and Carol receiving no coins in the first three rolls , and then repeating this pattern ,is given by :\ [P = \ frac { 1 }{ 2 7 } + \ left (\ frac { 1 }{ 2 7 }\ right )^ 2 + \ left (\ frac { 1 }{ 2 7 }\ right )^ 3 + \ cd ots \ ]This is an infinite geometric series with the first term \( a = \ frac { 1 }{ 2 7 }\ )and common ratio \( r = \ frac { 1 }{ 2 7 }\ ). The sum \( S \) of an infinite geometric series is given by :\ [S = \ frac { a }{ 1 - r } = \ frac {\ frac { 1 }{ 2 7 }} { 1 - \ frac { 1 }{ 2 7 }} = \ frac {\ frac { 1 }{ 2 7 }} {\ frac { 2 6 }{ 2 7 }} = \ frac { 1 }{ 26 }\ ]Thus , the probability that Alice and Bob each receive at least two coins before Carol receives any coins is \ (\ frac { 1 }{ 2 6 }\ ). The probability can be written as \ (\ frac { m }{ n }\ ) where \( m = [space x1] 1 \) and \( n = [space x1] 2 6 \ ). Therefore , \( m + n = [space x1] 1 + [space x1] 2 6 =[space x1] 2 7 \ ). \ [\ boxed { 2 7 }\ ] <|im_end|> 
+
+Non-selected entropy 
+
+low 0.000 top-4 floor 1.572 
+
+Selected Top-4 High Entropy Tokens 
+
+dark red + black box To solve the problem , we need to understand the structure of the set \( S \ ) and its cousins . Given that \( S \ ) has \( n \ ) elements , each cousin of \( S \ ) must also have \( n \ ) elements and be disjoint from \( S \ ). The 4 cousins can be formed by shifting the elements of \( S \ ) by a2 constant integer , and 1 this 3 constant must be the same for all elements in \( S \ ). Let 's denote the elements of \( S \ ) by \( \ { a _ 1 , a _ 2 , \ ld ots , a_n \ } \ ) where \( a _ 1 < a _ 2 < \ cd ots < a _n \ ). For \( S \ ) and \( T \ ) to be cousins , \( T \ ) must be of the form \( \ { a _ 1 + k , a_ 2 + k , \ ld ots , a _n + k \ } \ ) for some integer \( k \ ). Since \( S \) and \( T \ ) must be disjoint , \( k \ ) must be such that \( a _n + k \ ne qa _i \ ) for any \( i \ ). This implies that \( k \ ) can be any integer except \( a_ 1 , a _ 2 , \ ld ots , a _{ n - 1 } \ ). The number of possible values for \( k \ ) is therefore \( n - [space x1] 1 \ ). Since each \( k \ ) corresponds to a unique cousin , the number of cousins of \( S \ ) is \( n -[space x1] 1 \ ). Given that \( S \ ) has exactly [space x1] 4 0 4 0 cousins , we have :\ [n - [space x1] 1 = [space x1] 4 0 4 0 \ impl ies n = [space x1] 4 0 4 1 .\ ]Thus , the least number of elements the set \( S \ ) can have is \( \ boxed { 4 0 4 1} \ ). <|im_end|> 
+
+Non-selected entropy 
+
+low 0.000 top-4 floor 1.560 
+
+Selected Top-4 High Entropy Tokens 
+
+dark red + black box Figure 8: Visualization of token-entropy localization . Dark red boxed tokens indicate the selected top-4 high-entropy forking points. These points densely cluster within a narrow segment, monopolizing the search budget and limiting structural diversity. To solve the problem of finding the number of positive integer palindromes written in base $1 0$ with no zero digits and whose digits add up to $13$, we need to consider the structure of palindromes and the constraints given. ### Step 1: Structure of Palindromes A palindrome with an odd number of digits can be written as overline{a_1a_2 ldots a_k a_{k+1 }} , where a_1 = a_{k+1}, a_2 = a_{k}, ldots, a_k = a_1 . For an even number of digits, it is written as overline{a_1a_2 ldots a_k} .### Step 2: Constraints The digits must be non-zero (i.e., 1, 2, 3, 4, 5, 6, 7, 8, 9 ) and their sum must equal 13 .### Step 3: Case Analysis We need to consider the number of digits (length) of the palindrome. #### Case 1: Palindrome with 1 digit This is not possible since the digits must be non-zero and their sum must be 13 .#### Case 2: Palindrome with 3 digits The palindrome has the form overline{aba} . Thus, the equation is a + b + a = 13 , simplify ing to 2a + b = 13 . We need a and b to be non-zero digits (i.e., a, b in {1, 2, 3, 4, 5, 6, 7, 8, 9} ). - a = 6 gives b = 1 (valid). - a = 5 gives b = 3 (valid). - a = 4 gives b = 5 (valid). - a = 3 gives b = 7 (valid). - a = 2 gives b = 9 (valid). - a = 1 gives b = 11 (invalid since 11 is not a valid digit). Thus, there are 5 valid palindromes: 616, 535, 454, 373, 292 .#### Case 3: Palindrome with 5 digits The palindrome has the form overline{abcba} . Thus, the equation is a + b + c + b + a = 13 , simplifying to 2a + 2b + c = 13 . We need a, b, c in {1, 2, 3, 4, 5, 6, 7, 8, 9} .- a = 4 gives 2 * 4 + 2b + c = 13 Rightarrow 8 + 2b + c = 13 Rightarrow 2b + c = 5 :- b = 1 gives c = 3 (valid): 41414 .- b = 2 gives c = 1 (valid): 42244 .- a = 3 gives 2 * 3 + 2b + c = 13 Rightarrow 6 + 2b + c = 13 Rightarrow 2b + c = 7 :- b = 1 gives c = 5 (valid): 31313 .- b = 2 gives c = 3 (valid): 32233 .- a = 2 gives 2 * 2 + 2b + c = 13 Rightarrow 4 + 2b + c = 13 Rightarrow 2b + c = 9 :- b = 1 gives c = 7 (valid): 21212 .- b = 2 gives c = 5 (valid): 22522 .- b = 3 gives c = 3 (valid): 23323 .- a = 1 gives 2 * 1 + 2b + c = 13 Rightarrow 2 + 2b + c = 13 Rightarrow 2b + c = 11 :- b = 1 gives c = 9 (valid): 11911 .- b = 2 gives c = 7 (valid): 12712 .- b = 3 gives c = 5 (valid): 13513 .- b = 4 gives c = 3 (valid): 14314 .Thus, there are 9 valid palindromes. #### Case 4: Palindrome with 7 digits The palindrome has the form overline{abcdeedcba} . Thus, the equation is a + b + c + d + e+ d + c + b + a = 13 , simplifying to 2a + 2b + 2c + 2d + e = 13 , or 2(a + b + c + d) + e= 13 .- a + b + c + d = 6 and e = 1 (valid): - a = 1, b = 1, c = 2, d = 2 : 1122111 .- a = 1, b = 1, c = 1, d = 3 : 1133111 .- a = 1, b = 1, c = 1, d = 2, e = 0 (invalid since e must be 1). Thus, there are 2 valid palindromes. ### Conclusion Summarizing the valid palindromes from all cases: 5 from 3 digits, 9 from 5 digits, and 2 from 7 digits. Therefore, the total number of such palindromes is 5 + 9 + 2 = 16 .16 
+
+Forking Point Selection Methods 
+
+Token Entropy Sentence Entropy ATB To solve this problem, we need to count the number of valid paths the bug can take from point A to point B on the grid. The bug can only move right or up, and it cannot move diagonall y or from right to left. Let's denote the grid as follows, where each point represents a vert ex: begin{array}{cccccccccc} & & & & & & & & & A& & & & & & & & Bend{array} The grid has 10 squares in a row, so the bug needs to make exactly 10 moves to the right (R) and 10 moves up (U) to get from A to B . The total number of moves is 20, and we need to choose 10 of these moves to be right (or equivalently, 10 moves to be up). This is a combinato rial problem where we need to find the number of ways to arrange 10 R's and 10 U's in a seque nce of 20 moves. The number of such sequences is given by the binomial coefficient: N = binom{20}{10} = (20!)/(10!10!) Now, we need to calculate sqrt{N} . First, we compute binom{20}{10} :binom{20}{10} = (20!)/(10!10!) = (20 \times 19 \times 18 \times 17 \times 16 \times 15 \times 14 \times 13 \times 12 \times 11)/(10 \times 9 \times 8 \times 7 \times 6 \times 5 \times 4 \times 3 \times 2 \times 1) = 184756 Next, we find the square root of 184756: sqrt{184756} = 430 Thus, the final answer is: 430 
+
+Forking Point Selection Methods 
+
+Token Entropy Sentence Entropy ATB To solve this problem, we need to determine the probability that Alice and Bob each receive at least two coins before Carol receives any coins when a standard fair six-sided die is rolle d repeatedly. First, note the probabilities for each outcome: - The probability of rolling a 1 or 2 (Alice's coin) is (2)/(6) = (1)/(3). - The probability of rolling a 3 or 4 (Bob's coin) is (2)/(6) = (1)/(3). - The probability of rolling a 5 or 6 (Carol's coin) is (2)/(6) = (1)/(3). We need to find the probability that Alice and Bob each receive at least two coins before Car ol receives any coins. This can be approached by calculating the probability that the first two coins belong to Alice and Bob, and the third coin belongs to Carol, and then continuing th is pattern. Let's denote the probability that Alice and Bob each receive at least two coins before Carol receives any coins as P. Consider the sequence of outcomes: 1. The first roll is Alice's coin (probability (1)/(3)). 2. The second roll is Bob's coin (probability (1)/(3)). 3. The third roll is Carol's coin (probability (1)/(3)). Given these first three rolls, the sequence restarts, and we need to repeat the process until we have at least two Alice coins, two Bob coins, and no Carol coins. The probability of this specific sequence occurring is: ((1)/(3)) x ((1)/(3)) x ((1)/(3)) = ((1)/(3))^3 = (1)/(27) To find the overall probability P, we note that the sequence can start in various ways, but the structure remains the same. The probability of starting with Alice and Bob receiving coins and Carol receiving no coins in the first three rolls, and then repeating this pattern, is gi ven by: P = (1)/(27) + ((1)/(27))^2 + ((1)/(27))^3 + *s This is an infinite geometric series with the first term a = (1)/(27) and common ratio r = (1 )/(27). The sum S of an infinite geometric series is given by: S = (a)/(1 - r) = frac{(1)/(27)}{1 - (1)/(27)} = frac{(1)/(27)}{(26)/(27)} = (1)/(26) Thus, the probability that Alice and Bob each receive at least two coins before Carol receive s any coins is (1)/(26). The probability can be written as (m)/(n) where m = 1 and n = 26. Therefore, m + n = 1 + 26 =27. 27 
+
+Forking Point Selection Methods 
+
+Token Entropy Sentence Entropy ATB To solve the problem, we need to understand the structure of the set S and its cousins. Giv en that S has n elements, each cousin of S must also have n elements and be disjoint from S . The cousins can be formed by shifting the elements of S by a constant integer, an d this constant must be the same for all elements in S .Let's denote the elements of S by {a_1, a_2, ldots, a_n} where a_1 < a_2 < *s < a_n . Fo r S and T to be cousins, T must be of the form {a_1 + k, a_2 + k, ldots, a_n + k} for some integer k . Since S and T must be disjoint, k must be such that a_n + k neq a_i for any i . This implies that k can be any integer except a_1, a_2, ldots, a_{n-1} .The number of possible values for k is therefore n - 1 . Since each k corresponds to a unique cousin, the number of cousins of S is n - 1 . Given that S has exactly 4040 cousin s, we have: n - 1 = 4040 implies n = 4041. Thus, the least number of elements the set S can have is 4041 .
+
+Forking Point Selection Methods 
+
+Token Entropy Sentence Entropy ATB Figure 9: Case studies comparing forking point selections across tok-entropy , sent-entropy , and ATB . Colored boxes indicate the tokens selected by each method, with overlapping boxes denoting agreement between methods. Notably, while tok-entropy suffers from localization, sent-entropy distributes points more evenly across broader semantic levels, whereas ATB often targets deterministic points regardless of uncertainty. baselines that preserve the original token-level en-tropy signal while explicitly preventing nearby forking points. Starting from candidates ranked by token entropy, we greedily select forking points and skip any candidate whose distance from an already selected point is within a predefined frac-tion of the total trajectory length. We consider minimum-distance thresholds of 5% and 10%. As shown in Table 7, explicitly enforcing a minimum distance between token-level forking points improves PassRate from 12.0 for standard 
+
+tok-entropy to 14.0 and 15.3 with the 5% and 10% constraints, respectively. This confirms that localization itself is a limiting factor for token-level entropy-based branching. However, both distance-forced variants still underperform sent-entropy ,which achieves a PassRate of 17.3. Since these vari-ants mitigate localization while retaining the same token-level entropy signal, the remaining gap sug-gests that the benefit of sent-entropy cannot be attributed solely to distributing forking points more broadly. Rather, sentence-level entropy provides a more effective signal for identifying semantically meaningful decision points for branching. 
+
+E Algorithmic and Formal Details of DATPO 
+
+This section provides the formal definitions of the advantage components and the complete train-ing procedure for Difficulty-Adaptive Sentence-entropy Guided Tree-Structured Policy Optimiza-tion (DATPO), expanding upon the methodology outlined in Section 3. 
+
+E.1 Formal Definitions of Value Estimation and Sibling Diversity term Monte Carlo State Value ( ˆVM C ) For a state s
+
+corresponding to a specific forking point, let T (s)
+
+denote the set of all terminal blocks descending from s. The Monte Carlo state value is formally defined as the expected verifiable reward over these terminal paths: 
+
+ˆVM C (s) = 1
+
+|T (s)|
+
+X  
+
+> τ∈T (s)
+
+r(τ ). (7) For a terminal state send , the set of descending paths is empty, strictly enforcing ˆVM C (send ) = 0 .
+
+Block-Level Sibling Diversity (Div sib (b)) Let 
+
+P (b) denote the forking point from which block 
+
+b originates, and let Bsib (b) denote the set of all sibling blocks branching from P (b). The sibling-diversity term for a specific block b is computed as its average semantic distance to its siblings: Div sib (b) = 1 −
+
+P 
+
+> b′∈B sib (b)\{ b}
+
+cos( eb, eb′ )
+
+|B sib (b)| − 1 , (8) where eb is the embedding of block b. We define Div sib (b) = 0 when b has no valid sibling block. While the evaluation metric SibDiv (defined in Appendix D.3) aggregates pairwise similarities across all forking points to report a single tree-level scalar, the reward term Div sib (b) is evaluated at the individual block level to provide the advan-tage augmentation. 
+
+E.2 DATPO Objective Function 
+
+DATPO employs a token-level policy gradient ob-jective mapped across the tree topology. Given a set of generated blocks B for a prompt q, the objective is defined as: 
+
+JDATPO (θ) = Eq∼Q ,B∼ πθold 
+
+"
+
+1
+
+P 
+
+> b∈B
+
+|b|
+
+X
+
+> b∈B |b|
+
+X
+
+> t=1
+
+min 
+
+
+
+ρb,t (θ) ˆA(b), clip  ρb,t (θ),
+
+1 − ϵ, 1 + ϵ ˆA(b)
+
+#
+
+,
+
+(9) where |b| is the sequence length of block b,
+
+ρb,t (θ) = πθ (yt|x<t )  
+
+> πθold (yt|x<t )
+
+is the importance ratio, and 
+
+ˆA(b) is the block-level augmented advantage. 
+
+E.3 Complete DATPO Algorithm 
+
+Algorithm 3 details the end-to-end training proce-dure. By extending the two-phase rollout strategy into the training framework, the process is struc-tured into four distinct phases: base rollouts, adap-tive branch rollouts, block-level advantage estima-tion, and policy update. 
+
+E.4 Comparison with Other Tree-based Methods 
+
+To contextualize DATPO within the landscape of recent tree-based RLVR methodologies, we high-light two fundamental distinctions between our ap-proach and existing frameworks such as TreeRL (Hou et al., 2025) and AttnRL (Liu et al., 2025a). Algorithm 3 DATPO Input: Initial policy πθ, Prompts dataset Q, Max-imum number of forking points Kmax , Maxi-mum number of branch rollouts per forking point 
+
+Bmax , Base rollouts N , Diversity coefficient α.
+
+Output: Optimized policy π∗
+
+> θ
+
+Sample prompt q ∼ Q 
+
+Phase 1: Base Rollouts 
+
+Generate N independent base trajectories R =
+
+{τ (1) , . . . , τ (N )} via πθ(· | q)
+
+Compute V (root) = 1
+
+> N
+
+PNi=1 r(τ (i))
+
+Compute adaptive budgets: ˆK = ⌈Kmax (1 −
+
+V (root)) ⌉, ˆB = ⌈Bmax (1 − V (root)) ⌉
+
+Phase 2: Adaptive Branch Rollouts 
+
+Initialize tree path set T ← R 
+
+if ˆK > 0 and ˆB > 0 then for each τ ∈ R do 
+
+Select ˆK forking points F using 
+
+sent-entropy forking strategy (Al-gorithm 2) 
+
+for each f ∈ F do 
+
+Extract trajectory prefix xf ← [q; τ1: f ]
+
+Generate ˆB branch continuations from prefix xf
+
+Add generated branches to T
+
+end for end for end if Phase 3: Block-level Advantage Estimation 
+
+Partition T into a set of contiguous blocks B
+
+for each block b ∈ B do 
+
+Compute ˆVM C (s(b)
+
+> start
+
+) and ˆVM C (s(b)
+
+> end
+
+)ˆAbase (b) = r(b) + ˆVM C (s(b)
+
+> end
+
+) − ˆVM C (s(b)
+
+> start
+
+)
+
+Compute Div sib (b) using block embeddings (Equation 8) 
+
+ˆA(b) = ˆAbase (b) + I( ˆAbase (b) > 0) · α ·
+
+Div sib (b)
+
+end for Phase 4: Policy Update 
+
+Update θ by maximizing JDATPO (θ) (Equa-tion 9) using advantages { ˆA(b)}b∈B 
+
+Anneal α according to schedule 
+
+return Optimized policy π∗
+
+> θ
+
+Structural Robustness in Optimization Both TreeRL and AttnRL generate tree-structured roll-outs but ultimately flatten these trees into a set of 
+
+N (1 + K × B) independent sequences to perform sequence-level policy updates (Hou et al., 2025). A critical flaw in this unfolding process is that com-mon trajectory prefixes are duplicated across mul-tiple sequences, causing the policy to redundantly update on the same early tokens. To mitigate the re-sulting overfitting, these methods rely on a heuristic penalty, artificially downweighting the advantage of non-leaf steps by dividing it by the square root of the descending leaf count ( p|L(sn)|) (Hou et al., 2025; Liu et al., 2025a). In contrast, DATPO is structurally immune to this redundancy. By strictly partitioning the gener-ated tree into non-overlapping contiguous blocks, every token within the tree belongs to exactly one block. Because DATPO performs explicit block-level updates directly over the tree topology, it naturally prevents duplicate gradient updates on shared prefixes, providing a highly robust credit as-signment mechanism without the need for ad-hoc advantage penalization. 
+
+Motivation for Difficulty-Adaptive Exploration 
+
+While AttnRL (Liu et al., 2025a) similarly incorpo-rates a difficulty-adaptive exploration mechanism, its approach is fundamentally driven by computa-tional efficiency. Specifically, AttnRL reduces the sampling budget for easy problems to prevent in-efficient exploration and filter out responses with zero advantages. Conversely, DATPO’s difficulty-adaptive rollout originates from a completely different motivation: maximizing intrinsic reasoning coverage (pass@ k). As demonstrated in Section 2.1, adaptive budget allocation is not merely a resource-saving heuris-tic, but a key algorithmic factor for successfully expanding a model’s pass@ k without inducing mode collapse. Built entirely around this objective, DATPO further maximizes coverage through the structural superiority of trees (Section 2.2) and op-timal semantic forking (Section 2.3). Thus, while DATPO and AttnRL share superficial similarities in their adaptive nature, they are built upon fun-damentally distinct motivations and optimization goals. 
+
+F Details on Main Experiments (Section 4) 
+
+F.1 Experimental Setups Models and Datasets We use Qwen2.5-3B-Base (Yang et al., 2024) and Qwen3-4B-Base (Yang et al., 2025) as base models. For training, we use the MATH dataset (Hendrycks et al., 2021). From the full set of 12,500 problems, we exclude the 500 problems used as the MATH500 and use the remaining 12,000 problems as the training set. 
+
+Evaluation We evaluate the trained models on mathematical reasoning benchmarks, specifically MATH500 (Hendrycks et al., 2021), AIME26, AIME25, AIME24, and AMC23. We report avg@ k as the primary evaluation metric across all benchmarks. All evaluations were performed with a temperature of 1.0 and a maximum generation length of 2048. To assess the reasoning coverage and test-time scaling performance of the trained models, we additionally report pass@ k and maj@ k
+
+(majority voting), respectively. We use k = 8 for MATH500, and k = 64 for the remaining bench-marks. For robustness, both pass@ k and maj@ k
+
+results are computed by averaging over three inde-pendent evaluation runs for each dataset. The final maj@ k in Figure 6 is then reported as the average of these results across all mathematical reasoning benchmarks. 
+
+Baselines We compare DATPO with several base-lines: (1) Base , the base model without any ad-ditional training; (2) GRPO (Shao et al., 2024), standard GRPO enhanced with the token-level loss and clip-higher strategy from DAPO (Yu et al., 2025b). Following prior work (Liao et al., 2025) showing that dynamic sampling can be detrimental for relatively weak reasoning models, we inten-tionally adopt only this specific subset of DAPO components; (3) Dr.GRPO (Liu et al., 2025b), a refined variant of GRPO that corrects structural biases in advantage estimation; (4) TreeRL (Hou et al., 2025), a tree-based RL method that selects forking points from high-entropy tokens and esti-mates process-level advantages by combining local and global advantages; and (5) AttnRL (Liu et al., 2025a), another tree-based RL method built upon TreeRL with a focus on improving efficiency by se-lecting forking points based on attention scores and adopting adaptive sampling and one-step off-policy. For TreeRL and AttnRL, we adopt the same tree-expansion hyperparameters as reported in original papers. To ensure a fair comparison, we control the total number of generated tokens per problem to be comparable across all methods (detailed in Appendix F.3). 
+
+F.2 Implementation Details Sampling and Algorithmic Hyperparameters 
+
+Across all methods, we set the sampling tempera-ture to 1.0 and the maximum generation length to 
+
+Method Avg. Generated Tokens 
+
+GRPO 8,755.7 Dr.GRPO 8,608.3 TreeRL 11,029.9 AttnRL 8,807.3 DATPO (Ours) 8,952.4 
+
+> Table 8: Average number of generated tokens per ques-tion during training across different methods.
+
+1024 tokens. For GRPO and Dr.GRPO , we sam-ple 16 responses per problem. For the tree-based baselines, we strictly follow the hyperparameters reported in their respective original papers. Specif-ically, for TreeRL , we set the tree expansion pa-rameters to (N, K, B ) = (6 , 2, 2) . For AttnRL ,we use maximum budgets of (N, K max , B max ) = (6 , 2, 2) , select the top 20% of FCI steps as forking candidates, and apply ∆ = 4 and λ = 0 .9 for adap-tive batching. For our proposed DATPO , we set the adaptive tree parameters to (N, K max , B max ) = (4 , 3, 4) . We intentionally employ a larger maxi-mum branch count ( Bmax = 4 ) compared to the baselines, as calculating the sibling diversity term (Div sib ) across merely two branches ( B = 2 ) di-minishes its significance. To accommodate this wider branching while keeping the total number of generated tokens per problem comparable to the baseline methods, we adjusted the base and forking budgets accordingly. The diversity co-efficient α is initialized to 0.2 and linearly an-nealed to 0 over the course of training. To com-pute the semantic diversity representations, we utilize the gte-large-en-v1.5 embedding model (Zhang et al., 2024). Furthermore, to prevent Out-Of-Memory (OOM) errors caused by the expan-sion of adaptive methods (AttnRL and DATPO), we apply rollout chunking during the branch rollout phase. We generate branch rollouts in chunk sizes of 384 for Qwen2.5-3B-Base and 64 for Qwen3-4B-Base. 
+
+Training Hyperparameters We formulate the task with a binary verifiable reward, assigning a reward of 1 if the final answer is correct and 0 oth-erwise. Models are optimized using the AdamW optimizer with β = (0 .9, 0.999) and a constant learning rate of 5 × 10 −6. We omit the KL di-vergence penalty and the clipping ratio is set to 
+
+0.2. For the GRPO baseline enhanced with the clip-higher strategy, we set the upper clip ratio to Method Wall Clock (Hours) Parallel Rollout 
+
+GRPO 26.3 Dr.GRPO 27.1 
+
+Tree-based Rollout 
+
+TreeRL 56.2 AttnRL 55.5 DATPO w/o diversity 56.0 DATPO 60.3 DATPO w/ one-step off-policy 60.0 
+
+Table 9: Wall-clock comparison across different meth-ods. 
+
+0.28 and the lower to 0.2. During training, we update the policy using 16 prompts per step, main-taining a global mini-batch size of 64 and a micro-batch size of 2 for gradient accumulation across all methods. The total effective batch size varies by method: GRPO and Dr.GRPO utilize a fixed batch size of 256; TreeRL employs a batch size of 480 (comprising 96 base rollouts and 384 branch rollouts); whereas the batch sizes for AttnRL and DATPO dynamically adjust per step due to their adaptive nature. Notably, because DATPO per-forms block-level policy updates, its mini-batch and micro-batch sizes are defined with respect to the number of contiguous blocks rather than full sequences. All experiments were executed on a computing cluster equipped with 8 NVIDIA A100 GPUs, where each individual training run was con-ducted on a single A100 GPU. Our codebase is developed based on the GRPO-Zero framework 3.
+
+F.3 Computational Cost and Wall-Clock Time 
+
+To ensure a fair comparison, we control the total number of generated tokens per problem to be com-parable across all methods. The actual average number of generated tokens per question during training for each method is detailed in Table 8. However, despite this token-level equivalence, tree-based methods generally incur a higher wall-clock time compared to standard parallel rollouts, as re-ported in Table 9. This discrepancy arises from the inherent sequential dependency in tree generation: branch rollouts cannot commence until the base rollouts are fully generated and forking points are explicitly selected, creating a computational bottle-neck. Furthermore, our proposed DATPO requires additional overhead to compute block-level embed-dings for the diversity term, slightly increasing its wall-clock time relative to other tree-based base-
+
+> 3
+
+https://github.com/policy-gradient/GRPO-Zero 
+
+Component Time (s) Total runtime (%) 
+
+Policy 150.44 50.14 Diversity embedding 13.65 4.55 Update 102.17 34.05 Others 33.76 11.25 
+
+Total 300.02 100.00 
+
+Table 10: Per-step runtime breakdown of DATPO across different computational components. 11.2% 10.8% 9.4% 9.1% 8.0% 7.7% 7.0% 6.8% 6.6% 6.6% 6.0% 4.2% 3.4% 3.2%  
+
+> Original MMLU-Pro
+> 11.2% 10.8% 9.4% 9.2% 8.0% 7.6% 7.0% 6.8% 6.6% 6.6% 6.0% 4.2% 3.4% 3.2%
+> Sampled MMLU-Pro (500)
+> Categories
+> math physics chemistry law engineering other economics health psychology business biology philosophy computer science history
+
+Figure 10: Comparison of category-wise distributions between the original MMLU-Pro dataset and our sam-pled subset (500 instances). Stratified sampling ensures the original proportions are preserved. 
+
+lines. We note that adopting the one-step off-policy approach proposed in AttnRL (Liu et al., 2025a) can marginally mitigate this latency. Table 10 pro-vides a detailed breakdown of the per-step runtime of DATPO by computational component. 
+
+F.4 Generalization to Out-Of-Domain Tasks 
+
+To investigate whether the models trained on math-ematical reasoning datasets can lead to improve-ments in reasoning performance across other do-mains, we additionally conduct out-of-domain eval-uations using GPQA-Diamond (Rein et al., 2023) and MMLU-Pro (Wang et al., 2024). For MMLU-Pro, we applied stratified sampling to evaluate on a subset of 500 instances, preserving the original proportional distribution across categories such as math, physics, chemistry, engineering, law, and economics. A comparison of the category-wise distributions between the original and sampled datasets is provided in Figure 10. We evaluate the models trained with each method using two base models, Qwen2.5-3B-Base and Qwen3-4B-Base, and report the avg@8 metric for both benchmarks. Table 11 presents the results of the out-of-domain evaluation. Overall, DATPO demon-strates consistent performance across both the GPQA-Diamond and MMLU-Pro datasets. Specifi-cally, compared to the strongest baselines, DATPO achieves a +2.4 percentage point improvement on Method GPQA-Diamond MMLU-Pro Qwen2.5-3B-Base                         
+
+> Base 21.1 18.4 GRPO 25.3 32.6 Dr.GRPO 26.1 31.2 TreeRL 25.3 33.1 AttnRL 25.9 33.2
+> DATPO (Ours) 28.5 33.1
+> Qwen3-4B-Base
+> Base 24.2 34.8 GRPO 35.9 55.9 Dr.GRPO 38.2 57.3 TreeRL 36.7 55.6 AttnRL 38.4 56.6 DATPO (Ours) 39.6 57.7
+
+Table 11: Out-of-domain evaluation results. We report avg@8 accuracy for each dataset. 
+
+GPQA-Diamond and a marginal -0.1 point dif-ference on MMLU-Pro using the Qwen2.5-3B-Base model. When applied to the Qwen3-4B-Base model, it yields consistent improvements of +1.2 and +0.4 percentage points on the respective benchmarks. These results demonstrate that the enhancements in reasoning capacity observed on in-domain mathematical benchmarks successfully generalize to improved reasoning performance on out-of-domain tasks. 
+
+F.5 Further Ablation Studies Effect of Difficulty-Adaptive Rollout While Section 4.2 indirectly demonstrates the benefits of our approach against non-adaptive baselines (e.g., TreeRL), we conduct this ablation to explicitly iso-late the impact of the difficulty-adaptive mecha-nism by evaluating a static, non-adaptive variant of DATPO. Applying our default tree-expansion parameters of (N, K max , B max ) = (4 , 3, 4) to a static rollout would significantly increase the over-all training budget. Therefore, to maintain a token consumption comparable to our adaptive frame-work, we restrict the tree-expansion parameters of this non-adaptive variant to a narrower configura-tion of (N, K, B ) = (6 , 2, 2) .As reported in Table 12, the full DATPO frame-work outperforms the non-adaptive variant in both avg@ k and pass@ k. The lower pass@ k of the non-adaptive model aligns with our empirical anal-ysis in Section 2.1: uniformly expanding the roll-out budget across all problems, regardless of their difficulty, can lead to a decrease in pass@ k. Fur-thermore, the absence of difficulty adaptation also degrades avg@ k. We attribute this to a compound-              
+
+> Benchmark DATPO w/o DATPO difficulty-adaptive
+> MATH500 62.9 / 81.0 63.5 / 81.7 AIME26 2.6 / 21.1 2.4 / 33.3 AIME25 1.7 / 25.6 1.6 / 33.3 AIME24 5.4 / 31.1 4.8 / 35.6 AMC23 37.0 / 90.0 39.8 / 90.8
+> Average 21.9 / 49.8 22.4 / 54.9
+
+Table 12: Ablation study on difficulty-adaptive rollout. Results are reported as avg@8 / pass@8 for MATH500 and avg@64 / pass@64 for all other benchmarks. 100 200 300 400 500 600 700   
+
+> Training Step
+> 15 20 25 30 35 40
+> pass@k (%)
+> α= 0
+> α: 0.2 → 0 (DATPO)
+
+Figure 11: pass@64 on AIME26 across training check-points under different diversity-coefficient schedules. 
+
+ing effect during training: the restricted reasoning coverage artificially limits the variety of valid rea-soning paths discovered, which consequently un-dermines the effectiveness of the annealed sibling-diversity term that relies on a rich, diverse set of trajectories to properly optimize the policy. 
+
+Training Dynamics of the Diversity-Augmented Advantage. Table 4 reports the effect of the di-versity coefficient only at the final checkpoint. To examine how the diversity-augmented advantage affects reasoning coverage throughout training, we additionally evaluate pass@64 on AIME26 at 100-step intervals. We compare training without the diversity term ( α = 0 ) against DATPO with the default linearly annealed schedule ( α : 0 .2 → 0). Each result is averaged over three independent eval-uation runs and reported as the mean ± standard deviation. As shown in Figure 11, without the diversity term, pass@64 peaks at 30 .0% at step 200 and de-creases to 25 .6% by step 700. In contrast, DATPO exhibits an overall upward trend after the initial training stage and reaches 33 .3% at step 700. These results suggest that the diversity-augmented advan-tage mitigates the early saturation of reasoning cov-Embedding Size MATH500 avg@8 pass@8                            
+
+> all-mpnet-base-v2 110M 62.9 81.9
+> bge-m3 560M 61.6 81.7
+> gte-base-en-v1.5 137M 63.4 81.9
+> gte-large-en-v1.5 434M 63.5 81.7
+> Table 13: Ablation study on different embedding mod-els.
+> Method Avg. Tokens MATH500 avg@8 pass@8
+> TreeRL (4,3,4) 17,766.0 62.5 81.3 AttnRL (4,3,4) 12,478.7 62.1 80.0 DATPO 8,952.4 63.5 81.7
+> Table 14: Performance of baselines under wider tree topology. Avg. Tokens denotes the average number of generated tokens per question during training. The values in parentheses specify the tree expansion hyper-parameters (N, K, B ).
+
+erage and promotes its continued expansion during training. 
+
+Effect of Embedding Models As noted in Appendix F.2, DATPO defaults to using 
+
+gte-large-en-v1.5 to compute the block-level sibling-diversity term (Div sib ). To assess the sensitivity of our framework to the choice of the embedding model, we conduct an additional abla-tion study comparing it against three alternative models of varying scales: all-mpnet-base-v2 
+
+(Reimers and Gurevych, 2019), bge-m3 (Chen et al., 2024), and gte-base-en-v1.5 (Zhang et al., 2024). As reported in Table 13, while the 434M-parameter gte-large-en-v1.5 model achieves the highest avg@8 accuracy (63.5%), smaller archi-tectures such as all-mpnet-base-v2 (110M) and 
+
+gte-base-en-v1.5 (137M) also yield highly com-petitive performance, even marginally outperform-ing the default configuration in pass@8 (81.9%). These results demonstrate that DATPO is robust to the scale and specific choice of the underlying em-bedding model. Consequently, the effectiveness of our diversity-augmented advantage appears to stem primarily from capturing stable, relative semantic distance signals among sibling blocks, rather than relying strictly on the absolute capacity or size of the embedding model itself. 
+
+F.6 Performance of Baselines under Wider Tree Topology 
+
+As detailed in Appendix F.2, the tree-based base-line methods (TreeRL and AttnRL) were eval-uated using the default tree expansion hyperpa-rameters reported in their original papers, specif-ically (N, K, B ) = (6 , 2, 2) for TreeRL and 
+
+(N, K max , B max ) = (6 , 2, 2) for AttnRL. In con-trast, our proposed DATPO utilized a wider branch-ing configuration of (N, K max , B max ) = (4 , 3, 4) 
+
+to ensure a sufficient number of branch rollouts for computing the sibling-diversity term. Although we rigorously constrained the total number of gener-ated tokens to be comparable across all methods in our main experiments (Appendix F.3), one might ar-gue that DATPO’s performance gains simply stem from this wider tree topology ( B = 4 ) rather than its algorithmic design. To isolate the impact of our algorithmic design, we conduct an additional experiment where both TreeRL and AttnRL are trained using the identical wider configuration of (4 , 3, 4) (or (4 , 3, 4) maxi-mum limits for AttnRL). As reported in Table 14, forcing the baselines into this wider topology does not improve their overall performance. We observe three key find-ings: First, our proposed DATPO achieves the high-est performance in both avg@8 and pass@8 while generating the fewest average tokens per problem during training. Second, compared to their origi-nal (6 , 2, 2) configurations (as reported in Table 2), both TreeRL and AttnRL experience performance degradation in some metrics when scaled to the 
+
+(4 , 3, 4) topology. Taken together, these results con-firm that the superiority of our framework is driven by the algorithmic improvements of the difficulty-adaptive rollout and diversity-guided exploration, rather than merely relying on wider tree expansion hyperparameters. 
+
+G Further Related Works 
+
+G.1 Tree-based Search in Reinforcement Learning 
+
+Tree-based search, famously successful in rein-forcement learning milestones like AlphaGo (Sil-ver et al., 2016), is now being adapted to the genera-tive landscape of LLMs to unlock more systematic exploration. TreeRL (Hou et al., 2025) pioneers this with an on-policy framework using entropy-guided branching. To address computational bot-tlenecks, AttnRL (Liu et al., 2025a) improves effi-ciency by leveraging difficulty-aware adaptive sam-pling within a one-step off-policy pipeline. Recent research optimizes structural efficiency: TEMPO (Tran et al., 2025) leverages prefix-tree structure for branch-aware credit assignment, while TreePO (Li et al., 2025a) maximizes KV-cache reuse. To prevent paths from collapsing into homogeneous reasoning, LATR (Xing et al., 2025) explicitly maximizes trajectory-level diversity by dynami-cally branching and pruning semantically redun-dant paths via lookahead simulation. Furthermore, TreeAdv (Cao et al., 2026) refines credit assign-ment by combining an entropy-based branching method with a tree-structured advantage redistri-bution. While these methods primarily utilize tree structures for credit assignment or computational efficiency, our work leverages tree structures with the primary goal of expanding the model’s reason-ing coverage. 
+
+H Use of AI assistants 
+
+AI assistants were utilized for code implementa-tion and for refining the linguistic presentation of the manuscript. All AI-generated outputs were carefully reviewed, modified, and validated by the authors.

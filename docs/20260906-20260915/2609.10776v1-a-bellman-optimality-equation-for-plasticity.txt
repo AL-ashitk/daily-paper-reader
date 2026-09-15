@@ -1,0 +1,641 @@
+Title: A Bellman Optimality Equation for Plasticity
+
+URL Source: https://arxiv.org/pdf/2609.10776v1
+
+Published Time: Fri, 11 Sep 2026 00:12:12 GMT
+
+Number of Pages: 12
+
+Markdown Content:
+A Bellman Optimality Equation for Plasticity 
+
+# A Bellman Optimality Equation for Plasticity 
+
+Jeremy Lucas 1, Doina Precup 1
+
+jeremy.lucas@mila.quebec, precupdo@mila.quebec 
+
+> 1
+
+Mila – Quebec Artificial Intelligence Institute Montreal, Quebec, Canada 
+
+Abstract 
+
+In continual reinforcement learning, carefully managing the stability-plasticity tradeoff remains a core challenge. Recent work by Abel et al. (2025) formalized this dilemma by defining plasticity as the generalized directed information from an agent’s obser-vations to its actions, and empowerment as the generalized directed information from its actions to its observations. This formulation successfully reframes the traditional stability-plasticity tradeoff as an empowerment-plasticity tradeoff. However, while ex-tensive literature exists on optimizing for empowerment, there is currently no research addressing the optimization of plasticity under this new definition. This paper presents preliminary work toward optimizing plasticity within Markov decision processes. We show that there exists a Bellman optimality equation for optimizing plasticity similar to previous work for empowerment. 
+
+1 Introduction 
+
+Conceptually, empowerment is interpreted as an agent’s ability to control its future, whereas plas-ticity represents its capacity to remain malleable by the environment. Recently, Abel et al. (2025) connected these two domains by formalizing plasticity as the mirror of empowerment. While em-powerment describes controllability by maximizing the information flowing from an agent’s actions to its subsequent observations, Abel et al. (2025) defined plasticity as the information flowing in the opposite direction. They theorize that designing robust continual learning agents requires maintain-ing both empowerment and plasticity above critical thresholds, and this claim is the motivation for this work. To build algorithms that address this claim, both empowerment and plasticity must be actively op-timized and controlled. The literature presents numerous methods for maximizing empowerment, ranging from its introduction by Klyubin et al. (2005) to the Bellman formulation of Leibfried et al. (2019) and the deep variational approaches of Mohamed & Rezende (2015). However, plasticity optimization remains unexplored. Plasticity has primarily been studied through the lens of loss of plasticity in deep architectures (Lyle et al., 2023; Dohare et al., 2024), and is often addressed using architectural or training methods (Dohare et al., 2021). Consequently, no existing work has formal-ized the direct optimization of the new information-theoretic definition. In this paper, we bridge this gap by deriving a Bellman optimality equation for plasticity. The remainder of this paper is structured as follows: Section 2 establishes the necessary mathemati-cal preliminaries; Section 3 details the formal derivation of our Bellman optimality equation; Section 4 introduces our benchmark environment; and Section 5 presents empirical evaluations across both the benchmark and two scaled-up environments. arXiv:2609.10776v1 [cs.LG] 9 Sep 2026 Continual Reinforcement Learning Workshop at Reinforcement Learning Conference 2026 
+
+2 Background 
+
+2.1 Empowerment and Plasticity via Directed Information 
+
+From Klyubin et al. (2005) the formal definition of empowerment is the channel capacity between an agent’s action channel and the next state that follows these actions. 
+
+Et(St) = max   
+
+> p(Ant)
+
+I(Ant ; St+n | St) (1) This requires an agent with an open loop system that can produce and execute n actions every state. Capdepuy (2011) extended this framework by incorporating a feedback loop. They redefined empowerment as the directed information from the agent’s actions to its subsequent observations. 
+
+I(ANt → ONt+1 ) =  
+
+> N−1
+
+X
+
+> n=0
+
+I(An+1  
+
+> t
+
+; Ot+1+ n | Ont+1 ) (2) More recently, Abel et al. (2025) built off of the definition and ideas from Capdepuy (2011) and defined empowerment through general directed information. They define the empowerment of an agent architecture Λ within an environment e relative to an action window [a : b] and observation window [c : d] as: 
+
+Ea:bc:d(Λ , e ) ≜ max  
+
+> λ∈Λ
+
+I(Aa:b → Oc:d) (3) Similar to empowerment, Abel et al. (2025) define the plasticity of an agent λ within a set of envi-ronments E relative to an observation window [a : b] and action window [c : d] as: 
+
+Ba:bc:d(λ, E) ≜ max  
+
+> e∈E
+
+I(Oa:b → Ac:d) (4) In this paper we are interested in their definition with a single agent λ interaction with a specific environment e.
+
+2.2 Value-Based Information Maximization 
+
+While directed information provides a complete formalism to analyze these concepts, it is very diffi-cult to optimize directly in Markov decision processes. Value based methods proposed in Leibfried et al. (2019); Tiomkin & Tishby (2018) formulate generalized Bellman equations to make the op-timization for empowerment tractable. Leibfried et al. (2019) introduced a unified framework for the maximization of reward and empowerment. They introduce two parameters to control focus on reward versus empowerment. They define an empowerment Bellman optimality equation given as the following: 
+
+V ∗(s) = max  
+
+> πbehave ,q
+
+Ea∼πbehave (·| s)
+
+
+
+αR (s, a ) + Es′∼P (·| s,a )
+
+
+
+β log 
+
+ q(a | s′, s )
+
+πbehave (a | s)
+
+
+
++ γV ∗(s′)
+
+ 
+
+(5) We can now develop a Bellman optimality equation for plasticity similar to this formulation. We focus on the scenario where there are no external rewards (or α is set to 0) to isolate and examine the information-theoretic value of plasticity and the resulting policies without the influence of external rewards. A Bellman Optimality Equation for Plasticity 
+
+3 The Bellman Optimality Equation for Plasticity 
+
+3.1 Plasticity and Empowerment Value Channels 
+
+In Leibfried et al. (2019), they create a value function that isolates the present and future information. Given St, they use I(At, S t+1 | St) as the step reward and V (St+1 ) as the future reward which looks like the following.      
+
+> I(At;St+1 |St)γV (St+1 )
+
+St St+1 St+2 . . . St+n
+
+At At+1 At+2 At+n−1
+
+In this paper we formulate the equivalent counterpart for plasticity. We use the step reward 
+
+I(St+1 , A t+1 |St, A t) and the future context V (St+1 , A t+1 ) as the future value.      
+
+> I(St+1 ;At+1 |St, A t)γV (St+1 , A t+1 )
+
+St St+1 St+2 . . . St+n
+
+At At+1 At+2 At+n−1
+
+3.2 The Bellman Optimality Equation Definition 
+
+We now introduce the Bellman optimality equation for plasticity. We establish its theoretical foun-dations by proving that the associated Bellman operator is a contraction, with the full proof deferred to Appendix A. 
+
+V ∗(st−1, a t−1) = max  
+
+> π∈Π( st−1,a t−1)
+
+E
+
+> st∼p
+
+
+
+E
+
+> at∼π
+
+
+
+log π(at | st−1, a t−1, s t)
+
+q(at | st−1, a t−1) + γV ∗(st, a t)
+
+ 
+
+(6) Here, Π( st−1, a t−1) denotes the set of policies that match the current policy everywhere except for the non-zero values of p(· | st−1, a t−1). The q marginal is defined below: 
+
+q(at | st−1, a t−1) = X
+
+> st
+
+p(st | st−1, a t−1) · π(at | st−1, a t−1, s t) (7) To apply this Bellman value function in a tabular learning setting, the policy must be augmented with the historical state and action. For each history context, the action distributions for all next states st that can arise from p(st | st−1, a t−1) must be optimized jointly due to the coupling from the q marginal. A tractable computation for this is described below. 
+
+3.3 Algorithm Optimization 
+
+The Bellman operator can be restricted to deterministic policies, as proven in the appendix. There-fore, the search set for each history context consists of the max over the distinct combinations of deterministic action distributions. This requires searching through |A||S| combinations, where |A|
+
+is the number of actions and |S| is the number of distinct states arising from each history context. This search space becomes rapidly intractable and a further optimization must be made. Continual Reinforcement Learning Workshop at Reinforcement Learning Conference 2026 
+
+3.4 Multi-Weight Knapsack Dynamic Programming 
+
+Because the marginal distribution q(at | st−1, a t−1) is shared, the action choices across all next-states st are coupled and cannot be optimized individually. However, this joint search space can be significantly reduced by framing the optimization as a Multi-Weight Knapsack problem. In this formulation, each next-state st acts as an item for which we must select exactly one action at.Choosing action at contributes a "weight" equal to the transition probability p(st | st−1, a t−1) to the corresponding coordinate of the q marginal, while yielding a linear future value of γV (st, a t). The dimensions of our knapsack track the accumulated weight distribution across the action space. By using dynamic programming, we track identical accumulated weight states across action-selection paths, allowing us to prune suboptimal combinations and stop redundant computation. 
+
+Algorithm 1: Tabular Value Iteration for Plasticity 
+
+Input: State space S, Action space A, transition probabilities p(st | st−1, a t−1), discount factor γ, convergence threshold θ > 0
+
+Output: Optimal value function V ∗(s, a ) and optimal policy π∗(at | st−1, a t−1, s t) 
+
+> 1
+
+Initialize V (s, a ) ← 0 for all (s, a ) ∈ S × A  
+
+> 2
+
+Initialize π(at | st−1, a t−1, s t) ← 1(at = a∗) where a∗ ∼ U (A), for all 
+
+(st−1, a t−1, s t, a t) ∈ S × A × S × A  
+
+> 3
+
+repeat  
+
+> 4
+
+∆ ← 0 
+
+> 5
+
+foreach (st−1, a t−1) ∈ S × A do  
+
+> 6
+
+v ← V (st−1, a t−1) 
+
+> 7
+
+V (st−1, a t−1), π ∗(· | st−1, a t−1, ·) ← Solve Multi-Weight Knapsack DP (π, V, p, γ ) 
+
+> 8
+
+∆ ← max(∆ , |v − V (st−1, a t−1)|) 
+
+> 9
+
+end  
+
+> 10
+
+until ∆ < θ 
+
+4 The Plasticity-Empowerment Landscape 
+
+To build intuition regarding the dynamics of plasticity and empowerment, we introduce a minimal benchmark environment designed to isolate unique policy interactions between the two metrics. The simplest architecture identified that retains a rich, non-trivial plasticity-empowerment landscape is the Markov Decision Process illustrated in Figure 1. 
+
+S0 S1a0,1 : 0 .5
+
+a0,1 : 0 .5
+
+a0 : 1 .0 a1 : 1 .0
+
+Figure 1: The Control-Gated MDP Benchmark. We designate this environment as the Control-Gated MDP . Despite its minimal size, it exhibits several compelling properties for analysis: 1. Computational Efficiency: Consisting of only two states and two actions, it allows for exact, rapid numerical optimization and complete policy enumeration. 2. Asymmetric Controllability: It features a highly empowering state ( S1) alongside a non-empowering state ( S0). By grid-searching across all valid stochastic policies π(a | s) at a granularity of 0.01 , we map the discretized, empirical plasticity-empowerment rate landscape shown in Figure 2. The plasticity and empowerment is a measure of total directed information from states to actions and vice-versa for A Bellman Optimality Equation for Plasticity 
+
+the given policy and environment. Although both metrics are dependent on the environment, the maximum information rate (in bits) for plasticity is bounded by log 2 |A| while for empowerment it is bounded by log 2 |S|.
+
+Figure 2: The empirical plasticity-empowerment frontier mapped via policy enumeration. The plasticity-maximizing policy π∗ 
+
+> plastic
+
+selects actions deterministically, with π∗
+
+> plastic
+
+(1 | 0) = 1 
+
+and π∗
+
+> plastic
+
+(0 | 1) = 1 . Conversely, the empowerment-maximizing policy π∗ 
+
+> empower
+
+exhibits more distributed behavior: it acts uniformly in state 0, yielding π∗
+
+> empower
+
+(a | 0) = 12 for a ∈ { 0, 1}, while in state 1 it selects actions with probabilities π∗
+
+> empower
+
+(0 | 1) = 13 and π∗
+
+> empower
+
+(1 | 1) = 23 . Visually, this divergence is reflected in the policy landscape: highly plastic policies occupy the blue regions of the plot, whereas empowering policies are characterized by a mixture of blue and red regions. 
+
+5 Experiments 
+
+5.1 Control-Gated MDP 
+
+We evaluate our Bellman optimality equation in the Control-Gated MDP. We record each history context value and the current plasticity and empowerment at each iteration. 0 20 40 60 80 100      
+
+> Outer Iterations
+> 012345
+> Value Score (Mean ± STD)
+> Mean Value Convergence over 100 Trials
+> V: (0,0), (0,1), None V: (1,0) V: (1,1)
+> 020 40 60 80 100
+> Outer Iterations
+> 0.0 0.2 0.4 0.6 0.8 1.0
+> Bits (Mean ± STD)
+> Mean Plasticity and Empowerment over 100 Trials
+> Plasticity Empowerment
+
+Figure 3: Results from the Control-Gated MDP Benchmark From our results, it is clear that the value iteration is monotonically non-decreasing and converges to the optimal value function across all history contexts. Intuitively, the history contexts with de-Continual Reinforcement Learning Workshop at Reinforcement Learning Conference 2026 
+
+terministic transitions, (1 , 0) and (1 , 1) , yield the lowest values. Among these, (1 , 1) results in the minimum value because it transitions back to state 1, where the agent again faces low-value prospects, while (1 , 0) leads to state 0.The empowerment and plasticity results show that the policy ultimately converges to approximately 
+
+0.92 bits of plasticity and 0 bits of empowerment. The non-zero standard deviation observed in the early iterations is a consequence of the random selection among multiple optimal policies that share the same value but vary in their total plasticity. This highlights the discrepancy between our Bellman optimality equation and the directed information definition of plasticity. 
+
+5.2 Road Environment 
+
+The Road Environment consists of 5 states {− 2, −1, 0, 1, 2}, signifying the five lanes of a road, and 3 actions {− 1, 0, 1}, describing the directions the agent can turn. At each step, the agent selects an action and the environmental wind is sampled uniformly from {− 1, 0, 1}. The agent’s action and the wind are added together to determine the next state of the agent. The transition dynamics are bounded such that neither the agent’s action nor the wind can cause the agent to leave the road. The agent starts in a random lane. Lanes (States) Time / Step Progression       
+
+> Lane 0 Lane 1 Lane 2 Lane 3 Lane 4
+> Action (a= +1 )Wind (w= +1 )
+> Road Environment Dynamics
+> Agent (t) Agent (t+1)
+
+Figure 4: Road Environment 0 20 40 60 80 100      
+
+> Outer Iterations
+> 0246810
+> Value Score (Mean ± STD)
+> Mean Value Convergence over 100 Trials
+> V: (0,0), (4,2) V: (0,1), (1,0), (3,2), (4,1) V: (0,2), (1,1), (1,2), (2,0), (2,1), (2,2), (3,0), (3,1), (4,0) V: None
+> 020 40 60 80 100
+> Outer Iterations
+> 0.00 0.25 0.50 0.75 1.00 1.25 1.50
+> Bits (Mean ± STD)
+> Mean Plasticity and Empowerment over 100 Trials
+> Plasticity Empowerment
+
+Figure 5: Results from Road Environment From these results, attempting to leave the road—corresponding to history contexts (0 , 0) and 
+
+(4 , 2) —yields the least amount of value. This is followed by staying straight in the outer lanes, 
+
+(0 , 1) and (4 , 1) , along with moving to the outside from the second inner lanes, (1 , 0) and (3 , 2) .Interestingly, the initial "None" history, where no steps have yet occurred, exhibits a very slightly less plastic value than the inner dynamics of the environment. A Bellman Optimality Equation for Plasticity 
+
+5.3 Two-Room Environment 
+
+This final environment is a 5 × 7 gridworld containing 35 states and a 4-directional action space, consisting of two distinct rooms. The first room is fully noisy, where all actions result in a transition to a random state within that same room. The second room is fully deterministic, allowing the agent to navigate freely. At the beginning of the episode, the agent must choose which bridge to cross to enter its respective room. If the agent fails to cross a bridge, they fall into a river that continuously flows downward toward the bottom of the grid, where the episode terminates. While the agent is in the river, all state transitions are completely deterministic, and the agent’s actions have no effect on their downward flow. 0 20 40 60 80 100 
+
+> Outer Iterations
+> 0246810 12 14
+> Value Score (Mean ± STD)
+
+Mean Value Convergence over 10 Trials      
+
+> V: (0,0), (0,3), (5,0) ... (+3 more) V: (0,1), (1,0), (1,1) ... (+67 more) V: (0,2), (5,3), (10,0) V: (2,0), (2,1), (2,2) ... (+33 more) V: (5,1) V: (10,2), (15,3), (20,0) ... (+1 more) V: (15,2), (20,3), (25,0) V: (20,2), (25,3), (30,0) V: (25,2), (30,2), (30,3)
+> 020 40 60 80 100
+> Outer Iterations
+> 0.00 0.25 0.50 0.75 1.00 1.25 1.50 1.75 2.00
+> Bits (Mean ± STD)
+
+Mean Plasticity and Empowerment over 10 Trials 
+
+> Plasticity Empowerment
+
+Figure 6: Results from the Two-Room Environment 0 1 2 3 40123456                            
+
+> S_0 S_1 S_2 S_3 S_4 S_5 S_6 S_7 S_8 S_9 S_10 S_11 S_12 S_13 S_14 S_15 S_16 S_17 S_18 S_19 S_20 S_21 S_22 S_23 S_24 S_25 S_26 S_27 S_28 S_29 S_30 S_31 S_32 S_33 S_34
+> Simulation of 10 Environment Trajectories
+> River Walls Noise Zone Empowerment Bridges
+
+Figure 7: Policy Simulation in the Two-Room Environment In this gridworld environment, there are too many history contexts to analyze individually, but the policy simulation clearly demonstrates that the agent navigates toward the bridge to the noisy room to capture the maximum plastic value. 
+
+6 Future Work 
+
+A natural progression is to develop an online, sample-based algorithm to scale effectively to contin-uous, high-dimensional environments by parameterizing the policy and value function with deep Continual Reinforcement Learning Workshop at Reinforcement Learning Conference 2026 
+
+neural networks. Finally, this framework can be integrated alongside existing empowerment-maximization algorithms which will open the door to agents that can dynamically balance plasticity, empowerment, and external reward during continual learning. 
+
+Broader Impact Statement 
+
+This work introduces a foundational Bellman optimality equation focused on maximizing an agent’s plasticity in Markov decision processes. Because it operates at a fundamental algorithmic level, it does not carry immediate negative societal impacts or direct applications to sensitive domains. 
+
+Acknowledgements 
+
+We would like to thank Zihan Wang for inspiration for the Road Environment. 
+
+References 
+
+David Abel, Michael Bowling, André Barreto, Will Dabney, Shi Dong, Steven Hansen, Anna Haru-tyunyan, Khimya Khetarpal, Clare Lyle, Razvan Pascanu, Georgios Piliouras, Doina Precup, Jonathan Richens, Mark Rowland, Tom Schaul, and Satinder Singh. Plasticity as the mirror of empowerment. arXiv preprint arXiv:2505.10361 , 2025. Philippe Capdepuy. Informational Principles of Perception-Action Loops and Collective Be-haviours . PhD thesis, University of Hertfordshire, 2011. Shibhansh Dohare, Richard S. Sutton, and A. Rupam Mahmood. Continual backprop: Stochastic gradient descent with persistent randomness. arXiv preprint arXiv:2108.06325 , 2021. Shibhansh Dohare, J. Fernando Hernandez-Garcia, Qingfeng Lan, Parash Rahman, A. Rupam Mah-mood, and Richard S. Sutton. Loss of plasticity in deep continual learning. Nature , 632(8026): 768–774, 2024. DOI: 10.1038/s41586-024-07711-7. Alexander S. Klyubin, Daniel Polani, and Chrystopher L. Nehaniv. Empowerment: A universal agent-centric measure of control. In Proceedings of the IEEE Congress on Evolutionary Compu-tation , volume 1, pp. 214–221. IEEE, 2005. Felix Leibfried, Sergio Pascual-Díaz, and Jordi Grau-Moya. A unified Bellman optimality prin-ciple combining reward maximization and empowerment. In Advances in Neural Information Processing Systems , volume 32, pp. 7867–7878, 2019. Clare Lyle, Zeyu Zheng, Evgenii Nikishin, Bernardo Avila Pires, Razvan Pascanu, and Will Dabney. Understanding plasticity in neural networks. In International Conference on Machine Learning ,pp. 23193–23211. PMLR, 2023. Shakir Mohamed and Danilo Jimenez Rezende. Variational information maximisation for intrinsi-cally motivated reinforcement learning. In Advances in Neural Information Processing Systems ,volume 28, pp. 2125–2133, 2015. Stas Tiomkin and Naftali Tishby. A unified bellman equation for causal information and value in markov decision processes. arXiv preprint arXiv:1703.01585 , 2018. A Bellman Optimality Equation for Plasticity 
+
+A Proofs and Theoretical Derivations 
+
+A.1 Contraction Mapping Property of the Bellman Operator 
+
+Let V be the Banach space of bounded, real-valued functions mapping from history state-action space to R. The supremum norm ∥ · ∥ ∞ is defined for any V ∈ V , ∥V ∥∞ = sup s,a |V (s, a )|. Let 
+
+γ ∈ (0 , 1) be the discount factor. We define the Bellman operator T : V → V associated with the value function as: 
+
+(T V )( st−1, a t−1) = max  
+
+> π∈Π( st−1,a t−1)
+
+E
+
+> st∼p
+
+
+
+E
+
+> at∼π
+
+
+
+log π(at | st−1, a t−1, s t)
+
+q(at | st−1, a t−1) + γV (st, a t)
+
+ 
+
+(8) 
+
+Theorem A.1. The operator T is a γ-contraction mapping under the supremum norm, i.e., for any 
+
+V1, V 2 ∈ V :
+
+∥T V 1 − T V 2∥∞ ≤ γ∥V1 − V2∥∞ (9) 
+
+Proof. Let V1, V 2 ∈ V be two arbitrary value functions. For any state-action context (st−1, a t−1),we evaluate the absolute difference |(T V 1)( st−1, a t−1) − (T V 2)( st−1, a t−1)|.Using the algebraic property of the maximum, | max x f (x) − max x g(x)| ≤ max x |f (x) − g(x)|,we can upper-bound the difference as follows: 
+
+(T V 1)( st−1, a t−1) − (T V 2)( st−1, a t−1)
+
+= max  
+
+> π∈Π( st−1,a t−1)
+
+E
+
+> st∼p
+
+
+
+E
+
+> at∼π
+
+
+
+log π(at | st−1, a t−1, s t)
+
+q(at | st−1, a t−1) + γV 1(st, a t)
+
+ 
+
+− max  
+
+> π∈Π( st−1,a t−1)
+
+E
+
+> st∼p
+
+
+
+E
+
+> at∼π
+
+
+
+log π(at | st−1, a t−1, s t)
+
+q(at | st−1, a t−1) + γV 2(st, a t)
+
+ 
+
+≤ max  
+
+> π∈Π( st−1,a t−1)
+
+E
+
+> st∼p
+
+
+
+E
+
+> at∼π
+
+
+
+log π(at | st−1, a t−1, s t)
+
+q(at | st−1, a t−1) + γV 1(st, a t)
+
+ 
+
+− E
+
+> st∼p
+
+
+
+E
+
+> at∼π
+
+
+
+log π(at | st−1, a t−1, s t)
+
+q(at | st−1, a t−1) + γV 2(st, a t)
+
+ 
+
+(10) The identical log terms cancel out within the absolute value: 
+
+|(T V 1)( st−1, a t−1) − (T V 2)( st−1, a t−1)| ≤ max  
+
+> π∈Π( st−1,a t−1)
+
+E
+
+> st∼p
+
+
+
+E
+
+> at∼π
+
+γ V1(st, a t) − V2(st, a t) 
+
+(11) By definition of the supremum norm, |V1(st, a t) − V2(st, a t)| ≤ ∥ V1 − V2∥∞ holds for all (st, a t).
+
+|(T V 1)( st−1, a t−1) − (T V 2)( st−1, a t−1)| ≤ γ max  
+
+> π∈Π( st−1,a t−1)
+
+E
+
+> st∼p
+
+
+
+E 
+
+> at∼π
+
+[∥V1 − V2∥∞]
+
+
+
+(12) Because valid probability distributions integrate to 1, we can pull the norm out of the expectations: 
+
+|(T V 1)( st−1, a t−1) − (T V 2)( st−1, a t−1)| ≤ γ∥V1 − V2∥∞ (13) Continual Reinforcement Learning Workshop at Reinforcement Learning Conference 2026 
+
+Since this upper bound is uniform and independent of the choice of (st−1, a t−1), taking the supre-mum over all state-action contexts on the left-hand side completes the proof: 
+
+∥T V 1 − T V 2∥∞ = sup 
+
+> st−1,a t−1
+
+|(T V 1)( st−1, a t−1) − (T V 2)( st−1, a t−1)| ≤ γ∥V1 − V2∥∞ (14) Given γ ∈ (0 , 1) , the operator T is a γ-contraction mapping. By the Banach Fixed-Point Theorem, 
+
+T possesses a unique fixed point V ∗.
+
+A.2 Limiting the Bellman Operator to Policy Endpoints 
+
+We now show that the optimization domain of the Bellman operator T can be restricted entirely to deterministic policies without altering the operator itself. 
+
+Theorem A.2. For any value function V ∈ V , the objective function inside the Bellman operator optimization problem: 
+
+f (π) = E
+
+> st∼p
+
+
+
+E
+
+> at∼π
+
+
+
+log π(at | st−1, a t−1, s t)
+
+q(at | st−1, a t−1) + γV (st, a t)
+
+ 
+
+(15) 
+
+is convex with respect to π. Consequently, the maximum of f (π) over the convex compact set Π is attained at an extreme point of the policy space, corresponding to a deterministic action selection. Proof. Let V ∈ V be an arbitrary value function. To analyze the convexity of f (π) with respect to 
+
+π, we can expand the inner expectation for a fixed next-state st. For structural clarity, let pi = π(ai |
+
+st−1, a t−1, s t), qi = q(ai | st−1, a t−1), and Vi = γV (st, a i) where i indexes the finite action space 
+
+A.We can rewrite the core objective function as a sum of three distinct components mapping from the probability simplex ∆( A) → R:
+
+ϕ(p) = 
+
+> |A|
+
+X
+
+> i=1
+
+pi log pi −
+
+> |A|
+
+X
+
+> i=1
+
+pi log qi +
+
+> |A|
+
+X
+
+> i=1
+
+piVi (16) We will establish the convexity of ϕ(p) by analyzing each term independently: 
+
+1. Convexity of the negative entropy term: Let g(pi) = pi log pi defined on the domain pi ∈
+
+(0 , 1] . We prove convexity by showing that the second derivative of pi log pi is non-negative for 
+
+pi > 0. Evaluating the first and second derivatives with respect to pi yields: 
+
+g′(pi) = log pi + 1 , and g′′ (pi) = 1
+
+pi
+
+(17) Since pi > 0 for any valid probability vector inside the simplex, the second derivative is strictly positive ( g′′ (pi) > 0). This guarantees that g(pi) is strictly convex. Because the sum of convex functions preserves convexity, the aggregate term P|A|  
+
+> i=1
+
+pi log pi is strictly convex. 
+
+2. Convexity of the cross-entropy baseline term: Let h(pi) = −pi log qi. Because the baseline distribution q is fixed and independent of the optimization policy π, the value − log qi treats itself as a constant coefficient. Taking the derivatives with respect to pi results in: 
+
+h′(pi) = − log qi, and h′′ (pi) = 0 (18) Since the second derivative is zero everywhere, h(pi) is an affine (linear) function. All affine func-tions are convex, implying the sum − P|A|  
+
+> i=1
+
+pi log qi is a convex function of p.A Bellman Optimality Equation for Plasticity 
+
+3. Convexity of the value function expectation term: Similarly, the value function parameters 
+
+Vi are independent of p. The sum P|A|  
+
+> i=1
+
+piVi forms a linear combination of the coordinates of p,which makes it an affine function, and therefore it is inherently convex. In conclusion, because ϕ(p) is a sum consisting of a strictly convex function and two affine func-tions, the entire objective function ϕ(p) is strictly convex across the action distribution vector space. Since the outer expectation Est∼p acts as a linear operator it preserves convexity. Therefore, the global objective function f (π) is convex with respect to π.By Bauer’s Maximum Principle, a convex function optimized over a compact, convex set (the prob-ability simplex ∆( A)) must attain its maximum at one of its extreme points. The extreme points of a probability simplex are the vertices where the entire probability mass is allocated to a single choice: 
+
+π∗(a | st−1, a t−1, s t) = δ(a − a∗) (19) where δ is the Kronecker delta and a∗ ∈ A represents a deterministic action choice. Consequently, limiting the policy search space exclusively to these deterministic endpoints yields an identical value under the operator. Continual Reinforcement Learning Workshop at Reinforcement Learning Conference 2026 
+
+B Experimental Details 
+
+Table 1: Hyperparameter configurations for the Control-Gated MDP, Road Environment and Two-Room Environment. 
+
+Hyperparameter Control-Gated MDP Road Environment Two-Room Environment 
+
+Number of Trials ( T ) 100 100 10 Total Iterations ( N ) 100 100 100 Discount Factor ( γ) 0.9 0.9 0.9 
+
+C Code and Reproducibility 
+
+The complete source code to reproduce all experiments in this paper is publicly available on GitHub at: 
+
+https://github.com/jeremy-lucas-mcgill/ A-Bellman-Optimality-Equation-for-Plasticity

@@ -1,0 +1,585 @@
+{
+  "date": "20260906-20260915",
+  "date_label": "2026-09-06 ~ 2026-09-15",
+  "generated_at": "2026-09-15 08:21:20 UTC",
+  "recommend_exists": true,
+  "run_count": 1,
+  "papers": [
+    {
+      "paper_id": "2609.08802v1",
+      "route": "20260906-20260915/2609.08802v1-graph-based-safe-reinforcement-learning-for-multi-agent-systems-with-time-varying-topology",
+      "title": "Graph-Based Safe Reinforcement Learning for Multi-Agent Systems with Time-Varying Topology",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 10.0,
+      "evidence": "面向时变拓扑的安全多智能体强化学习",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.06421v1",
+      "route": "20260906-20260915/2609.06421v1-on-batchnorm-forward-modes-in-value-based-reinforcement-learning",
+      "title": "On BatchNorm Forward Modes in Value-Based Reinforcement Learning",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "基于价值强化学习中的批归一化前向模式",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.06467v1",
+      "route": "20260906-20260915/2609.06467v1-local-and-global-stability-in-performative-reinforcement-learning",
+      "title": "Local and Global Stability in Performative Reinforcement Learning",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "表演式强化学习的稳定性理论分析",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.06469v1",
+      "route": "20260906-20260915/2609.06469v1-one-step-one-lead-mitigating-higher-order-interference-in-multi-domain-reinforcement-learning-via-cross-step-control",
+      "title": "One Step, One Lead: Mitigating Higher-Order Interference in Multi-Domain Reinforcement Learning via Cross-Step Control",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "多领域强化学习中的高阶干扰缓解",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.07211v1",
+      "route": "20260906-20260915/2609.07211v1-phase-and-first-arrival-vlm-feedback-for-sparse-reward-reinforcement-learning-in-surgical-manipulation",
+      "title": "Phase-and-First-Arrival VLM Feedback for Sparse-Reward Reinforcement Learning in Surgical Manipulation",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "面向手术操作稀疏奖励强化学习的VLM反馈",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.07247v1",
+      "route": "20260906-20260915/2609.07247v1-elastic-horizon-discovering-the-effective-interaction-frontier-in-agentic-reinforcement-learning",
+      "title": "Elastic Horizon: Discovering the Effective Interaction Frontier in Agentic Reinforcement Learning",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "智能体强化学习中的交互视界自适应调度",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.07303v1",
+      "route": "20260906-20260915/2609.07303v1-long-horizon-language-model-reinforcement-learning-via-progressive-point-matching",
+      "title": "Long-Horizon Language Model Reinforcement Learning via Progressive Point Matching",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "面向长时程语言模型强化学习的稠密奖励方法",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.07998v1",
+      "route": "20260906-20260915/2609.07998v1-mini-batch-risk-averse-deep-q-learning-a-robot-navigation-case-study",
+      "title": "Mini-Batch Risk-Averse Deep Q-Learning: A Robot Navigation Case Study",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "面向机器人导航的小批量风险规避深度Q学习",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.08642v1",
+      "route": "20260906-20260915/2609.08642v1-sun-reaching-for-novelty-in-reinforcement-learning",
+      "title": "SUN: Reaching for Novelty in Reinforcement Learning",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "离策略强化学习中的目标条件探索与可证明新颖性奖励",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.08853v1",
+      "route": "20260906-20260915/2609.08853v1-cast-alternating-state-value-targets-and-expanded-policy-gradients-for-model-based-reinforcement-learning",
+      "title": "CAST: Alternating State-Value Targets and Expanded Policy Gradients for Model-Based Reinforcement Learning",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "结合规划器引导价值学习的基于模型强化学习",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.09783v1",
+      "route": "20260906-20260915/2609.09783v1-brace-anchored-bellman-residual-correction-for-stale-critics-in-asynchronous-rl",
+      "title": "BRACE: Anchored Bellman-Residual Correction for Stale Critics in Asynchronous RL",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "面向异步强化学习评论家的锚定贝尔曼残差校正算法",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.09981v1",
+      "route": "20260906-20260915/2609.09981v1-optimal-value-inference-for-reinforcement-learning",
+      "title": "Optimal Value Inference for Reinforcement Learning",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "基于贝尔曼方程的强化学习最优价值离线推断",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.10433v1",
+      "route": "20260906-20260915/2609.10433v1-multi-agent-reinforcement-learning-for-autonomous-uav-exploration-in-wildfire-response",
+      "title": "Multi-Agent Reinforcement Learning for Autonomous UAV Exploration in Wildfire Response",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "面向野火响应的无人机探索多智能体深度强化学习",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.10776v1",
+      "route": "20260906-20260915/2609.10776v1-a-bellman-optimality-equation-for-plasticity",
+      "title": "A Bellman Optimality Equation for Plasticity",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "持续强化学习中可塑性的贝尔曼最优性方程理论",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.10866v1",
+      "route": "20260906-20260915/2609.10866v1-certifying-lower-bounds-for-risk-sensitive-reinforcement-learning-under-adversarial-state-perturbations",
+      "title": "Certifying Lower Bounds for Risk-Sensitive Reinforcement Learning under Adversarial State Perturbations",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "对抗扰动下风险敏感强化学习的认证",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.11615v1",
+      "route": "20260906-20260915/2609.11615v1-distributed-optimization-of-modular-production-systems-using-model-based-reinforcement-learning-with-inverse-models",
+      "title": "Distributed Optimization of Modular Production Systems using Model-based Reinforcement Learning with Inverse Models",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "结合逆模型的模型强化学习",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.11807v1",
+      "route": "20260906-20260915/2609.11807v1-near-optimal-reinforcement-learning-with-multi-step-transition-lookahead",
+      "title": "Near-Optimal Reinforcement Learning with Multi-Step Transition Lookahead",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "带转移前瞻的复杂度理论与近最优规划",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.12014v1",
+      "route": "20260906-20260915/2609.12014v1-certified-safety-curation-distribution-free-guarantees-for-safe-offline-reinforcement-learning",
+      "title": "Certified Safety Curation: Distribution-Free Guarantees for Safe Offline Reinforcement Learning",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "安全离线强化学习与可认证数据筛选",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.12419v1",
+      "route": "20260906-20260915/2609.12419v1-mintrl-off-policy-intervention-can-boost-on-policy-rl",
+      "title": "MInTRL: Off-policy Intervention can boost On-policy RL",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "离策略干预提升在线策略强化学习",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.12424v1",
+      "route": "20260906-20260915/2609.12424v1-granularity-adaptive-credit-assignment-for-long-horizon-llm-agent-reinforcement-learning",
+      "title": "Granularity-Adaptive Credit Assignment for Long-Horizon LLM Agent Reinforcement Learning",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "面向长时程LLM智能体的强化学习与信用分配算法",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.12459v1",
+      "route": "20260906-20260915/2609.12459v1-evors-on-policy-self-evolution-of-reward-systems-for-open-ended-reinforcement-learning",
+      "title": "EvoRS: On-Policy Self-Evolution of Reward Systems for Open-Ended Reinforcement Learning",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "面向开放式强化学习的奖励系统自演化",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.12749v1",
+      "route": "20260906-20260915/2609.12749v1-scq-stabilizing-conservative-q-learning-with-sigmoid-bounded-entropy",
+      "title": "SCQ: Stabilizing Conservative Q-Learning with Sigmoid-Bounded Entropy",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "用Sigmoid有界熵稳定离线到在线强化学习的保守Q学习",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.12905v1",
+      "route": "20260906-20260915/2609.12905v1-offline-reinforcement-learning-for-wind-farm-control-a-wind-tunnel-study-under-dynamic-wind-directions",
+      "title": "Offline Reinforcement Learning for Wind Farm Control: A Wind Tunnel Study under Dynamic Wind Directions",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "面向风电场控制的离线强化学习算法",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.13044v1",
+      "route": "20260906-20260915/2609.13044v1-robust-policy-optimization-via-adversarial-importance-sampling",
+      "title": "Robust Policy Optimization via Adversarial Importance Sampling",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "鲁棒深度强化学习策略优化与评估库",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.13058v1",
+      "route": "20260906-20260915/2609.13058v1-expert-space-exploration-in-moe-reinforcement-learning",
+      "title": "Expert-Space Exploration in MoE Reinforcement Learning",
+      "section": "deep",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 9.0,
+      "evidence": "面向MoE模型的强化学习后训练与专家路由探索",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.07148v1",
+      "route": "20260906-20260915/2609.07148v1-stable-mm-r1-anchoring-multimodal-reasoning-dynamics-via-entropy-guided-stratification",
+      "title": "Stable-MM-R1: Anchoring Multimodal Reasoning Dynamics via Entropy-Guided Stratification",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "稳定强化学习训练的数据中心框架",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.07461v1",
+      "route": "20260906-20260915/2609.07461v1-temporal-causal-inference-for-reinforcement-learning-via-automata-learning",
+      "title": "Temporal-Causal Inference for Reinforcement Learning via Automata Learning",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "结合自动机因果推断的强化学习算法",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.08025v1",
+      "route": "20260906-20260915/2609.08025v1-eliciting-self-verification-in-multimodal-reasoning-agents-with-reinforcement-learning",
+      "title": "Eliciting Self-Verification in Multimodal Reasoning Agents with Reinforcement Learning",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "面向多模态推理智能体的强化学习微调",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.08080v1",
+      "route": "20260906-20260915/2609.08080v1-proactive-context-forecasted-safety-constraints-for-nonstationary-reinforcement-learning",
+      "title": "Proactive Context-Forecasted Safety Constraints for Nonstationary Reinforcement Learning",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "非平稳环境下带主动约束的安全强化学习",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.08211v1",
+      "route": "20260906-20260915/2609.08211v1-a-better-spur-should-start-from-each-objective",
+      "title": "A Better Spur Should Start From Each Objective",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "细粒度偏好优化的多目标强化学习",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.09059v1",
+      "route": "20260906-20260915/2609.09059v1-playtrain-an-efficient-reinforcement-learning-framework-for-llm-generated-adaptable-javascript-games",
+      "title": "PlayTrain: An Efficient Reinforcement Learning Framework for LLM-Generated Adaptable JavaScript Games",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 8.0,
+      "evidence": "强化学习框架与可训练的游戏环境",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.06958v1",
+      "route": "20260906-20260915/2609.06958v1-mind-the-phase-effective-rank-and-representation-health-in-legged-locomotion",
+      "title": "Mind the Phase: Effective Rank and Representation Health in Legged Locomotion",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 7.0,
+      "evidence": "足式运动中深度强化学习策略表示的实证研究",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.07183v1",
+      "route": "20260906-20260915/2609.07183v1-circuitlens-reasoning-circuits-as-data-selection-signals-for-reinforcement-learning-with-verifiable-rewards",
+      "title": "CircuitLens: Reasoning Circuits as Data Selection Signals for Reinforcement Learning with Verifiable Rewards",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 7.0,
+      "evidence": "可验证奖励强化学习的数据选择",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.08650v1",
+      "route": "20260906-20260915/2609.08650v1-difficulty-adaptive-tree-structured-policy-optimization-for-expanding-reasoning-coverage-in-rlvr",
+      "title": "Difficulty-Adaptive Tree-Structured Policy Optimization for Expanding Reasoning Coverage in RLVR",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 7.0,
+      "evidence": "面向RLVR推理覆盖的策略优化算法",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.09764v1",
+      "route": "20260906-20260915/2609.09764v1-socialrl-refining-llms-social-intelligence-through-multi-turn-reinforcement-learning-and-reward-design",
+      "title": "SocialRL: Refining LLMs' Social Intelligence through Multi-turn Reinforcement Learning and Reward Design",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 7.0,
+      "evidence": "多轮强化学习框架与奖励设计",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    },
+    {
+      "paper_id": "2609.06649v1",
+      "route": "20260906-20260915/2609.06649v1-inducing-emergent-misalignment-from-reward-hacks-with-iterative-dpo",
+      "title": "Inducing Emergent Misalignment from Reward Hacks with Iterative DPO",
+      "section": "quick",
+      "tags": [
+        {
+          "kind": "query",
+          "label": "rl"
+        }
+      ],
+      "score": 6.0,
+      "evidence": "强化学习从可验证奖励中的奖励黑客行为",
+      "first_seen_at": "2026-09-15 08:21:20 UTC",
+      "updated_at": "2026-09-15 08:21:20 UTC"
+    }
+  ]
+}

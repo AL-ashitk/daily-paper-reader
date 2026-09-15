@@ -1,0 +1,975 @@
+Title: Elastic Horizon: Discovering the Effective Interaction Frontier in Agentic Reinforcement Learning
+
+URL Source: https://arxiv.org/pdf/2609.07247v1
+
+Published Time: Wed, 09 Sep 2026 02:04:08 GMT
+
+Number of Pages: 17
+
+Markdown Content:
+# Elastic Horizon: Discovering the Effective Interaction Frontier in Agentic Reinforcement Learning 
+
+Gangyi Zhang 1*, Junjie Meng 2*, Letian Zhang 3, Wei Wu 2, Yang Zheng 3,Dong Wang 1†, Yang Liu 1, Guanjun Jiang 1, Chongming Gao 2†1Qwen Business Unit of Alibaba, 2University of Science and Technology of China, 
+
+> 3
+
+Independent Researcher 
+
+> gangyi.cn@gmail.com, mengjre@gmail.com wd443495@alibaba-inc.com, chongming.gao@gmail.com
+
+Abstract 
+
+Scaling the interaction horizon—the max-imum number of environment interactions per episode—improves LLM agents on long-horizon tasks, and curriculum-based methods that progressively expand the horizon outper-form fixed-horizon alternatives. However, ex-isting schedules are open-loop : they monotoni-cally increase the horizon until a manually spec-ified maximum, with no mechanism to detect when further expansion stops helping. We pro-pose the effective interaction frontier hypoth-esis : a dynamic boundary beyond which ad-ditional interactions yield diminishing returns while cost grows linearly. We then introduce 
+
+Elastic Horizon , a closed-loop controller that tracks this boundary via the 90th percentile of successful trajectory lengths. On AppWorld and BFCL, fixed-horizon sweeps reveal clear saturation plateaus; Elastic Horizon stabilizes the horizon inside the saturation band from both under- and over-capacity initializations, attains the best success rates across 7B and 14B back-bones, and saves up to 25% of per-step trajec-tory tokens. Our work shifts the paradigm from 
+
+how to scale interaction horizons to when to stop scaling .
+
+1 Introduction 
+
+In partially observable environments, LLM agents must gather information through multi-turn inter-actions to reduce state uncertainty and complete tasks (Yao et al., 2023; Shinn et al., 2023). Re-cent work demonstrates that scaling the interaction horizon —the maximum number of environment interactions per episode—substantially improves performance on long-horizon agentic tasks. Xi et al. (2025) introduce ScalingInter-RL, a curricu-lum that linearly increases the horizon during train-ing, matching or surpassing commercial models 
+
+> *Equal contribution.
+> †Corresponding authors.
+
+on 27 tasks across diverse environments. Shen et al. (2025) show that a multiplicative schedule outperforms both fixed-horizon training and addi-tive schedules on web navigation benchmarks. Despite their success, these approaches share a fundamental characteristic: they are open-loop monotonically increasing schedules. The horizon grows according to a predetermined function of training steps, continuing until reaching a manu-ally specified maximum Kmax , with no mechanism to assess whether further expansion remains ben-eficial. This design implicitly assumes that per-formance improves monotonically with horizon length. We challenge that assumption in this work. We present evidence that horizon scaling ex-hibits diminishing marginal returns . Figure 1a shows results from fixed-horizon sweep experi-ments on AppWorld (Trivedi et al., 2024): suc-cess rate increases with the interaction budget K in the under-capacity regime, then plateaus around a threshold we term the effective interaction frontier 
+
+H∗. Beyond this point, additional budget produces no systematic improvement while computational cost—proportional to trajectory length—continues to grow linearly. This saturation phenomenon has been observed independently in prior work. Xi et al. (2025) report that RL with a large interaction budget “quickly collapses,” and that beginning with a large number of interaction turns “leads the model into redundant reasoning and unproductive actions.” Liu et al. (2025) find that a ReAct agent “saturates at a budget of 100” tool calls and “fails to utilize additional tool budget, reaching a performance ceiling.” Shen et al. (2025) observe that a fixed long horizon ( h =30 ) leads the agent to expend steps unproductively early in training, degrading performance relative to a shorter horizon. These observations converge on a common in-sight: there exists an effective interaction frontier 
+
+1arXiv:2609.07247v1 [cs.AI] 7 Sep 2026 10 20 30 40 50 60 70 80       
+
+> Maximum Interaction Horizon K
+> 0.2 0.3 0.4 0.5 0.6 0.7
+> AppWorld: Success Rate (%)  H*BFCL H*App
+> Post-H*saturated AppWorld BFCL
+> 0.70 0.72 0.74 0.76 0.78 0.80 0.82
+> BFCL: Success Rate (%)
+
+(a) Fixed-horizon training on AppWorld: success rate im-proves with horizon K until reaching a plateau around the ef-fective frontier H∗ (shaded region), beyond which additional budget yields diminishing returns while cost grows linearly. 0 20 40 60 80 100 120 140  
+
+> Training Step
+> 010 20 30 40 50
+> Horizon  Kt
+> P90( t)
+> Elastic Horizon (Ours) Elastic Horizon (Ours, different initialization) TTI (Exponential Scaling) ScalingInter (Linear Scaling) Converged horizon region
+
+(b) Horizon evolution during training: open-loop schedules (ScalingInter, TTI) increase monotonically toward Kmax =50 , whereas Elastic Horizon stabilizes the horizon inside the saturation band from both low ( K0 = 10 ) and high ( K0 = 50 )initializations. 
+
+Figure 1: Interaction horizon saturation and Elastic Horizon. 
+
+H∗, jointly determined by task complexity and agent capability, beyond which additional interac-tion steps yield diminishing returns. This motivates a fundamental question: can we automatically detect and adapt to this frontier? 
+
+We answer affirmatively with Elastic Horizon ,a closed-loop horizon controller that automatically discovers and tracks H∗ during training. 1 Un-like open-loop schedules that increase the hori-zon based on training progress, Elastic Horizon adjusts based on the agent’s demonstrated capabil-ity , specifically the lengths of trajectories that suc-cessfully complete tasks. It estimates the agent’s competence boundary using the 90th percentile of successful trajectory lengths, a statistic that cap-tures near-maximal capability while filtering outlier noise from inefficient explorations. The controller is bidirectional : expanding when the agent demonstrates capability growth, and con-tracting when approaching the task’s complexity ceiling (Figure 1b). This enables automatic conver-gence to H∗ from arbitrary initializations. Open-loop schedules can only increase the horizon, so they cannot converge from an over-capacity start. Elastic Horizon complements test-time budget-aware methods like BATS (Liu et al., 2025). While BATS optimizes deployment performance by in-jecting budget awareness into prompts, Elastic Horizon optimizes training efficiency by adapting the horizon to demonstrated capability. The two approaches target different phases and can be com-bined. Our contributions are: 
+
+> 1
+
+Code and training configurations are available at https: //github.com/junjie-meng/ElasticHorizon .
+
+• Empirical discovery. We document interaction horizon saturation on AppWorld (Trivedi et al., 2024) and BFCL v3 (Patil et al., 2025), revealing clear plateaus beyond a task-dependent threshold 
+
+H∗ (Section 5.2). • Methodology. We propose Elastic Horizon, the first closed-loop horizon controller for agentic RL. It adapts via percentile-based boundary esti-mation with EMA smoothing, requiring no man-ual schedule (Section 4). • Mechanism validation. Elastic Horizon sta-bilizes the horizon inside the saturation band from both high and low initializations, validating its role as an automatic frontier detector (Sec-tion 5.3). • Practical impact. Elastic Horizon attains the best results across both 7B and 14B backbones while reducing per-step trajectory tokens by up to 25% on AppWorld (Section 5.4). Together, these contributions shift the focus from 
+
+how to scale interaction horizons to when to stop scaling .
+
+2 Related Work 
+
+2.1 Multi-Turn Agent Training and Horizon Scaling 
+
+Training LLM agents for long-horizon tasks presents challenges in stability and sample effi-ciency. Xi et al. (2025) introduce AgentGym-RL and propose ScalingInter-RL—a curriculum that progressively extends interaction horizons during training—finding that fixed large horizons cause training instability while gradual expansion im-2proves performance. Shen et al. (2025) demon-strate that scaling interaction steps outperforms scaling per-step reasoning tokens under fixed com-pute budgets, advocating a multiplicative horizon schedule. Both methods employ open-loop sched-ules where the horizon increases according to pre-determined functions of training steps. Elastic Hori-zon differs by using closed-loop control: the hori-zon adapts based on observed trajectory statistics, enabling automatic convergence to the task’s effec-tive frontier without manual schedule design. Several works address long-horizon challenges through complementary approaches. Zhou et al. (2024) propose ArCHer, combining hierarchical off-policy learning with on-policy token-level opti-mization. Wang et al. (2025) document the “Echo Trap” phenomenon and propose variance-based filtering for stabilization. Qi et al. (2025) intro-duce self-evolving task curricula, and Chen et al. (2025) develop memory-efficient PPO variants. These methods address orthogonal aspects of long-horizon training and can be combined with Elastic Horizon’s adaptive horizon control. 
+
+2.2 Budget-Aware Agents 
+
+A parallel thread addresses resource allocation at inference time. Liu et al. (2025) propose BATS, which injects remaining budget information into prompts and adapts planning strategies based on available resources. Snell et al. (2025) establish that compute-optimal test-time strategies should adaptively allocate resources based on prompt dif-ficulty. Paglieri et al. (2025) learn when to invoke planning versus direct action. Han et al. (2025) dynamically estimate token budgets based on rea-soning complexity. These methods focus on test-time resource opti-mization with explicit budget signals. Elastic Hori-zon operates during training using implicit capa-bility signals (trajectory length distributions). The approaches are complementary: Elastic Horizon optimizes training efficiency, while methods like BATS optimize deployment performance. 
+
+2.3 Curriculum Learning 
+
+Curriculum learning (Bengio et al., 2009) demon-strates that presenting examples from easy to hard improves generalization. Self-paced learning (Ku-mar et al., 2010) extends this by determining dif-ficulty from the learner’s current loss, making the curriculum data-driven. Jiang et al. (2015) unify these approaches, combining prior difficulty knowl-                  
+
+> Table 1: Positioning of Elastic Horizon. †
+> Method Stage Control Signal
+> ScalingInter-RL Train Open-loop Training step TTI Train Open-loop Training step BATS Test Closed-loop Budget count Self-Paced Train Closed-loop Loss value
+> Elastic (Ours) Train Closed-loop Traj. length
+> †Elastic Horizon uses the 90th percentile of successful trajectory lengths; see Section 4.3.
+
+edge with dynamic learner feedback. In reinforce-ment learning, curriculum methods have been ap-plied to task selection (Narvekar et al., 2020), goal generation (Florensa et al., 2018), and start state distributions (Florensa et al., 2017). Elastic Horizon contributes a novel competence signal—the upper percentile of successful trajec-tory lengths—applied to episode horizon length, a previously underexplored curriculum dimension. This signal directly measures demonstrated capa-bility to complete long-horizon tasks, making it particularly suited for agentic RL where trajectory length correlates with task complexity. 
+
+2.4 Scaling Laws 
+
+Scaling laws research establishes that optimal re-source allocation depends on model capacity and task demands. Kaplan et al. (2020) derive power-law relationships between performance and com-pute. Hoffmann et al. (2022) demonstrate that model size and training tokens should scale propor-tionally for compute-optimal training. Hilton et al. (2023) extend these findings to RL, showing that varying the task’s horizon length changes the coef-ficient but not the exponent of the compute-optimal scaling relationship. These principles support Elas-tic Horizon’s premise: interaction horizons should adapt to agent competence rather than follow fixed maximal allocations. Table 1 summarizes Elastic Horizon’s position-ing among related methods. 
+
+3 Preliminaries 
+
+3.1 Multi-Turn Agentic Tasks as POMDPs 
+
+We formalize multi-turn agentic tasks as episodic decision problems with sparse terminal rewards. Following standard practice in agentic RL (Xi et al., 2025; Wang et al., 2025), we adopt a simpli-fied Partially Observable Markov Decision Process (POMDP) formulation: 
+
+M = ( U, S, A, O, T, R ), (1) 3where U is the instruction space specifying task goals, S is the state space (only partially observable to the agent), A is the action space (e.g., tool calls, API requests), O is the observation space (e.g., API responses, environment feedback), T : S × A → ∆( S) is the state transition function, and 
+
+R : S → { 0, 1} is a sparse binary terminal reward indicating task success. The agent’s policy πθ is parameterized by a large language model with parameters θ. Given an in-struction u ∈ U and the interaction history hk =(a1, o 1, . . . , a k−1, o k−1), the policy outputs a dis-tribution over actions: πθ(ak|u, h k). We denote a complete trajectory as τ = ( u, a 1, o 1, . . . , a L, o L),where L(τ ) denotes the trajectory length (number of interaction turns). 
+
+3.2 Success Rate under Horizon Constraints 
+
+Let r(τ ) ∈ { 0, 1} denote the terminal reward of trajectory τ , where r(τ ) = 1 indicates successful task completion. During training, we impose an 
+
+interaction budget (or horizon constraint ) K: a trajectory is forcibly terminated if it reaches K
+
+steps without task completion, receiving r(τ ) = 0 .For a task distribution T , policy πθ, and horizon constraint K, we define the success rate as: SR (K; πθ, T ) = Eu∼T ,τ ∼πθ (·| u,K ) [r(τ )] , (2) where the notation τ ∼ πθ(·| u, K ) indicates that the trajectory is sampled under horizon constraint 
+
+K. The horizon constraint thus defines the maxi-mum number of interaction turns the agent may use per episode, directly affecting both task completion probability and computational cost. 
+
+3.3 Horizon Scheduling in Curriculum Learning 
+
+Existing curriculum-based methods adjust the hori-zon constraint Kt at training step t according to predetermined schedules: 
+
+Linear schedule (Xi et al., 2025): The horizon increases by a fixed amount per training step: 
+
+Kt = min ( Kmin + δ · t, K max ) , (3) where δ > 0 is the increment rate, and Kmin , K max 
+
+are the lower and upper bounds. 
+
+Multiplicative schedule (Shen et al., 2025): The horizon is set to a growing integer multiple of Kmin 
+
+at stage boundaries: 
+
+Kt = min  Kmin ·   t/T stage 
+
+ + 1  , K max 
+
+ ,
+
+(4) where Tstage is the stage duration. Shen et al. (2025) write this as hi = clip( hmin · i, h max ) for iteration 
+
+i, and adopt it over the additive alternative hi =clip( hmin + i, h max ).Both schedules are open-loop : Kt depends solely on the training step t and is independent of the agent’s actual performance or the task distri-bution’s complexity. In contrast, our method adapts 
+
+Kt based on observed trajectory statistics, forming a closed-loop controller. A complete notation summary is provided in Appendix A. 
+
+4 Method 
+
+We define the effective interaction frontier that mo-tivates our design (Section 4.1), derive principled design requirements for a closed-loop controller (Section 4.2), present the capability boundary esti-mation mechanism (Section 4.3), and provide the complete Elastic Horizon algorithm (Section 4.4). 
+
+4.1 The Effective Interaction Frontier 
+
+Open-loop horizon schedules implicitly assume that performance improves monotonically with in-teraction budget. The fixed-horizon sweeps in Sec-tion 5.2 (Figure 3) refute this assumption: success rate plateaus once the interaction budget exceeds a task-dependent threshold, after which additional budget yields no measurable gain in success rate while training compute continues to grow linearly. We call this threshold the effective interaction frontier and denote it H∗(T , θ ), where T is the task distribution and θ the policy parameters. The fron-tier is the operationally relevant boundary: training with K > H ∗ pays the linear cost of additional steps without raising success rate, while training with K < H ∗ caps the agent below its achievable performance. We treat H∗ as an empirical quantity defined by the plateau in Figure 3 rather than intro-ducing further formalism, and design our method to track it. The frontier is dynamic : it depends on both T
+
+and the evolving θ. As the agent improves, H∗ may shift—a more capable agent can solve harder tasks that require longer interaction sequences. This time-varying property is what makes a fixed K
+
+inadequate and motivates a closed-loop controller that re-estimates H∗ throughout training. We do not assume that H∗ is directly observable. Instead, we use the agent’s successful-trajectory length distribution as a behavioral surrogate (Sec-4ROLLOUT   
+
+> 𝜋 𝜃
+> 𝑎 𝑡 𝑜 𝑡 , 𝑟 𝑡
+
+✓ ✓ ✗
+
+> discard failures, keep successes
+
+BUFFER    
+
+> B𝑡
+> successful trajectory lengths
+> 𝑇 1
+> 𝑇 2
+> 𝑇 3
+> ...𝑇 𝑛 −1
+> 𝑇 𝑛
+> FIFO capacity 𝑁 , FIFO eviction
+> ★Novel Module
+
+ELASTIC HORIZON CONTROLLER  
+
+> 1
+
+Capability Estimator      
+
+> ˆB𝑡 =P90 (B 𝑡 )
+> 𝑃 90
+> 2
+
+Headroom Adjustment      
+
+> 𝐾 tgt
+> 𝑡 =ˆB𝑡 +Δ
+> 3
+
+EMA Filter          
+
+> 𝐾 𝑡 +1=(1−𝛼 )𝐾 𝑡 +𝛼𝐾 tgt
+> 𝑡
+> successful 𝑇 𝑖 B𝑡
+> 𝐾 𝑡 +1as next rollout horizon
+
+BIDIRECTIONAL CONVERGENCE         
+
+> Any starting 𝐾 0−→ controller finds 𝐻 ∗
+> 020 40 60
+> 𝐾 𝑡
+> training steps
+> 𝐾 0=50
+> 𝐾 0=10
+
+𝐻 ∗ ≈ 33 Figure 2: Elastic Horizon overview. Successful trajectories from R OLLOUT populate the FIFO B UFFER Bt of trajectory lengths. The E LASTIC HORIZON CONTROLLER (right) maps the buffer to the next horizon in three stages: a percentile capability estimator ˆBt = P90 (Bt), an additive headroom adjustment Ktgt  
+
+> t
+
+= ˆBt + ∆ , and an 
+
+EMA filter Kt+1 = (1 − α) Kt + α K tgt  
+
+> t
+
+. The output Kt+1 feeds back as the next rollout’s horizon (red arrow), forming a closed loop. The bottom panel shows the controller’s key property: bidirectional convergence —from any initialization K0, the horizon settles around the effective frontier H∗.
+
+tion 4.3), and validate empirically (Section 5.3) that the controller’s converged horizon lies within the saturation band identified in Section 5.2. 
+
+4.2 Design Requirements for Closed-Loop Control 
+
+Given the goal of tracking H∗, we identify three design requirements: 
+
+R1: Capability-driven signal. The controller should adjust the horizon based on the agent’s demonstrated capability, not training progress. Open-loop schedules violate this by conditioning on step t rather than performance. 
+
+R2: Robust estimation. The capability sig-nal must be robust to trajectory-level noise (e.g., anomalously long trajectories from inefficient ex-ploration) while remaining sensitive to genuine ca-pability changes. 
+
+R3: Bidirectional adaptation. The con-troller must expand the horizon when capability grows and contract when approaching saturation. Monotonic-only schedules cannot converge to H∗
+
+from above. Elastic Horizon satisfies these requirements through: (R1) using successful trajectory lengths as the capability signal; (R2) employing percentile-based estimation with smoothing; (R3) allowing both expansion and contraction based on the signal. 
+
+4.3 Capability Boundary Estimation 
+
+The core mechanism of Elastic Horizon is estimat-ing the agent’s current capability boundary from trajectory data. We maintain a buffer B of suc-cessful trajectory lengths and compute an upper percentile as the boundary estimate. 
+
+Why successful trajectories? Successful trajec-tories directly measure the agent’s ability to com-plete tasks within a given number of steps. The distribution of successful trajectory lengths FL en-codes how much interaction budget the agent actu-ally needs to solve tasks it can solve. This provides a grounded capability signal, unlike training loss or reward statistics which conflate capability with task difficulty. 
+
+Percentile selection. We use the 90th percentile (P90) of successful trajectory lengths: 
+
+ˆBt = ˆF −1 
+
+> L
+
+(0 .9) = P90 (Bt), (5) 5where ˆFL(x) is the empirical cumulative distribu-tion function (CDF) of trajectory lengths in buffer 
+
+Bt.This choice balances two competing objectives: 
+
+Sensitivity : The estimate should capture near-maximal capability, providing sufficient horizon for harder task instances. The mean E[L] underes-timates this, as it reflects average behavior rather than capability limits. 
+
+Robustness : The estimate should filter outliers from inefficient exploration or random walks. The maximum max i Li is sensitive to a single anoma-lously long trajectory. P90 achieves both: it captures the capability fron-tier (90% of successful trajectories complete within this length) while filtering the top 10% of poten-tial outliers. From an order statistics perspective, high quantiles provide robust location estimates for heavy-tailed distributions. Agent trajectory lengths are commonly heavy-tailed, as we verify empiri-cally in Appendix E. 
+
+Exploration headroom. To encourage attempt-ing tasks slightly beyond current capability, we add a fixed headroom ∆:
+
+Ktarget  
+
+> t
+
+= ˆBt + ∆ . (6) The headroom provides slack for exploring longer trajectories necessary for harder tasks, prevent-ing premature convergence to a suboptimal fron-tier. This parallels the “zone of proximal develop-ment” concept in curriculum learning (Bengio et al., 2009): the agent should be challenged slightly be-yond demonstrated competence. 
+
+EMA smoothing. Raw percentile estimates fluc-tuate due to sampling variance. We apply expo-nential moving average (EMA) smoothing to the horizon update: 
+
+Kt+1 = (1 −α)·Kt+α·clip (Ktarget  
+
+> t
+
+, K min , K max ),
+
+(7) where α ∈ (0 , 1) controls adaptation speed. Small 
+
+α yields stable but slow adaptation; large α yields responsive but potentially oscillatory behavior. 
+
+4.4 The Elastic Horizon Algorithm 
+
+Algorithm 1 presents the complete training proce-dure integrating the above components. 
+
+Cold start handling. When successful samples are scarce ( |B| < N min ), the P90 estimate is unreli-able. The controller maintains the current horizon 
+
+Algorithm 1 Elastic Horizon Training 
+
+Require: Policy πθ0 , task distribution T
+
+Require: Initial horizon K0, bounds 
+
+[Kmin , K max ]
+
+Require: EMA coefficient α, headroom ∆, buffer size N 
+
+> 1:
+
+Initialize buffer B ← ∅ , horizon K ← K0 
+
+> 2:
+
+for training step t = 1 , 2, . . . , T do  
+
+> 3:
+
+// Trajectory collection under current hori-zon  
+
+> 4:
+
+Sample trajectories {τi}Mi=1 with budget K 
+
+> 5:
+
+// Policy update  
+
+> 6:
+
+θt ← RLU PDATE (θt−1, {τi}) 
+
+> 7:
+
+// Buffer update (FIFO)  
+
+> 8:
+
+for each τi with r(τi) = 1 do  
+
+> 9:
+
+B.APPEND (L(τi))  
+
+> 10:
+
+if |B| > N then B.POP FIRST ()  
+
+> 11:
+
+end if  
+
+> 12:
+
+end for  
+
+> 13:
+
+// Closed-loop horizon update  
+
+> 14:
+
+if |B| ≥ Nmin then  
+
+> 15:
+
+ˆB ← P90 (B) ▷ Capability estimate  
+
+> 16:
+
+Kraw ← clip ( ˆB + ∆ , K min , K max ) 
+
+> 17:
+
+K ← (1 − α) · K + α · Kraw ▷ EMA  
+
+> 18:
+
+end if  
+
+> 19:
+
+end for                          
+
+> Table 2: Comparison of horizon scheduling approaches.
+> ScalingInter TTI Elastic (Ours)
+> Control Open-loop Open-loop Closed-loop Signal Step tStep tP90 of Lsucc
+> Direction ↑only ↑only Bidirectional Converges to Kmax Kmax ≈H∗
+> Hparams δ, stages Kmin ,Tstg α,∆
+
+until sufficient data accumulates. This conserva-tive strategy prevents erratic behavior during early training when exploration dominates. 
+
+Computational overhead. Elastic Horizon adds negligible cost: maintaining a buffer of integers, computing a percentile, and performing EMA up-date require O(N ) operations per step, which is insignificant compared to trajectory sampling and gradient computation. 
+
+Comparison with open-loop schedules. Table 2 summarizes key differences. Open-loop methods depend solely on training step t and increase mono-tonically to Kmax . Elastic Horizon depends on agent performance and adapts bidirectionally, auto-matically converging toward H∗.65 Experiments 
+
+We design experiments to answer three research questions: RQ1 : Does interaction horizon satura-tion exist? RQ2 : Can Elastic Horizon automati-cally discover the effective frontier? RQ3 : How does Elastic Horizon compare to open-loop base-lines? 
+
+5.1 Experimental Setup Environments. We evaluate on two challenging multi-turn agent benchmarks: 
+
+AppWorld (Trivedi et al., 2024) is a high-fidelity execution environment simulating 9 daily applica-tions (Amazon, Venmo, Spotify, Gmail, etc.) with 457 APIs. Tasks require agents to coordinate across multiple apps through API calls. We report task goal completion rate. 
+
+BFCL v3 (Patil et al., 2025) (Berkeley Function Calling Leaderboard) evaluates multi-turn function calling across 8 API domains. The multi-turn split contains 1,000 test cases requiring stateful interac-tions. We report overall success rate. Both benchmarks use binary sparse rewards and enforce a maximum trajectory length of 50 steps. 
+
+Baselines. We compare against: GRPO (Fixed 
+
+K): Group Relative Policy Optimization (Shao et al., 2024) with static horizon constraints ( K =15 and K = 50 ). TTI (Shen et al., 2025): Multi-plicative horizon schedule ( 15 → 20 → 30 → 50 ). 
+
+ScalingInter (Xi et al., 2025): Linear horizon schedule from Kmin = 10 to Kmax = 50 .
+
+Training details. We use GRPO with KL coeffi-cient zero, training for 200 steps with batch size 16 and learning rate 1 × 10 −6 on both Qwen2.5-7B and Qwen2.5-14B. Our training pipeline is built on the AgentEvolver agent training framework (Zhai et al., 2025). For Elastic Horizon: K0 = 15 ,
+
+α = 0 .1, ∆ = 10 , buffer size N = 100 . We report mean@8 (average over 8 rollouts). Full details in Appendix D. 
+
+5.2 RQ1: Does Horizon Saturation Exist? 
+
+To verify interaction horizon saturation, we train separate models with fixed horizon constraints, sweeping K from 10 up to 80 on both benchmarks. Figure 3 reveals a consistent saturation pattern on both benchmarks. In the under-capacity regime 
+
+(K < H ∗), reward increases substantially with horizon length: AppWorld 7B climbs from ∼17% at K=10 to ∼60% at K=30 . In the saturation regime (K ≈ H∗), reward plateaus—runs with 
+
+K ∈ [30 , 60] converge to the same band on Ap-pWorld, and K ∈ [20 , 50] converge on BFCL— despite a 2 × range of per-step cost. In the noise-dominated regime (K > H ∗), additional budget yields no systematic improvement. The saturation threshold differs between bench-marks: AppWorld, with complex multi-app co-ordination, exhibits a higher H∗ than BFCL’s function-calling tasks. This validates that H∗ is task-dependent and underscores the need for adap-tive horizon control. 
+
+5.3 RQ2: Automatic Frontier Discovery 
+
+We test Elastic Horizon’s ability to adapt the hori-zon based on agent capability by running from two extreme initializations: K0 = 10 (under-capacity) and K0 = 50 (over-capacity). Figure 1b (right panel of Figure 1) shows the horizon tra-jectories. Open-loop baselines (ScalingInter, TTI) increase monotonically to Kmax = 50 regardless of agent behavior. Elastic Horizon behaves differ-ently: from K0 = 10 , the horizon expands as the buffer fills with longer successful trajectories; from 
+
+K0 = 50 , it contracts once the P90 estimate stabi-lizes. In both cases, the horizon stabilizes inside the saturation band identified in RQ1 (Figure 3). The exact stable value differs between runs (since it depends on hyperparameters α and ∆), but in neither case does the horizon reach Kmax .We interpret this as evidence that Elastic Horizon adapts the horizon based on the agent’s demon-strated trajectory length distribution rather than training step, which is the property that distin-guishes it from open-loop schedules. 
+
+5.4 RQ3: Comparison with Baselines 
+
+Table 3 summarizes the main results. 
+
+Static horizon dilemma. GRPO ( K=15 ) vs. GRPO ( K=50 ) illustrates the challenge of fixed-horizon training. On AppWorld, longer horizons help (complex multi-app tasks benefit from ex-tended interaction); on BFCL they hurt, with train-ing instability (marked ∗), confirming that exceed-ing H∗ degrades learning efficiency. 
+
+Open-loop limitations. TTI and ScalingInter give inconsistent results across benchmarks: both reach Kmax regardless of task complexity, leaving them unable to adapt when the optimal horizon differs across domains. 70 50 100 150 200 250 300 350 400             
+
+> Training step
+> 0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7
+> Validation reward (best@8 mean)
+> plateau (K ∈[30, 60])
+> (a) AppWorld 7B
+> Max horizon
+> K=10 K=15 K=20 K=30 K=40 K=50 K=60 K=70 K=80
+> 050 100 150 200 250 300 350 400
+> Training step
+> 0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8
+> Validation reward (best@8 mean)
+> plateau (K ∈[20, 50])
+> (b) BFCL 7B
+> Max horizon
+> K=10 K=15 K=20 K=25 K=30 K=40 K=50 K=60
+> Bold = EMA-smoothed ( α=0.22); faint = raw best@8 mean. Plateau band marks reward range achieved by mid-K runs.
+
+Figure 3: Training dynamics under fixed horizons. Validation reward (best@8 mean) versus training step for fixed-horizon GRPO runs on AppWorld 7B (a) and BFCL 7B (b). Curves are colored by K on a viridis scale; bold lines are EMA-smoothed ( α=0 .22 ), faint lines are raw measurements. On both benchmarks, performance saturates within a benchmark-specific plateau band (orange shading): K ∈ [30 , 60] on AppWorld and K ∈ [20 , 50] 
+
+on BFCL. Beyond the plateau, additional horizon budget produces no measurable gain in reward despite linearly higher per-step cost. Table 3: Performance comparison. Upper: zero-shot backbone models. Lower: training with Qwen2.5-7B and Qwen2.5-14B. ∗: training instability. Best in bold .
+
+Method AppWorld (%) BFCL (%) 
+
+Zero-shot Baselines 
+
+Qwen2.5-7B 2.08 30.12 Qwen2.5-14B 18.00 41.62 Qwen2.5-32B 39.06 49.63 Qwen3-235B-A22B 33.85 60.88 
+
+Training (7B) Mean@8 Best@8 Mean@8 Best@8 GRPO ( K = 15 ) 21.49 42.40 66.87 71.62 GRPO ( K = 50 ) 31.14 49.20 60.37 ∗ 68.32 ∗
+
+TTI 37.28 46.14 55.75 71.22 ScalingInter 36.18 55.10 69.12 73.93 
+
+Elastic Horizon 39.47 56.87 71.62 80.45 
+
+Training (14B) Mean@8 Best@8 Mean@8 Best@8 GRPO ( K = 15 ) 56.57 71.16 68.80 74.13 GRPO ( K = 50 ) 65.78 80.63 64.12 73.61 TTI 60.08 77.73 70.54 76.35 ScalingInter 67.54 82.54 70.17 78.85 
+
+Elastic Horizon 77.85 90.42 73.62 80.49 
+
+Elastic Horizon robustness. Elastic Hori-zon achieves the best results on both bench-marks at both 7B and 14B (e.g., AppWorld Best@8 =90 .42% at 14B). The trained 7B model surpasses zero-shot Qwen2.5-32B (39.06%) and Qwen3-235B-A22B (33.85%) on AppWorld. 
+
+Sample efficiency. Elastic Horizon saves tokens at two regimes (Figure 4): at mid-training (steps 100–170) when GRPO peaks, EH has already con-verged and saves 25% per-step tokens; at conver-gence (step ≥200 ), EH still uses 11% fewer per-step tokens than the worst baseline. These add up 0 50 100 150 200 250 300 Training step 1.0 1.2 1.4 1.6 1.8 Tokens per step ( ×10 6, ↓ better)  
+
+> converged regime
+> −25%
+> vs. GRPO −11%
+> at conv.
+> Elastic Horizon (Ours) TTI (Multiplicative) ScalingInter (Linear) GRPO (K=50)
+
+Figure 4: Per-step token consumption on AppWorld (14B). Elastic Horizon consumes −25% vs. GRPO at the mid-training peak (step ∼140 ) and −11% vs. the worst baseline at convergence (step ≥200 ). Cumulative-token and BFCL counterparts in Appendix F.4. 
+
+to a 28% cumulative-token saving at SR =50% on AppWorld 7B (Appendix F.4). Under tight com-pute budgets, the mid-training saving is the more consequential. 
+
+6 Conclusion 
+
+We introduced Elastic Horizon , a closed-loop con-troller that sets the interaction budget of an agen-tic RL run from the agent’s own demonstrated be-havior, estimating the effective interaction frontier 
+
+H∗ from the 90th percentile of successful trajec-tory lengths. Three findings emerge. First, fixed-horizon training saturates beyond a task-dependent 
+
+H∗: on AppWorld and BFCL, a twofold range of interaction budgets converges to the same re-ward band while per-step cost keeps growing. Sec-8ond, because the controller reads capability rather than training step, it both expands and contracts the horizon, and settles inside the saturation band from under- and over-capacity initializations alike, behavior that monotonically increasing schedules cannot produce. Third, this costs nothing in quality: Elastic Horizon attains the best success rates across 7B and 14B backbones on both benchmarks while cutting per-step trajectory tokens by up to 25%. The broader point is that the interaction budget need not be a hyperparameter. Open-loop curricula ask practitioners to commit in advance to a growth rate and a maximum horizon, quantities that de-pend on the agent and the environment and are therefore unknown before training begins. Elastic Horizon replaces that commitment with a measure-ment, so that how far to scale the horizon—and where to stop—is determined by the training run itself. We expect the same treatment, allocating from demonstrated capability in both directions, to be applicable to other budgets in agent training beyond the interaction horizon. 
+
+Limitations 
+
+We discuss several limitations of our work that suggest directions for future research. 
+
+Cold start with sparse success. Elastic Horizon relies on successful trajectory statistics for capabil-ity estimation. In early training or on extremely difficult tasks, successful trajectories may be rare, leading to unreliable P90 estimates. Our current mitigation—maintaining the initial horizon until a minimum buffer is reached—is conservative but may delay adaptation. Future work could explore alternative signals such as partial progress indi-cators or trajectory length distributions from all rollouts (not just successful ones). 
+
+Single global horizon. We adjust a single global horizon Kt applied uniformly across all task in-stances. For heterogeneous task distributions with wide difficulty variance, this may be subopti-mal: easy tasks receive unnecessarily long hori-zons while hard tasks may still be under-budgeted. Instance-level or difficulty-conditioned horizon al-location could improve efficiency further, though at the cost of additional complexity. 
+
+Heuristic nature of P90. The choice of the 90th percentile is empirically motivated and supported by ablation studies, but lacks a first-principles derivation. While we provide intuitions from order statistics and curriculum learning theory, a more rigorous theoretical foundation for optimal per-centile selection remains an open question. The ablation results suggest that performance is rela-tively robust across the P75–P95 range, but the optimal choice may be task-dependent. 
+
+Proxy efficiency metric. We use cumulative trajectory tokens as a proxy for training com-pute. While more informative than raw interaction counts, this metric does not capture all cost fac-tors such as environment latency, parallel sampling efficiency, or accelerator utilization. Actual wall-clock time savings may differ from token-based estimates. 
+
+Ethical Considerations 
+
+Our proposed method, Elastic Horizon, explicitly addresses the computational overhead associated with long-horizon agentic tasks. By automatically detecting the effective interaction frontier, our ap-proach reduces per-step trajectory tokens by up to 25% during the most expensive phase of training and 11% at convergence on AppWorld, compared to fixed-horizon baselines. This contributes to the goals of “Green AI” by lowering the energy con-sumption and carbon footprint required to train ca-pable agents. By demonstrating that smaller mod-els (e.g., 7B parameters) can achieve high perfor-mance through adaptive horizon control, our work also helps make agent research more accessible to institutions with limited computational resources. While we focus on training efficiency, we ac-knowledge that more capable LLM agents carry inherent risks of misuse. Our method does not intro-duce specific new capabilities that would uniquely exacerbate these risks beyond the general progress of the field; it is a training-efficiency technique applicable to any agentic RL setup. We use only publicly released benchmarks (AppWorld, BFCL) and base models (Qwen2.5), and our experiments do not involve human subjects or sensitive data. 
+
+References 
+
+> Yoshua Bengio, Jérôme Louradour, Ronan Collobert, and Jason Weston. 2009. Curriculum learning. In
+> Proceedings of the 26th Annual International Con-ference on Machine Learning (ICML) , pages 41–48. ACM. Kevin Chen, Marco Cusumano-Towner, Brody Hu-val, Aleksei Petrenko, Jackson Hamburger, Vladlen
+
+9Koltun, and Philipp Krähenbühl. 2025. Reinforce-ment learning for long-horizon interactive LLM agents. Preprint , arXiv:2502.01600. Carlos Florensa, David Held, Xinyang Geng, and Pieter Abbeel. 2018. Automatic goal generation for rein-forcement learning agents. In Proceedings of the 35th International Conference on Machine Learn-ing (ICML) , volume 80 of Proceedings of Machine Learning Research , pages 1515–1528. PMLR. Carlos Florensa, David Held, Markus Wulfmeier, Michael Zhang, and Pieter Abbeel. 2017. Reverse curriculum generation for reinforcement learning. In 
+
+Proceedings of the 1st Annual Conference on Robot Learning (CoRL) , volume 78 of Proceedings of Ma-chine Learning Research , pages 482–495. PMLR. Tingxu Han, Zhenting Wang, Chunrong Fang, Shiyu Zhao, Shiqing Ma, and Zhenyu Chen. 2025. Token-budget-aware LLM reasoning. In Findings of the As-sociation for Computational Linguistics: ACL 2025 ,pages 24842–24855, Vienna, Austria. Association for Computational Linguistics. Jacob Hilton, Jie Tang, and John Schulman. 2023. Scal-ing laws for single-agent reinforcement learning. 
+
+Preprint , arXiv:2301.13442. Jordan Hoffmann, Sebastian Borgeaud, Arthur Mensch, Elena Buchatskaya, Trevor Cai, Eliza Rutherford, Diego de Las Casas, Lisa Anne Hendricks, Johannes Welbl, Aidan Clark, Thomas Hennigan, Eric Noland, Katherine Millican, George van den Driessche, Bog-dan Damoc, Aurelia Guy, Simon Osindero, Karén Simonyan, Erich Elsen, and 3 others. 2022. An em-pirical analysis of compute-optimal large language model training. In Advances in Neural Information Processing Systems 35 (NeurIPS 2022) , pages 30016– 30030. Curran Associates, Inc. Lu Jiang, Deyu Meng, Qian Zhao, Shiguang Shan, and Alexander G. Hauptmann. 2015. Self-paced curricu-lum learning. In Proceedings of the AAAI Conference on Artificial Intelligence , pages 2694–2700. Jared Kaplan, Sam McCandlish, Tom Henighan, Tom B. Brown, Benjamin Chess, Rewon Child, Scott Gray, Alec Radford, Jeffrey Wu, and Dario Amodei. 2020. Scaling laws for neural language models. Preprint ,arXiv:2001.08361. M. Pawan Kumar, Benjamin Packer, and Daphne Koller. 2010. Self-paced learning for latent variable mod-els. In Advances in Neural Information Processing Systems 23 (NeurIPS) , pages 1189–1197. Tengxiao Liu, Zifeng Wang, Jin Miao, I-Hung Hsu, Jun Yan, Jiefeng Chen, Rujun Han, Fangyuan Xu, Yanfei Chen, Ke Jiang, Samira Daruki, Yi Liang, William Yang Wang, Tomas Pfister, and Chen-Yu Lee. 2025. Budget-aware tool use enables effective agent scaling. Preprint , arXiv:2511.17006. Accepted to COLM 2026. Sanmit Narvekar, Bei Peng, Matteo Leonetti, Jivko Sinapov, Matthew E. Taylor, and Peter Stone. 2020. Curriculum learning for reinforcement learning do-mains: A framework and survey. Journal of Machine Learning Research , 21(181):1–50. Davide Paglieri, Bartłomiej Cupiał, Jonathan Cook, Ulyana Piterbarg, Jens Tuyls, Edward Grefenstette, Jakob Nicolaus Foerster, Jack Parker-Holder, and Tim Rocktäschel. 2025. Learning when to plan: Effi-ciently allocating test-time compute for LLM agents. 
+
+Preprint , arXiv:2509.03581. Shishir G. Patil, Huanzhi Mao, Fanjia Yan, Char-lie Cheng-Jie Ji, Vishnu Suresh, Ion Stoica, and Joseph E. Gonzalez. 2025. The Berkeley function calling leaderboard (BFCL): From tool use to agentic evaluation of large language models. In Proceed-ings of the 42nd International Conference on Ma-chine Learning (ICML) , volume 267 of Proceedings of Machine Learning Research , pages 48371–48392. PMLR. Zehan Qi, Xiao Liu, Iat Long Iong, Hanyu Lai, Xueqiao Sun, Jiadai Sun, Xinyue Yang, Yu Yang, Shuntian Yao, Wei Xu, Jie Tang, and Yuxiao Dong. 2025. We-bRL: Training LLM web agents via self-evolving on-line curriculum reinforcement learning. In The Thir-teenth International Conference on Learning Repre-sentations (ICLR 2025) .Zhihong Shao, Peiyi Wang, Qihao Zhu, Runxin Xu, Junxiao Song, Xiao Bi, Haowei Zhang, Mingchuan Zhang, Y. K. Li, Y. Wu, and Daya Guo. 2024. DeepSeekMath: Pushing the limits of mathemati-cal reasoning in open language models. Preprint ,arXiv:2402.03300. Junhong Shen, Hao Bai, Lunjun Zhang, Yifei Zhou, Amrith Setlur, Peter Tong, Diego Caples, Nan Jiang, Tong Zhang, Ameet Talwalkar, and Aviral Kumar. 2025. Thinking vs. Doing: Improving agent reason-ing by scaling test-time interaction. In Advances in Neural Information Processing Systems 38 (NeurIPS 2025) , pages 169640–169681. Curran Associates, Inc. Noah Shinn, Federico Cassano, Ashwin Gopinath, Karthik Narasimhan, and Shunyu Yao. 2023. Re-flexion: Language agents with verbal reinforcement learning. In Advances in Neural Information Process-ing Systems 36 (NeurIPS 2023) , pages 8634–8652. Curran Associates, Inc. Charlie Snell, Jaehoon Lee, Kelvin Xu, and Aviral Ku-mar. 2025. Scaling LLM test-time compute optimally can be more effective than scaling parameters for rea-soning. In The Thirteenth International Conference on Learning Representations (ICLR 2025) .Harsh Trivedi, Tushar Khot, Mareike Hartmann, Ruskin Manku, Vinty Dong, Edward Li, Shashank Gupta, Ashish Sabharwal, and Niranjan Balasubramanian. 2024. AppWorld: A controllable world of apps and people for benchmarking interactive coding agents. 
+
+10 In Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pages 16022–16076, Bangkok, Thai-land. Association for Computational Linguistics. Zihan Wang, Kangrui Wang, Qineng Wang, Pingyue Zhang, Linjie Li, Zhengyuan Yang, Xing Jin, Kefan Yu, Minh Nhat Nguyen, Licheng Liu, Eli Gottlieb, Yiping Lu, Kyunghyun Cho, Jiajun Wu, Li Fei-Fei, Lijuan Wang, Yejin Choi, and Manling Li. 2025. RA-GEN: Understanding self-evolution in LLM agents via multi-turn reinforcement learning. Preprint ,arXiv:2504.20073. Zhiheng Xi, Jixuan Huang, Chenyang Liao, Baodai Huang, Honglin Guo, Jiaqi Liu, Rui Zheng, Junjie Ye, Jiazheng Zhang, Wenxiang Chen, Wei He, Yi-wen Ding, Guanyu Li, Zehui Chen, Zhengyin Du, Xuesong Yao, Yufei Xu, Jiecao Chen, Tao Gui, and 4 others. 2025. AgentGym-RL: Training LLM agents for long-horizon decision making through multi-turn reinforcement learning. Preprint , arXiv:2509.08755. Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak Shafran, Karthik Narasimhan, and Yuan Cao. 2023. ReAct: Synergizing reasoning and acting in language models. In The Eleventh International Conference on Learning Representations (ICLR 2023) .Yunpeng Zhai, Shuchang Tao, Cheng Chen, Anni Zou, Ziqian Chen, Qingxu Fu, Shinji Mai, Li Yu, Jiaji Deng, Zouying Cao, Zhaoyang Liu, Bolin Ding, and Jingren Zhou. 2025. AgentEvolver: To-wards efficient self-evolving agent system. Preprint ,arXiv:2511.10395. Yifei Zhou, Andrea Zanette, Jiayi Pan, Sergey Levine, and Aviral Kumar. 2024. ArCHer: Training language model agents via hierarchical multi-turn RL. In Pro-ceedings of the 41st International Conference on Ma-chine Learning (ICML) , volume 235 of Proceedings of Machine Learning Research , pages 62178–62209. PMLR. 
+
+A Notation Summary 
+
+Table 4 provides a complete summary of notation used throughout the paper. 
+
+B Theoretical Analysis 
+
+This appendix collects formal discussion of the de-sign choices in Elastic Horizon. We do not claim a full theoretical analysis: the controller is funda-mentally a closed-loop heuristic whose primary jus-tification is empirical (Section 5). What we make explicit here are (i) the statistical motivation for using the 90th percentile of successful trajectory lengths as a capability boundary estimator (Sec-tion B.1); and (ii) the stability behavior we rely on for the EMA update, together with the limitations of treating it as a convergence result (Section B.2). 
+
+Table 4: Complete notation summary.                                                               
+
+> Symbol Description Defined in
+> POMDP Formulation
+> MPOMDP tuple Sec. 3.1
+> UInstruction space Sec. 3.1
+> SState space Sec. 3.1
+> AAction space Sec. 3.1
+> OObservation space Sec. 3.1
+> TTransition function Sec. 3.1
+> RReward function Sec. 3.1
+> πθPolicy w/ params θSec. 3.1
+> TTask distribution Sec. 3.2
+> Trajectory and Metrics
+> τTrajectory Sec. 3.1
+> L(τ)Trajectory length (turns) Sec. 3.1
+> r(τ)Terminal reward (1=succ, 0=fail) Sec. 3.2 SR (K;πθ,T)Success rate under horizon KSec. 3.2
+> Horizon Control
+> KtHorizon at step tSec. 3.3
+> Kmin Minimum horizon bound Sec. 3.3
+> Kmax Maximum horizon bound Sec. 3.3
+> H∗Effective frontier Sec. 4.1
+> Elastic Horizon
+> BSuccess buffer (trajectory lengths) Sec. 4.4
+> ˆBtCapability boundary estimate Sec. 4.3 P90 (B)90th percentile of BSec. 4.3
+> FLCDF of success lengths Sec. 4.3
+> αEMA smoothing coefficient Sec. 4.4
+> ∆Headroom Sec. 4.3
+> NBuffer capacity App. D
+> Nmin Min. buffer for activation App. D
+
+B.1 Statistical Motivation for the P90 Estimator 
+
+The capability boundary estimator ˆBt = P90 (Bt)
+
+is motivated by two desiderata: it should re-flect near-maximal demonstrated capability while remaining robust to occasional very long suc-cessful trajectories produced by inefficient explo-ration. Both desiderata follow from standard order-statistics intuition; we do not derive a closed-form relationship between ˆBt and the frontier H∗.
+
+Heavy-tail robustness. Successful trajectory lengths are right-skewed in our experiments (Ap-pendix E, Table 7). Under heavy tails, the sample maximum has variance Var [max  
+
+> i
+
+Li] = O(n2/α −2), (8) for Pareto tails with index α, which diverges for 
+
+α < 2. By contrast, sample quantiles in the body of the distribution—including the 90th percentile un-der standard regularity conditions—have variance 
+
+O(1 /n ). The P90 therefore provides a far more stable boundary estimate than the maximum when occasional very long successful trajectories occur. 11 Choice of P90 vs. other quantiles. The choice of the 90th percentile, rather than P75 or P95, is em-pirically motivated. Lower quantiles (mean, P50) underestimate near-maximal capability and lead to overly conservative horizons that truncate harder task instances; higher quantiles approach the max-imum and lose the robustness benefit above. The ablation in Appendix F confirms that performance is relatively insensitive across the P75–P95 range, consistent with the order-statistics intuition that any high quantile gives a stable, near-maximal estimate. We do not claim that P90 is optimal in any formal sense. 
+
+Connection to the frontier. We do not establish a closed-form bound between ˆBt and H∗. The intended interpretation is qualitative: ˆBt captures the horizon at which 90% of the agent’s currently solvable tasks complete, so ˆBt + ∆ is a budget large enough to admit nearly all current successes plus some slack for exploration of harder instances. Whether this surrogate tracks the true frontier is an empirical question; the convergence experiments in Section 5.3, where the controller stabilizes near the same plateau identified by the fixed-horizon sweeps in Section 5.2, are the main evidence we offer. 
+
+B.2 Stability of the EMA Update 
+
+The horizon update rule 
+
+Kt+1 = (1 − α)Kt + αK raw  
+
+> t
+
+, (9) 
+
+Kraw  
+
+> t
+
+= clip ( ˆBt + ∆ , K min , K max ), (10) is a standard exponential moving average over the clipped target Kraw  
+
+> t
+
+. Its stability is a property of the EMA filter rather than a novel result, but it is worth stating the form we rely on, together with what it does not say. 
+
+Geometric attraction toward a stationary target. 
+
+Suppose the input sequence {Kraw  
+
+> t
+
+} converges to a fixed target K†. Subtracting K† from both sides of the EMA update gives |Kt+1 − K†| ≤ (1 −
+
+α)|Kt − K†| + α|Kraw  
+
+> t
+
+− K†|. Iterating yields the standard bound 
+
+|Kt − K†| ≤ (1 − α)t|K0 − K†|
+
++ α
+
+> t−1
+
+X
+
+> s=0
+
+(1 − α)t−1−s|Kraw  
+
+> s
+
+− K†|. (11) The first term decays geometrically; the second is controlled by the residual estimation error of Kraw  
+
+> s
+
+.
+
+Implications for the controller. This standard property has two consequences for Elastic Hori-zon. First, the steady-state horizon depends on the limiting target distribution of Kraw  
+
+> t
+
+(which in turn depends on hyperparameters α, ∆), not on the initial horizon K0. This is consistent with the con-vergence experiments in Section 5.3, where runs starting from K0 = 10 and K0 = 50 both stabilize within the saturation band identified in Section 5.2. Second, the smoothing constant α trades respon-siveness against variance: small α damps sampling noise in ˆBt but tracks capability changes more slowly, as confirmed empirically in Appendix F. 
+
+Limitation: non-stationary targets from policy updates. The above analysis assumes the input 
+
+Kraw  
+
+> t
+
+converges to a fixed target. In Elastic Hori-zon training, both the policy πθ and the trajectory-length distribution FL evolve over time, and the frontier H∗ itself is dynamic (Section 4.1). The buffer Bt uses FIFO eviction precisely so that ˆBt
+
+tracks current rather than historical capability; as a consequence, Kraw  
+
+> t
+
+is not a stationary input. The EMA bound above should therefore be read as a de-scription of the controller’s tracking behavior under slow drift, not a claim of asymptotic convergence to a fixed point. Formal analysis of the joint policy– controller dynamics, including the cold-start and FIFO buffer effects, is left to future work. 
+
+C Algorithm Details 
+
+Algorithm 2 presents the complete Elastic Horizon training procedure with all implementation details. 
+
+Implementation notes. 
+
+• Training is implemented on top of the Agen-tEvolver agent training framework (Zhai et al., 2025). Elastic Horizon is added as a horizon-control module around the rollout loop (Phases 1, 3, and 4 above); the policy update path is left unmodified. • The GRPO update follows Shao et al. (2024) with KL coefficient set to zero. • The buffer B uses first-in-first-out (FIFO) evic-tion to maintain a sliding window of the most recent successful trajectory lengths, ensuring the estimate reflects current agent capability rather than historical performance. • The floor operation ⌊·⌋ ensures integer horizon values. 12 Table 5: Complete hyperparameter settings.                                            
+
+> Category Parameter Value
+> Training Optimizer AdamW Learning rate 1×10 −6
+> Batch size 16 Micro-batch size 8Grad accum steps 2Total training steps 200 GRPO KL coefficient 0.0 Discount factor γ1.0 GAE λ1.0 Clip ratio 0.2 Elastic Horizon Initial horizon K015 Min. horizon Kmin 5Max. horizon Kmax 50 EMA coefficient α0.1 Headroom ∆10 Buffer size N100 Min. buffer Nmin 20 Baselines Linear inc. δ0.2 per step TTI growth stages 15 →20 →30 →50
+> TTI stage duration 50 steps Evaluation Rollouts per task 8Primary metric mean@8
+
+• During cold start ( |B| < N min ), the horizon re-mains unchanged to avoid unreliable estimates from insufficient samples. • We use Nmin = 20 to ensure the P90 estimate is based on at least 20 successful trajectories. 
+
+D Extended Experimental Details 
+
+D.1 Hyperparameter Settings 
+
+Table 5 provides the complete hyperparameter con-figuration for all experiments. 
+
+D.2 Environment Configuration AppWorld (Trivedi et al., 2024): A high-fidelity execution environment simulating 9 daily applica-tions (Amazon, Venmo, Spotify, Gmail, etc.) with 457 APIs. Tasks require agents to coordinate across multiple apps through API calls. We use the stan-dard test split with binary sparse rewards (1 for task completion, 0 otherwise). 
+
+BFCL v3 (Patil et al., 2025): The Berkeley Func-tion Calling Leaderboard evaluates multi-turn func-tion calling across 8 API domains. The multi-turn split contains 1,000 test cases requiring stateful interactions with multiple function calls per task. Both benchmarks enforce a maximum trajectory length of 50 steps. Trajectories exceeding the hori-zon constraint Kt are terminated with reward 0. 
+
+Table 6: Mean@8 with standard deviations across 3 random seeds (Qwen2.5-7B). Best in bold . ∗: training instability (highest variance, ±4.52 ).                                 
+
+> Method AppWorld BFCL
+> GRPO ( K=15 )21.49 ±2.14 66.87 ±1.83 GRPO ( K=50 )31.14 ±3.07 60.37 ±4.52 ∗
+> TTI 37.28 ±2.91 55.75 ±3.68 ScalingInter 36.18 ±2.53 69.12 ±2.15
+> Elastic Horizon 39.47 ±2.38 71.62 ±1.96
+
+D.3 Baseline Implementations Linear schedule (ScalingInter-RL style): 
+
+Kt = min( Kmin + δ · t, K max ), with δ = 0 .2.
+
+(12) This reaches Kmax = 50 at step t = 200 .
+
+Multiplicative schedule (TTI style): The hori-zon follows K ∈ { 15 , 20 , 30 , 50 } at training steps 
+
+{0, 50 , 100 , 150 }. This follows the stage-wise mul-tiplicative curriculum of Shen et al. (2025), who raise the horizon at successive stage boundaries rather than by a fixed per-step increment; we start from the same initial horizon as the conservative fixed-horizon baseline ( K=15 ) and cap the sched-ule at Kmax = 50 .
+
+Fixed horizon baselines : GRPO with K = 15 
+
+(conservative) and K = 50 (maximum), represent-ing the extremes of fixed-horizon training. 
+
+D.4 Computational Resources 
+
+All experiments were conducted on a single com-pute node with 8 AI accelerator devices per train-ing run. A 7B-parameter Elastic Horizon train-ing run (200 training steps) requires approximately 320 device-hours of wall-clock time; a 14B run requires approximately 680 device-hours under the same settings. The Elastic Horizon controller itself adds negligible overhead ( < 0.1% ) compared to trajectory sampling and gradient computation. 
+
+D.5 Statistical Significance 
+
+All main experiments are repeated with 3 random seeds. Table 6 reports mean@8 ± standard devi-ation across the 3 seeds for the 7B configuration, complementing the point estimates in Table 3. We do not report multi-seed variance for 14B due to compute constraints: each 14B training run con-sumes approximately 680 device-hours on 8 accel-erator devices ( ∼85 hours of wall-clock time per run), making 3-seed replication prohibitive. 13 Table 7: Quantile statistics of successful trajectory lengths at training step 100.                
+
+> Benchmark Min Mean P50 P90 Max
+> AppWorld 918 .14 14 37 .21 50
+> BFCL 111 .93 11 24 .29 50
+
+Table 8: Percentile choice across benchmarks (Mean@8, %). P90 is the best statistic on both benchmarks.           
+
+> Statistic AppWorld SR (%) BFCL SR (%)
+> P50 24.12 68.37
+> P90 39.47 71.62
+> P95 38.38 69.87 Max 36.0 62.88
+
+E Trajectory Length Distribution Analysis 
+
+Observations supporting P90. 
+
+1. Right skew : Both distributions have positive skewness, confirming that trajectory lengths are heavy-tailed rather than symmetric. 2. Mean underestimates capability : The mean is substantially lower than P90 , indicating that using the mean would set an overly conservative horizon that fails to accommodate harder task instances. 3. Max is unstable : The gap between P90 and Max reflects outlier trajectories from inefficient explorations. Using Max would inflate the hori-zon estimate and destabilize training. 4. P90 balances coverage and robustness : P90 covers 90% of successful trajectories while ex-cluding the top 10% of potential outliers, provid-ing a stable yet ambitious capability estimate. 
+
+F Additional Ablation Results 
+
+F.1 Full Percentile Comparison 
+
+To answer “why P90 over other percentiles?”, we report two complementary views: (i) the success rate achieved on each benchmark when the con-troller uses different statistics of B (Table 8); and (ii) the converged horizon, its stability, and the re-sulting interpretation on AppWorld (Table 9). Performance increases monotonically from P50 to P90 on both benchmarks, then gradually de-creases toward Max, consistent with the heavy-tail interpretation in Appendix B. 
+
+Table 9: Detailed percentile ablation on AppWorld (Step 200). We report success rate (SR), final converged hori-zon, and horizon stability (standard deviation over the last 50 steps).                     
+
+> Statistic SR (%) Final KKStd
+> Mean 24.12 19.09 16.4 P50 24.12 15.82 14.9
+> P90 39.47 28.1 12.8 P95 38.38 44.15 9.7 Max 36.0 50.00 3.1
+
+Table 10: Ablation on headroom ∆ (AppWorld, Step 200).                              
+
+> ∆SR (%) Final KTokens
+> 015.35 6.8 2.2×10 5
+> 512.06 22.9 3.7×10 5
+> 10 39.47 28.1 3.9×10 5
+> 15 25.87 28.7 3.5×10 5
+> 20 33.11 35.9 3.7×10 5
+
+Analysis. Lower percentiles (Mean, P50) cause premature horizon convergence ( K ≈ 15 -19 ), lim-iting the agent’s ability to solve harder tasks that re-quire longer interactions. Higher percentiles (P95, Max) are sensitive to outlier trajectories, pushing 
+
+K toward Kmax and losing the efficiency benefit of adaptive control. P90 provides the best tradeoff: sufficiently high to accommodate challenging tasks, yet robust to occasional outliers. 
+
+F.2 Headroom Sensitivity 
+
+Table 10 provides complete results for the head-room ablation. 
+
+Analysis. Setting ∆ = 0 removes the exploration margin entirely: the target horizon can never ex-ceed the current capability estimate, so the horizon collapses toward Kmin (K = 6 .8) and the agent never attempts tasks longer than what it already solves. Beyond this degenerate case, success rate is not monotone in ∆, and the gaps between neigh-bouring settings are comparable to the seed-to-seed spread reported in Table 6; we therefore claim only that ∆ = 10 is the best of the values we tried, not that a smooth trend exists. Larger headroom does raise the converged horizon ( K = 35 .9 at ∆ = 20 ), moving the controller toward fixed long-horizon behavior and eroding the efficiency benefit of adap-tive control. 14 Table 11: Ablation on EMA coefficient α (AppWorld). 
+
+α SR (%) Final K K Std Behavior 
+
+0.1 39.47 28.1 12.8 Slow, stable 0.2 30.92 27.6 14.1 Mild oscillation 1.0 24.78 28 17.9 Unstable 
+
+F.3 EMA Coefficient Sensitivity Analysis. The EMA coefficient α controls the tradeoff between responsiveness and stability. Small α (e.g., 0.1) yields very smooth trajectories but slow adaptation to capability changes. Large 
+
+α (e.g., 1.0, equivalent to no smoothing) tracks the raw P90 estimate directly, causing oscillations due to sampling variance. 
+
+F.4 Sample Efficiency Comparison 
+
+Table 12 reports cumulative trajectory tokens con-sumed by each method on AppWorld at two op-erating points: (i) the first training step at which success rate reaches 50%, and (ii) the step at which each method attains its peak success rate. The “To-ken Savings” column is computed against GRPO (K=50 ) at the matched SR=50% operating point. 
+
+Analysis. Elastic Horizon reaches SR=50% with only 36.28M cumulative tokens, compared to 50.21M for GRPO ( K=50 ), a 28% reduction at equivalent performance . At peak perfor-mance, Elastic Horizon achieves the highest SR (56.87%) while consuming fewer total tokens than the strongest fixed-horizon baseline. Figure 5 visu-alizes the underlying trajectories: Elastic Horizon (blue) reaches matched SR with strictly fewer cu-mulative tokens than every fixed-horizon baseline. The 28% saving stems from two sources: shorter trajectories during early training (when the con-troller has not yet expanded to its converged value), and automatic convergence that avoids wasteful exploration beyond H∗. These two contributions correspond to the per-step gap visualized in Fig-ure 4 of the main text. 
+
+BFCL average tokens per step. Figure 6 reports per-step token consumption on BFCL 7B for com-pleteness. The trend mirrors AppWorld 14B: Elas-tic Horizon maintains lower per-step trajectory to-kens than open-loop schedules throughout training. We move this panel to the appendix because the main-text efficiency story (Figure 4) is built around AppWorld 14B, where per-step gains are most pro-nounced. 0.10 0.20 0.30 0.40 0.50 
+
+> Success Rate (%)
+> 020 40 60 80
+> Cumulative Tokens Usage (×10 6) Elastic Horizon (Ours) TTI (Exponential Scaling) ScalingInter (Linear Scaling) GRPO (K=50)
+
+Figure 5: Success rate vs. cumulative trajectory tokens (AppWorld, Qwen2.5-7B). Elastic Horizon reaches matched success rates with strictly fewer cu-mulative tokens than every fixed-horizon baseline. At SR =50% , the cumulative gap is 28% vs. GRPO (K=50 ). 25 50 75 100 125 150 175 200 
+
+> Training Step
+> 200 250 300 350 400 450 500 550
+> Average Tokens (×10 3)
+> Elastic Horizon (Ours) TTI ScalingInter GRPO (K=50)
+
+Figure 6: Average tokens per training step on BFCL 7B. Elastic Horizon (blue) consumes fewer per-step tokens than open-loop baselines throughout training, with the gap most visible during the rapid expansion phase of TTI/ScalingInter. 
+
+G Limitations and Future Directions 
+
+G.1 Cold Start Phase 
+
+During early training when successful trajectories are scarce, the P90 estimate may be unreliable. Our current solution (maintaining the initial horizon un-til buffer fills) is conservative but may delay adap-tation. Future work could explore: • Using trajectory lengths from all trajectories (not just successful ones) with appropriate weighting. • Initializing the buffer with trajectories from a pretrained policy. • Hybrid strategies that use open-loop schedules during cold start, then switch to closed-loop. 
+
+G.2 Single Global Horizon 
+
+Elastic Horizon adjusts a single global horizon Kt
+
+applied to all tasks. For task distributions with high variance in complexity, a single horizon may be suboptimal: easy tasks waste budget, while hard tasks may be truncated. Future work could explore: • Per-task or per-difficulty-level horizon allocation. 15 Table 12: Sample efficiency on AppWorld (Qwen2.5-7B). Tokens are cumulative trajectory tokens (M = millions). Peak SR is the maximum Mean@8 attained during training. “ −” indicates the method did not reach the SR threshold. Token savings are computed against GRPO ( K=50 ) at the matched SR=50% operating point.                     
+
+> Method Tok @ SR=50% Tok @ Peak Peak SR (%) Token Savings
+> GRPO ( K=50 )50.21M 90.85M 56.49 (baseline) ScalingInter (Linear) 73.98M 73.98M 50.44 —TTI (Multiplicative) —85.07M 49.50 —
+> Elastic Horizon 36.28M 85.31M 56.87 ∼28%
+
+• State-conditioned horizon prediction. • Integration with task curriculum methods that also adapt task selection. 
+
+G.3 Non-Stationary Task Distributions 
+
+Our convergence analysis assumes the task distri-bution is stationary. If the distribution shifts during training (e.g., curriculum over tasks), the P90 es-timate may lag. The FIFO buffer provides some adaptivity, but stronger distribution shift may re-quire: • Drift detection mechanisms. • Weighted buffers that discount older samples. • Explicit handling of task difficulty metadata. 
+
+G.4 Theoretical Gaps 
+
+The formal discussion in Appendix B is intention-ally lightweight: we do not establish a closed-form bound between ˆBt and H∗, and we analyze the EMA update only under the simplifying assump-tion of a stationary target. Several theoretical ques-tions remain open: • Under what conditions is P90 optimal among percentile-based estimators? • Can we derive the headroom ∆ from first princi-ples rather than tuning? • How does the effective frontier H∗ evolve during training under the joint policy–controller dynam-ics, and can this be characterized formally? These questions present opportunities for future theoretical investigation. 
+
+H Extended Discussion 
+
+This appendix elaborates on two aspects of Elastic Horizon that are summarized only briefly in the main Conclusion. 
+
+What the frontier captures. The frontier H∗
+
+identified by Elastic Horizon reflects computational complexity —the number of interaction steps an agent needs to solve tasks—rather than concep-tual difficulty . A task may be conceptually simple yet require many API calls (e.g., iterating over a list), or conceptually hard yet solvable in few steps (e.g., a single complex reasoning query). Elastic Horizon optimizes the former dimension because it directly determines training compute, and it does so without requiring practitioners to specify growth rates, stage boundaries, or maximum horizons, all of which depend on unknown task properties. This self-regulation is particularly valuable when de-ploying RL to new environments with unknown task complexity, when the task distribution is het-erogeneous, and whenever compute is the binding constraint. 
+
+Complementarity with test-time horizon control. 
+
+Elastic Horizon operates during training to opti-mize sample efficiency, while concurrent test-time methods such as BATS (Liu et al., 2025) operate during deployment to optimize task performance under budget constraints. The two approaches ad-dress different stages of the agent lifecycle and are naturally complementary: combining training-time horizon adaptation with test-time budget aware-ness is a direction for end-to-end efficient agent systems. 16 Algorithm 2 Elastic Horizon Training (Complete) 
+
+Require: Initial policy πθ0 , task distribution T
+
+Require: Initial horizon K0, horizon bounds 
+
+Kmin , K max 
+
+Require: EMA coefficient α, headroom ∆
+
+Require: Buffer capacity N , minimum buffer size 
+
+Nmin 
+
+Require: Number of training steps T , batch size 
+
+M 
+
+> 1:
+
+Initialize success buffer B ← ∅  
+
+> 2:
+
+Initialize horizon K ← K0 
+
+> 3:
+
+for training step t = 1 , 2, . . . , T do  
+
+> 4:
+
+// Phase 1: Trajectory Collection  
+
+> 5:
+
+Sample task batch {ui}Mi=1 from T 
+
+> 6:
+
+for i = 1 , . . . , M do  
+
+> 7:
+
+Initialize trajectory τi ← (ui) 
+
+> 8:
+
+for interaction step k = 1 , . . . , K do  
+
+> 9:
+
+Sample action ak ∼ πθt−1 (·| τi) 
+
+> 10:
+
+Execute action, receive observation 
+
+ok and done flag dk 
+
+> 11:
+
+Append to trajectory: τi ← τi ∪
+
+(ak, o k) 
+
+> 12:
+
+if dk = TRUE then  
+
+> 13:
+
+break  
+
+> 14:
+
+end if  
+
+> 15:
+
+end for  
+
+> 16:
+
+Compute reward ri ← r(τi) and length 
+
+Li ← L(τi) 
+
+> 17:
+
+end for  
+
+> 18:
+
+// Phase 2: Policy Update  
+
+> 19:
+
+θt ← GRPO (θt−1, {(τi, r i)}Mi=1 ) 
+
+> 20:
+
+// Phase 3: Buffer Update (FIFO)  
+
+> 21:
+
+for i such that ri = 1 do  
+
+> 22:
+
+B.APPEND (Li) 
+
+> 23:
+
+if |B| > N then  
+
+> 24:
+
+B.POP FIRST ()  
+
+> 25:
+
+end if  
+
+> 26:
+
+end for  
+
+> 27:
+
+// Phase 4: Horizon Update (Closed-Loop Control)  
+
+> 28:
+
+if |B| ≥ Nmin then  
+
+> 29:
+
+ˆB ← PERCENTILE (B, 90) ▷
+
+Capability boundary estimate  
+
+> 30:
+
+Kraw ← CLIP ( ˆB + ∆ , K min , K max ) 
+
+> 31:
+
+K ← ⌊ (1 − α) · K + α · Kraw ⌋ ▷
+
+EMA smoothing  
+
+> 32:
+
+end if  
+
+> 33:
+
+Log (t, K, ˆB, SR t) 
+
+> 34:
+
+end for  
+
+> 35:
+
+return Trained policy πθT
+
+17

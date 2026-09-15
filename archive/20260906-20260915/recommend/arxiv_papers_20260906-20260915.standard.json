@@ -1,0 +1,1429 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-09-15T08:08:02.927487+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 43,
+    "deep_cap": 6,
+    "deep_selected": 25,
+    "quick_candidates": 25,
+    "quick_skim_target": 11,
+    "quick_selected": 11
+  },
+  "deep_dive": [
+    {
+      "id": "2609.08802v1",
+      "source": "arxiv",
+      "title": "Graph-Based Safe Reinforcement Learning for Multi-Agent Systems with Time-Varying Topology",
+      "abstract": "This paper presents a graph-based safe multi-agent reinforcement learning (MARL) framework for cooperative navigation with time-varying topology. To address the critical challenge of ensuring safety in environments with sensing constraints, a safety-decoupled mechanism is introduced through a Control Barrier-Like Function (CBLF) action screening layer. This mechanism bridges the gap between discrete LiDAR perception and continuous safety constraints, ensuring that physical safety constraints are strictly satisfied regardless of the learning progress. Building upon this safety foundation, a unified structural architecture is proposed, integrating a attention-based actor and a Graph Attention Network (GAT) centralized critic. The actor utilizes a value vector reconstruction mechanism that explicitly encodes relative geometric relations through a collaborative tracking error matrix, enabling scale-insensitive policy learning under time-varying communication topologies. Meanwhile, the GAT-based critic models evolving interaction structures for accurate global value estimation. The proposed framework is validated on real differential-drive robot platforms, and experimental results demonstrate superior stability and safety in dynamic scenarios with limited fields-of-view.",
+      "authors": [
+        "Xiao Sizhe",
+        "Dong Lijing",
+        "Bai Rui",
+        "Tan Xin"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-08T14:30:06+00:00",
+      "link": "https://arxiv.org/pdf/2609.08802v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "Safe multi-agent reinforcement learning with time-varying topology",
+      "llm_evidence_cn": "面向时变拓扑的安全多智能体强化学习",
+      "llm_evidence": "面向时变拓扑的安全多智能体强化学习",
+      "canonical_evidence": "面向时变拓扑的安全多智能体强化学习",
+      "llm_tldr_en": "This paper presents a graph-based safe multi-agent RL framework for cooperative navigation under time-varying topology, using a Control Barrier-Like Function action screening layer and a GAT centralized critic.",
+      "llm_tldr_cn": "该论文针对时变拓扑下多智能体协作导航中的安全问题，提出图结构的安全多智能体强化学习框架。作者设计控制障碍函数类动作筛选层，弥合离散LiDAR感知与连续安全约束之间的差距，无论学习进展如何都严格满足物理安全约束。在此基础上构建注意力演员与图注意力网络集中式评论家的统一架构，提升了多智能体系统的安全性与协作性能。",
+      "llm_tldr": "该论文针对时变拓扑下多智能体协作导航中的安全问题，提出图结构的安全多智能体强化学习框架。作者设计控制障碍函数类动作筛选层，弥合离散LiDAR感知与连续安全约束之间的差距，无论学习进展如何都严格满足物理安全约束。在此基础上构建注意力演员与图注意力网络集中式评论家的统一架构，提升了多智能体系统的安全性与协作性能。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "multi-agent reinforcement learning papers",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.06421v1",
+      "source": "arxiv",
+      "title": "On BatchNorm Forward Modes in Value-Based Reinforcement Learning",
+      "abstract": "Batch normalization (BN) substantially improves sample efficiency in continuous-control actor-critic methods such as CrossQ, yet recent studies report performance degradation in discrete-action value learning on Atari. These failures are surprising because discrete Q-networks lack the action-input distribution mismatch identified by CrossQ. We show for target-based C51 and target-free PQN that the simple choice between running and batch statistics at specific forward passes can reverse this degradation. In C51, switching the BN bootstrap forward to batch-statistic mode significantly improves performance over unnormalized and LayerNorm baselines and scales stably with update-to-data ratios up to 12. In PQN, using batch-statistics for both action selection and bootstrapping recovers performance from the failing running-statistic configuration. Across 26 Atari games at 400M frames, this configuration achieves a higher final aggregate score than PQN with LayerNorm. Our results show that carefully configured BN can substantially improve discrete-action value learning, and that its forward protocols are an essential part of the algorithm specification.",
+      "authors": [
+        "Daniel Palenicek",
+        "Mikael Henaff",
+        "Scott Fujimoto",
+        "Koustuv Sinha"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI"
+      ],
+      "published": "2026-09-06T06:45:59+00:00",
+      "link": "https://arxiv.org/pdf/2609.06421v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "value-based reinforcement learning with BatchNorm forward modes",
+      "llm_evidence_cn": "基于价值强化学习中的批归一化前向模式",
+      "llm_evidence": "基于价值强化学习中的批归一化前向模式",
+      "canonical_evidence": "基于价值强化学习中的批归一化前向模式",
+      "llm_tldr_en": "BatchNorm degrades discrete-action value learning on Atari, puzzling since Q-networks lack the action-input mismatch. Choosing running versus batch statistics at specific forward passes reverses this, improving C51 and PQN.",
+      "llm_tldr_cn": "批归一化在连续控制中提升样本效率，但在Atari离散动作价值学习中反而导致性能下降，其原因尚不明确。本文针对基于目标的C51与无目标的PQN，研究在特定前向传播中选用运行统计量还是批统计量对性能的影响。实验表明，将BN自举前向切换为批统计模式可显著优于未归一化与LayerNorm基线，并在更新数据比高达12时稳定扩展。该发现揭示了BN前向模式选择是价值学习稳定的关键因素。",
+      "llm_tldr": "批归一化在连续控制中提升样本效率，但在Atari离散动作价值学习中反而导致性能下降，其原因尚不明确。本文针对基于目标的C51与无目标的PQN，研究在特定前向传播中选用运行统计量还是批统计量对性能的影响。实验表明，将BN自举前向切换为批统计模式可显著优于未归一化与LayerNorm基线，并在更新数据比高达12时稳定扩展。该发现揭示了BN前向模式选择是价值学习稳定的关键因素。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "papers on reinforcement learning",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.06467v1",
+      "source": "arxiv",
+      "title": "Local and Global Stability in Performative Reinforcement Learning",
+      "abstract": "In performative reinforcement learning the deployed policy shapes the environment that generates the learner's future data, and the natural solution concept is a performatively stable policy that is optimal in the environment it induces. Existing convergence guarantees rely on Lipschitz sensitivity assumptions on the environment map $π\\mapsto (P_π, r_π)$, which are hard to verify and fail in settings such as multi-agent best-response dynamics. We instead study stability for mixtures of policies, and show that the resulting picture is fundamentally different from performative prediction, where randomization removes the need for any sensitivity assumption. We distinguish local mixed stability, an occupancy-weighted first-order relaxation that we show is equivalent to stationarity, from global mixed stability, which certifies against arbitrary deviating policies. Our first result is that a weighted per-state Hedge dynamic drives the local stability gap to zero at an $O(1/\\sqrt{T})$ rate for an arbitrary, possibly discontinuous, environment map, both with exact and with trajectory feedback. The two notions genuinely differ: we exhibit an instance where local stability is achieved exactly but every mixture has global stability gap bounded away from zero. For global stability we introduce a bounded transition range assumption, strictly weaker than Lipschitz sensitivity, under which unweighted per-state Hedge converges up to a floor of $O(γε_P/(1-γ)^3)$, and we prove a matching-in-$ε_P$ lower bound of $Ω(γε_P/(1-γ))$ under trajectory feedback, so this floor is unavoidable. Finally, we extend both notions to $n$-player performative Markov games, obtaining local stability with no assumption on the joint environment map or game structure, and global stability for performative Markov potential games.",
+      "authors": [
+        "Debmalya Mandal"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2026-09-06T08:29:07+00:00",
+      "link": "https://arxiv.org/pdf/2609.06467v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Theoretical stability analysis of performative reinforcement learning",
+      "llm_evidence_cn": "表演式强化学习的稳定性理论分析",
+      "llm_evidence": "表演式强化学习的稳定性理论分析",
+      "canonical_evidence": "表演式强化学习的稳定性理论分析",
+      "llm_tldr_en": "This paper studies convergence and stability in performative RL, where the deployed policy shapes the data-generating environment, and replaces hard-to-verify Lipschitz sensitivity assumptions with mixture-policy stability notions.",
+      "llm_tldr_cn": "该论文研究表演式强化学习中策略影响环境的稳定性问题，指出已有收敛保证依赖难以验证且在多智能体最佳响应下失效的Lipschitz敏感假设。作者转而研究策略混合的稳定性，区分局部混合稳定与全局稳定，并表明其与表演式预测中随机化消除敏感性的图景根本不同。该工作为表演式强化学习提供了更一般的理论稳定性基础。",
+      "llm_tldr": "该论文研究表演式强化学习中策略影响环境的稳定性问题，指出已有收敛保证依赖难以验证且在多智能体最佳响应下失效的Lipschitz敏感假设。作者转而研究策略混合的稳定性，区分局部混合稳定与全局稳定，并表明其与表演式预测中随机化消除敏感性的图景根本不同。该工作为表演式强化学习提供了更一般的理论稳定性基础。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "theoretical foundations of reinforcement learning",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.06469v1",
+      "source": "arxiv",
+      "title": "One Step, One Lead: Mitigating Higher-Order Interference in Multi-Domain Reinforcement Learning via Cross-Step Control",
+      "abstract": "Reinforcement learning (RL) across multiple domains can broaden the reasoning capabilities of large language models (LLMs), yet joint training often degrades individual-domain performance and can destabilize optimization. Existing work typically diagnoses such interference from a single-step view using first-order gradient alignment or curvature-based proxies. We show that this view can miss a critical form of sequential interference: same-point domain gradients may remain nearly orthogonal even when consecutive realized updates partially reverse one another in output space. We further show that consecutive token log-probability footprints recover this interaction directly from adjacent checkpoints as a local second-order interaction in output space, without explicitly reconstructing same-step curvature. Building on this insight, we propose OSOL, which designates a focus domain at each iteration, uses the preceding checkpoint footprint to rank token-level rebound risk, and applies a drift-ranked, adaptively scaled correction within the standard GRPO update. Our analysis shows that this correction suppresses the targeted cross-step output backtracking component. Controlled studies further show that cross-step backtracking is more strongly associated with subsequent task damage than same-point gradient diagnostics, while the preceding footprint ranks future rebound risk more accurately than Hessian-based proxies. On Qwen3-30B-A3B, OSOL reaches a domain-macro average of 0.4822, improving by 5.7% over the strongest compared baseline, without explicit higher-order differentiation.",
+      "authors": [
+        "Zihan Lin",
+        "Xiaohan Wang",
+        "Jie Cao",
+        "Jiajun Chai",
+        "Guojun Yin",
+        "Wei Lin",
+        "Ran He"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.CL"
+      ],
+      "published": "2026-09-06T08:32:59+00:00",
+      "link": "https://arxiv.org/pdf/2609.06469v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "RL across multiple domains, mitigating higher-order interference",
+      "llm_evidence_cn": "多领域强化学习中的高阶干扰缓解",
+      "llm_evidence": "多领域强化学习中的高阶干扰缓解",
+      "canonical_evidence": "多领域强化学习中的高阶干扰缓解",
+      "llm_tldr_en": "This paper studies multi-domain RL for LLMs, showing single-step gradient alignment misses sequential higher-order interference, and proposes cross-step control to mitigate it and stabilize joint training.",
+      "llm_tldr_cn": "该论文针对多领域强化学习联合训练常导致单领域性能下降与优化不稳定的问题，指出以往从单步视角用一阶梯度对齐或曲率代理诊断干扰会遗漏关键的序列性高阶干扰。作者发现连续 token 对数概率足迹可从相邻检查点直接恢复这种交互，并提出跨步控制方法来缓解干扰。该工作为多领域强化学习的稳定性提供了新的诊断与干预视角。",
+      "llm_tldr": "该论文针对多领域强化学习联合训练常导致单领域性能下降与优化不稳定的问题，指出以往从单步视角用一阶梯度对齐或曲率代理诊断干扰会遗漏关键的序列性高阶干扰。作者发现连续 token 对数概率足迹可从相邻检查点直接恢复这种交互，并提出跨步控制方法来缓解干扰。该工作为多领域强化学习的稳定性提供了新的诊断与干预视角。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "papers on reinforcement learning",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.07211v1",
+      "source": "arxiv",
+      "title": "Phase-and-First-Arrival VLM Feedback for Sparse-Reward Reinforcement Learning in Surgical Manipulation",
+      "abstract": "Sparse outcome feedback limits what robots can learn from unsuccessful attempts at complex manipulation. Failed multi-stage surgical attempts can contain grasps, lifts, or transfers worth reusing. In sparse-reward reinforcement learning, terminal rewards collapse such attempts to the same outcome, while scalar vision-language model (VLM) ratings reveal neither what progress merits credit nor when it occurred. We introduce phase-and-first-arrival feedback: one VLM query per recorded episode identifies the furthest visually verified task phase and when that phase is first reached, allowing the learner to reuse partial behavior and localize credit. We instantiate it in SurgPhaseBench, a phase-structured suite spanning rigid and deformable tasks, and evaluate it in simulation and hardware. Across five simulated tasks, our method reaches 75.2% mean success, compared with 52.1% for a reward based on Contrastive Language-Image Pre-training (CLIP) using the same visual input; the advantage persists when only the feedback representation changes. On hardware, the same record supports autonomous block picking and slip recovery. Together, these results show that trajectory-level visual supervision can preserve partial progress while providing the temporal credit needed for sparse-reward control.",
+      "authors": [
+        "Wanli Liuchen",
+        "Fangyuan Wang",
+        "Bin Li",
+        "Anqing Duan",
+        "Yunhui Liu",
+        "Peng Zhou",
+        "David Navarro-Alarcon"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-07T08:29:59+00:00",
+      "link": "https://arxiv.org/pdf/2609.07211v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Sparse-reward RL with VLM feedback for surgical manipulation",
+      "llm_evidence_cn": "面向手术操作稀疏奖励强化学习的VLM反馈",
+      "llm_evidence": "面向手术操作稀疏奖励强化学习的VLM反馈",
+      "canonical_evidence": "面向手术操作稀疏奖励强化学习的VLM反馈",
+      "llm_tldr_en": "This paper addresses sparse-reward RL in multi-stage surgical manipulation, where terminal rewards collapse partial progress, and proposes phase-and-first-arrival VLM feedback to localize credit and reuse partial behavior.",
+      "llm_tldr_cn": "该论文针对多阶段手术操作中稀疏奖励强化学习难以复用失败尝试的问题，指出终端奖励把不同进展压缩为同一结果，而标量视觉语言模型评分无法说明进展内容与时机。作者提出阶段与首次到达反馈，用每次VLM查询识别已验证的最远任务阶段及其首次到达时刻，从而复用部分行为并定位信用。该方法在SurgPhaseBench上验证，为稀疏奖励机器人操作提供了新的反馈机制。",
+      "llm_tldr": "该论文针对多阶段手术操作中稀疏奖励强化学习难以复用失败尝试的问题，指出终端奖励把不同进展压缩为同一结果，而标量视觉语言模型评分无法说明进展内容与时机。作者提出阶段与首次到达反馈，用每次VLM查询识别已验证的最远任务阶段及其首次到达时刻，从而复用部分行为并定位信用。该方法在SurgPhaseBench上验证，为稀疏奖励机器人操作提供了新的反馈机制。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "papers on reinforcement learning",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.07247v1",
+      "source": "arxiv",
+      "title": "Elastic Horizon: Discovering the Effective Interaction Frontier in Agentic Reinforcement Learning",
+      "abstract": "Scaling the interaction horizon-the maximum number of environment interactions per episode-improves LLM agents on long-horizon tasks, and curriculum-based methods that progressively expand the horizon outperform fixed-horizon alternatives. However, existing schedules are open-loop: they monotonically increase the horizon until a manually specified maximum, with no mechanism to detect when further expansion stops helping. We propose the effective interaction frontier hypothesis: a dynamic boundary beyond which additional interactions yield diminishing returns while cost grows linearly. We then introduce Elastic Horizon, a closed-loop controller that tracks this boundary via the 90th percentile of successful trajectory lengths. On AppWorld and BFCL, fixed-horizon sweeps reveal clear saturation plateaus; Elastic Horizon stabilizes the horizon inside the saturation band from both under- and over-capacity initializations, attains the best success rates across 7B and 14B backbones, and saves up to 25% of per-step trajectory tokens. Our work shifts the paradigm from how to scale interaction horizons to when to stop scaling.",
+      "authors": [
+        "Gangyi Zhang",
+        "Junjie Meng",
+        "Letian Zhang",
+        "Wei Wu",
+        "Yang Zheng",
+        "Dong Wang",
+        "Yang Liu",
+        "Guanjun Jiang",
+        "Chongming Gao"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-09-07T09:09:10+00:00",
+      "link": "https://arxiv.org/pdf/2609.07247v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Agentic reinforcement learning with adaptive interaction horizon scheduling",
+      "llm_evidence_cn": "智能体强化学习中的交互视界自适应调度",
+      "llm_evidence": "智能体强化学习中的交互视界自适应调度",
+      "canonical_evidence": "智能体强化学习中的交互视界自适应调度",
+      "llm_tldr_en": "Curriculum methods for LLM agent RL expand the interaction horizon open-loop, ignoring diminishing returns. Elastic Horizon adds a closed-loop controller that tracks the 90th percentile of successful trajectory lengths to locate the effective interaction frontier.",
+      "llm_tldr_cn": "现有面向大模型智能体的课程式强化学习调度是开环的：交互视界单调增长到人工设定的上限，无法判断继续扩展是否还有收益。本文提出有效交互前沿假设，并设计弹性视界闭环控制器，通过成功轨迹长度的九十分位数动态追踪该边界。实验表明闭环调节能在成本线性增长时避免无效交互，为长时程智能体强化学习提供更高效的训练范式。",
+      "llm_tldr": "现有面向大模型智能体的课程式强化学习调度是开环的：交互视界单调增长到人工设定的上限，无法判断继续扩展是否还有收益。本文提出有效交互前沿假设，并设计弹性视界闭环控制器，通过成功轨迹长度的九十分位数动态追踪该边界。实验表明闭环调节能在成本线性增长时避免无效交互，为长时程智能体强化学习提供更高效的训练范式。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "papers on reinforcement learning",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.07303v1",
+      "source": "arxiv",
+      "title": "Long-Horizon Language Model Reinforcement Learning via Progressive Point Matching",
+      "abstract": "Current paradigms for training language models via reinforcement learning rely heavily on sparse outcome rewards. However, as we pursue tasks that require longer and more complicated trajectories, such strategies result in slow learning. Prior work has attempted to address this problem by rewarding partial progress; however, naive formulations are often biased and converge to suboptimal policies. We show that a simple and unbiased dense reward formulation, which we term progressive point matching, scales exponentially more efficiently to long-horizon tasks by rewarding partial progress on a segment level, both theoretically and empirically via synthetic environments. We then show how progressive point matching can be practically instantiated using a single reference trajectory per task. On extremely hard math reasoning problems, sparse outcome rewards cannot make any progress, whereas segment-level rewards enable improvements at larger test-time token budgets when measured by success rate or pass@k.",
+      "authors": [
+        "Preston Fu",
+        "Kevin Frans",
+        "Oleh Rybkin",
+        "Sergey Levine",
+        "Aviral Kumar"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2026-09-07T10:21:41+00:00",
+      "link": "https://arxiv.org/pdf/2609.07303v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "RL for long-horizon language models with dense reward formulation",
+      "llm_evidence_cn": "面向长时程语言模型强化学习的稠密奖励方法",
+      "llm_evidence": "面向长时程语言模型强化学习的稠密奖励方法",
+      "canonical_evidence": "面向长时程语言模型强化学习的稠密奖励方法",
+      "llm_tldr_en": "This paper addresses slow learning from sparse outcome rewards in long-horizon language model RL and proposes progressive point matching, an unbiased dense reward that scales exponentially better on segment-level partial progress.",
+      "llm_tldr_cn": "该论文针对语言模型强化学习中稀疏结果奖励导致长时程任务学习缓慢的问题，指出以往奖励部分进展的做法往往有偏并收敛到次优策略。作者提出渐进点匹配这一简单且无偏的稠密奖励公式，在片段级别奖励部分进展，并在理论上证明其对长时程任务具有指数级更高的学习效率。合成环境实验验证了该方法的有效性，为长时程语言模型强化学习提供了可实用的稠密奖励方案。",
+      "llm_tldr": "该论文针对语言模型强化学习中稀疏结果奖励导致长时程任务学习缓慢的问题，指出以往奖励部分进展的做法往往有偏并收敛到次优策略。作者提出渐进点匹配这一简单且无偏的稠密奖励公式，在片段级别奖励部分进展，并在理论上证明其对长时程任务具有指数级更高的学习效率。合成环境实验验证了该方法的有效性，为长时程语言模型强化学习提供了可实用的稠密奖励方案。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "papers on reinforcement learning",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.07998v1",
+      "source": "arxiv",
+      "title": "Mini-Batch Risk-Averse Deep Q-Learning: A Robot Navigation Case Study",
+      "abstract": "We study the control of Markov decision processes in which the quality of a policy is evaluated by a dynamic, time-consistent Markov risk measure rather than by an expected discounted cost. The main obstacle to combining such measures with reinforcement learning is that a transition risk mapping depends on the transition kernel in a nonlinear way, and therefore cannot be estimated from a single observed transition. We remove this obstacle by employing mini-batch transition risk mappings: the mapping is applied to the empirical measure of $N$ independent next-state samples, and the result is averaged. The resulting mapping is again coherent. However, as an expected value of a function of $N$ next-state values, it admits an unbiased one-sample estimator.   We embed this mapping into a double deep Q-network, analyze the two sources of estimation bias that arise, and obtain a risk-averse Q-learning method applicable to state spaces far beyond the reach of tabular schemes. The method is applied to an underwater robot navigation problem, in which a vehicle must visit collection points, gather stochastic information payloads, and deliver them at transmission points, while exposed at each step to the risk of destruction. A hierarchical decomposition delegates path execution to an exact graph search and confines learning to the high-level ``collect or transmit'' decision. A low-dimensional feature map, invariant under the symmetries of the problem, replaces the raw state--configuration encoding. In experiments on $300$ held-out environments, the resulting policies transfer to instance sizes never seen in training, and already $N=2$ reduces the upper semideviation of the outcome distribution while simultaneously improving its mean whenever the simulator is misspecified---an empirical counterpart of the duality between coherent risk measures and distributional robustness.",
+      "authors": [
+        "Aayush Patel",
+        "Andrzej Ruszczyński"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "math.OC"
+      ],
+      "published": "2026-09-07T21:33:27+00:00",
+      "link": "https://arxiv.org/pdf/2609.07998v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Deep Q-learning with mini-batch risk-averse objectives for robot navigation",
+      "llm_evidence_cn": "面向机器人导航的小批量风险规避深度Q学习",
+      "llm_evidence": "面向机器人导航的小批量风险规避深度Q学习",
+      "canonical_evidence": "面向机器人导航的小批量风险规避深度Q学习",
+      "llm_tldr_en": "Combining dynamic Markov risk measures with RL is hard because transition risk mappings depend nonlinearly on the kernel; this paper uses mini-batch transition risk mappings with unbiased one-sample estimators in deep Q-learning for robot navigation.",
+      "llm_tldr_cn": "在马尔可夫决策过程中，策略质量可用动态时间一致的马尔可夫风险度量而非期望折扣代价来评价，但转移风险映射非线性依赖转移核，难以从单个观测转移估计。本文采用小批量转移风险映射，将其应用于N个独立下一状态样本的经验测度并取平均，从而获得无偏单样本估计，并将其融入深度Q学习。机器人导航案例研究表明该方法可有效实现风险规避的深度强化学习控制。",
+      "llm_tldr": "在马尔可夫决策过程中，策略质量可用动态时间一致的马尔可夫风险度量而非期望折扣代价来评价，但转移风险映射非线性依赖转移核，难以从单个观测转移估计。本文采用小批量转移风险映射，将其应用于N个独立下一状态样本的经验测度并取平均，从而获得无偏单样本估计，并将其融入深度Q学习。机器人导航案例研究表明该方法可有效实现风险规避的深度强化学习控制。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "deep reinforcement learning research papers",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.08642v1",
+      "source": "arxiv",
+      "title": "SUN: Reaching for Novelty in Reinforcement Learning",
+      "abstract": "Exploration in reinforcement learning (RL) remains a fundamental challenge. Recent goal-conditioned RL strategies (which select goals to encourage broader state coverage) have shown promising results, but none scores a goal by novelty and reachability jointly: the two signals are traded off by hand, applied in sequence, or one is neglected outright. In this paper, we introduce a reachability-aware goal-selection framework that explicitly integrates these two aspects, and that can be seamlessly incorporated into any off-policy RL algorithm. To this aim, we propose SUccessor-to-Novelty (SUN), an indicator derived from successor value functions to identify goals that are both novel and reachable. We prove that SUN recovers count-based bonuses in the limit, bounds short-horizon hitting probabilities, and provably rejects unreachable goals. We further present an adaptive goal-selection strategy that leverages these properties, and an accurate yet lightweight pseudocount to avoid the overhead of classic methods. We back up all our claims with thorough benchmarks: SUN consistently outperforms state-of-the-art methods in standard and novel environments with unreachable or hard-to-reach states, irreversible transitions, obstacles, mazes, and unbounded spaces.",
+      "authors": [
+        "Wenyan Yang",
+        "Arsenii Mustafin",
+        "Dominik Baumann",
+        "Joni Pajarinen",
+        "Simone Parisi"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "cs.RO"
+      ],
+      "published": "2026-09-08T12:12:13+00:00",
+      "link": "https://arxiv.org/pdf/2609.08642v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "goal-conditioned exploration in off-policy RL with provable novelty bonus",
+      "llm_evidence_cn": "离策略强化学习中的目标条件探索与可证明新颖性奖励",
+      "llm_evidence": "离策略强化学习中的目标条件探索与可证明新颖性奖励",
+      "canonical_evidence": "离策略强化学习中的目标条件探索与可证明新颖性奖励",
+      "llm_tldr_en": "Exploration in RL remains hard; goal-conditioned methods trade off novelty and reachability by hand. SUN proposes a reachability-aware goal-selection indicator from successor value functions, provably recovering count-based bonuses and improving exploration.",
+      "llm_tldr_cn": "强化学习中的探索长期受限于新颖性与可达性难以兼顾的问题，现有目标条件方法多依赖手工权衡。本文提出可达性感知的目标选择框架，并给出基于后继价值函数的SUN指标，用于识别既新颖又可达的目标，可无缝嵌入任意离策略算法。理论分析证明SUN在极限下恢复计数式探索奖励并给出短视界界，实验显示其提升探索效率。该工作为通用探索目标设计提供了可证明的新思路。",
+      "llm_tldr": "强化学习中的探索长期受限于新颖性与可达性难以兼顾的问题，现有目标条件方法多依赖手工权衡。本文提出可达性感知的目标选择框架，并给出基于后继价值函数的SUN指标，用于识别既新颖又可达的目标，可无缝嵌入任意离策略算法。理论分析证明SUN在极限下恢复计数式探索奖励并给出短视界界，实验显示其提升探索效率。该工作为通用探索目标设计提供了可证明的新思路。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "papers on reinforcement learning",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.08853v1",
+      "source": "arxiv",
+      "title": "CAST: Alternating State-Value Targets and Expanded Policy Gradients for Model-Based Reinforcement Learning",
+      "abstract": "Model-based reinforcement learning (MBRL) is a family of RL methods that learn a model of the environment and use it for action selection, making it well suited to robotics due to its sample efficiency. Combining learned models with online planning can further improve action selection, as the planner can exploit the model to find better actions than the learned policy alone. Recent methods combining learned policies with online planning typically learn the value of the policy rather than the stronger planner-guided behavior. We present CAST (Critic with Alternating State-value Target), which uses planner-guided behavior to improve value learning while regularizing the value estimate with the current policy. CAST replaces the action-value critic with a state-value critic, trained using a target that combines a real planner-guided transition and an imagined transition under the current policy. The resulting value function corresponds to an alternating process between planner-guided behavior and the current policy, allowing it to benefit from the stronger planner behavior while being regularised by the policy being learned. We evaluate CAST on the DeepMind Control and HumanoidBench Suites against several state-of-the-art methods, and demonstrate successful transfer to a physical Unitree Go2 quadruped performing a dynamic handstand.",
+      "authors": [
+        "Pietro Noah Crestaz",
+        "Mohamed Yassine Kabouri",
+        "Nicolas Mansard",
+        "Andrea Del Prete"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-09-08T15:05:16+00:00",
+      "link": "https://arxiv.org/pdf/2609.08853v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "model-based reinforcement learning with planner-guided value learning",
+      "llm_evidence_cn": "结合规划器引导价值学习的基于模型强化学习",
+      "llm_evidence": "结合规划器引导价值学习的基于模型强化学习",
+      "canonical_evidence": "结合规划器引导价值学习的基于模型强化学习",
+      "llm_tldr_en": "Model-based RL suits robotics due to sample efficiency, but methods combining learned policies with online planning typically learn policy value rather than stronger planner-guided behavior. CAST uses planner-guided behavior to improve value learning while regularizing with the current policy.",
+      "llm_tldr_cn": "基于模型的强化学习通过学习环境模型并用于动作选择，因样本效率高而适合机器人，但现有结合在线规划的方法通常只学习策略价值，而非更强的规划器引导行为价值。本文提出CAST（交替状态价值评论家），利用规划器引导行为改进价值学习，同时用当前策略正则化价值估计，并扩展策略梯度。该方法提升了价值估计与动作选择质量，为基于模型强化学习中融合在线规划的价值学习提供了更优方案。",
+      "llm_tldr": "基于模型的强化学习通过学习环境模型并用于动作选择，因样本效率高而适合机器人，但现有结合在线规划的方法通常只学习策略价值，而非更强的规划器引导行为价值。本文提出CAST（交替状态价值评论家），利用规划器引导行为改进价值学习，同时用当前策略正则化价值估计，并扩展策略梯度。该方法提升了价值估计与动作选择质量，为基于模型强化学习中融合在线规划的价值学习提供了更优方案。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "model-based reinforcement learning papers",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.09783v1",
+      "source": "arxiv",
+      "title": "BRACE: Anchored Bellman-Residual Correction for Stale Critics in Asynchronous RL",
+      "abstract": "Asynchronous reinforcement learning has become the standard way to scale training for language models, but the resulting policy lag biases the critic toward the stale behavior policy. Existing work on asynchronous LLM training corrects the actor and leaves this bias unaddressed, while the off-policy value correction of classical RL does not carry over to long-horizon agentic tasks, since a short correction horizon leaves the regression target free of the reward and a long one lets the product of importance ratios drift exponentially with the trajectory length. We propose BRACE, an anchored Bellman-residual correction for stale value models. BRACE bounds the correction horizon to a prefix of policy tokens and anchors a constant-weight Monte-Carlo tail beyond it, which separates policy correction from reward propagation. BRACE improves mean@1 on BrowseComp-Plus by $2.4\\%$ over the strongest baseline, runs $2.46\\times$ faster per step than synchronous training, and remains stable $50$ updates off-policy.",
+      "authors": [
+        "Guanqun Zhao",
+        "Zijun Xie",
+        "Binbin Zheng",
+        "Jiafeng Lu",
+        "Enlei Gong",
+        "Zeyu Chen"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI"
+      ],
+      "published": "2026-09-09T06:32:30+00:00",
+      "link": "https://arxiv.org/pdf/2609.09783v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Anchored Bellman-residual correction algorithm for asynchronous RL critics",
+      "llm_evidence_cn": "面向异步强化学习评论家的锚定贝尔曼残差校正算法",
+      "llm_evidence": "面向异步强化学习评论家的锚定贝尔曼残差校正算法",
+      "canonical_evidence": "面向异步强化学习评论家的锚定贝尔曼残差校正算法",
+      "llm_tldr_en": "Asynchronous RL for LLM training suffers stale critics biased toward old behavior policies; BRACE bounds the correction horizon and anchors a constant-weight Monte-Carlo target to correct the value model.",
+      "llm_tldr_cn": "异步强化学习已成为大规模训练语言模型的主流方式，但策略滞后会使评论家偏向陈旧的行为策略，而经典离策略价值校正难以直接用于长程智能体任务。本文提出BRACE，通过将校正时域限制在策略词元前缀，并锚定常权重的蒙特卡洛目标，来稳定地修正陈旧价值模型。该方法缓解了重要性比值随轨迹长度指数漂移的问题，为异步大模型强化学习提供了更可靠的价值估计。",
+      "llm_tldr": "异步强化学习已成为大规模训练语言模型的主流方式，但策略滞后会使评论家偏向陈旧的行为策略，而经典离策略价值校正难以直接用于长程智能体任务。本文提出BRACE，通过将校正时域限制在策略词元前缀，并锚定常权重的蒙特卡洛目标，来稳定地修正陈旧价值模型。该方法缓解了重要性比值随轨迹长度指数漂移的问题，为异步大模型强化学习提供了更可靠的价值估计。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "algorithms for reinforcement learning",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.09981v1",
+      "source": "arxiv",
+      "title": "Optimal Value Inference for Reinforcement Learning",
+      "abstract": "We study offline inference for the optimal value in reinforcement learning. Two new nuisances are derived as fixed points of a self-induced Bellman equation, in which we approximate the maximum Bellman operator by its softmax correspondence. We propose a debiased estimator through the Neyman orthogonality and establish its asymptotic normality under diverging horizons even when the behavior policy changes with time, as long as the nuisances have the statistical rates that can be achieved by many machine learning methods. We provide a concrete estimating procedure for these nuisances and show they can lead to valid inference. Synthetic experiments validate the numerical performance of our inference method, and we implement it in real-life decision-making problems, including bike repositioning and AI agentic tool use.",
+      "authors": [
+        "Nan Lu",
+        "Ethan Lee",
+        "James M. Robins",
+        "David Simchi-Levi",
+        "Junwei Lu"
+      ],
+      "primary_category": "stat.ML",
+      "categories": [
+        "stat.ML",
+        "cs.LG",
+        "stat.ME"
+      ],
+      "published": "2026-09-09T10:10:55+00:00",
+      "link": "https://arxiv.org/pdf/2609.09981v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "offline inference for optimal value in RL with Bellman equation theory",
+      "llm_evidence_cn": "基于贝尔曼方程的强化学习最优价值离线推断",
+      "llm_evidence": "基于贝尔曼方程的强化学习最优价值离线推断",
+      "canonical_evidence": "基于贝尔曼方程的强化学习最优价值离线推断",
+      "llm_tldr_en": "Offline inference for the optimal value in RL lacks reliable statistical tools. The paper derives two nuisances from a self-induced Bellman equation, uses Neyman orthogonality for a debiased estimator, and proves asymptotic normality under diverging horizons.",
+      "llm_tldr_cn": "强化学习中最优价值的离线推断缺乏可靠的统计推断工具。本文基于自诱导贝尔曼方程推导两个新干扰项，用softmax近似最大贝尔曼算子，并通过Neyman正交性构造去偏估计量。理论上证明其在行为策略随时间变化、时域发散条件下仍具渐近正态性。合成实验与实际决策任务验证了推断方法的有效性，为强化学习价值估计提供统计推断基础。",
+      "llm_tldr": "强化学习中最优价值的离线推断缺乏可靠的统计推断工具。本文基于自诱导贝尔曼方程推导两个新干扰项，用softmax近似最大贝尔曼算子，并通过Neyman正交性构造去偏估计量。理论上证明其在行为策略随时间变化、时域发散条件下仍具渐近正态性。合成实验与实际决策任务验证了推断方法的有效性，为强化学习价值估计提供统计推断基础。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "theoretical foundations of reinforcement learning",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.10433v1",
+      "source": "arxiv",
+      "title": "Multi-Agent Reinforcement Learning for Autonomous UAV Exploration in Wildfire Response",
+      "abstract": "This study develops a deep reinforcement learning framework for training Unmanned Aerial Vehicle (UAV) agents to navigate and monitor simulated wildfire environments. Results show that agents learn increasingly stable and effective behaviors over time, as demonstrated by converging loss trends, improved reward signals, and more consistent navigation patterns such as fire-boundary tracking. Overall, these findings highlight the potential of deep reinforcement learning (DRL) based UAV systems for autonomous wildfire monitoring and suggest that environmental structure and reward design influence policy effectiveness.",
+      "authors": [
+        "Caden Chandra",
+        "Jerry Ng"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO",
+        "cs.LG"
+      ],
+      "published": "2026-09-09T16:45:19+00:00",
+      "link": "https://arxiv.org/pdf/2609.10433v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "multi-agent deep RL for UAV exploration in wildfire response",
+      "llm_evidence_cn": "面向野火响应的无人机探索多智能体深度强化学习",
+      "llm_evidence": "面向野火响应的无人机探索多智能体深度强化学习",
+      "canonical_evidence": "面向野火响应的无人机探索多智能体深度强化学习",
+      "llm_tldr_en": "This work builds a deep reinforcement learning framework training UAV agents to navigate and monitor simulated wildfire environments, showing converging losses and improved fire-boundary tracking, highlighting DRL potential for autonomous monitoring.",
+      "llm_tldr_cn": "野火监测场景中无人机自主探索面临环境复杂与策略设计困难的问题。本文构建深度强化学习框架，训练无人机智能体在模拟野火环境中导航与监测。结果显示智能体行为随时间趋于稳定有效，损失收敛、奖励提升，并能持续跟踪火场边界。研究表明环境结构与奖励设计影响策略效果，展示了深度强化学习在自主野火监测中的潜力。",
+      "llm_tldr": "野火监测场景中无人机自主探索面临环境复杂与策略设计困难的问题。本文构建深度强化学习框架，训练无人机智能体在模拟野火环境中导航与监测。结果显示智能体行为随时间趋于稳定有效，损失收敛、奖励提升，并能持续跟踪火场边界。研究表明环境结构与奖励设计影响策略效果，展示了深度强化学习在自主野火监测中的潜力。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "multi-agent reinforcement learning papers",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.10776v1",
+      "source": "arxiv",
+      "title": "A Bellman Optimality Equation for Plasticity",
+      "abstract": "In continual reinforcement learning, carefully managing the stability-plasticity tradeoff remains a core challenge. Recent work by Abel et al. (2025) formalized this dilemma by defining plasticity as the generalized directed information from an agent's observations to its actions, and empowerment as the generalized directed information from its actions to its observations. This formulation successfully reframes the traditional stability-plasticity tradeoff as an empowerment-plasticity tradeoff. However, while extensive literature exists on optimizing for empowerment, there is currently no research addressing the optimization of plasticity under this new definition. This paper presents preliminary work toward optimizing plasticity within Markov decision processes. We show that there exists a Bellman optimality equation for optimizing plasticity similar to previous work for empowerment.",
+      "authors": [
+        "Jeremy Lucas",
+        "Doina Precup"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2026-09-09T19:23:56+00:00",
+      "link": "https://arxiv.org/pdf/2609.10776v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Bellman optimality equation theory for plasticity in continual RL",
+      "llm_evidence_cn": "持续强化学习中可塑性的贝尔曼最优性方程理论",
+      "llm_evidence": "持续强化学习中可塑性的贝尔曼最优性方程理论",
+      "canonical_evidence": "持续强化学习中可塑性的贝尔曼最优性方程理论",
+      "llm_tldr_en": "Continual RL must balance stability and plasticity, and prior work reframed this as an empowerment-plasticity tradeoff but never optimized plasticity. This paper derives a Bellman optimality equation for plasticity within MDPs as preliminary theory.",
+      "llm_tldr_cn": "持续强化学习中稳定性与可塑性的权衡是核心难题，已有工作将其形式化为赋能与可塑性的权衡，但尚无研究优化该定义下的可塑性。本文在马尔可夫决策过程中开展优化可塑性的初步研究，推导出可塑性的贝尔曼最优性方程。理论分析表明可塑性可通过类似价值迭代的方式优化。该工作为持续强化学习中的可塑性优化提供了理论基础。",
+      "llm_tldr": "持续强化学习中稳定性与可塑性的权衡是核心难题，已有工作将其形式化为赋能与可塑性的权衡，但尚无研究优化该定义下的可塑性。本文在马尔可夫决策过程中开展优化可塑性的初步研究，推导出可塑性的贝尔曼最优性方程。理论分析表明可塑性可通过类似价值迭代的方式优化。该工作为持续强化学习中的可塑性优化提供了理论基础。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "theoretical foundations of reinforcement learning",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.10866v1",
+      "source": "arxiv",
+      "title": "Certifying Lower Bounds for Risk-Sensitive Reinforcement Learning under Adversarial State Perturbations",
+      "abstract": "Reinforcement learning (RL) agents deployed in real-world environments are often vulnerable to adversarial perturbations in state observations, creating risks in safety-critical applications. Certification methods can improve robustness against adversarial perturbations by providing lower bounds on expected cumulative rewards. Existing certification methods, however, mainly focus on risk-neutral objectives. In this paper, we extend certification methods to risk-sensitive objectives by establishing lower bounds on the exponential utility of cumulative rewards under $l_{p}$-norm-bounded state adversarial perturbations ($1\\leq p <\\infty$). By introducing a $φ$-divergence relaxation of the perturbation set, we formulate the risk-sensitive certification problem as a convex optimization and derive its dual to obtain a tractable approximation of the certified lower bound. We further propose an empirical method that improves certified lower bounds by selecting the training risk-aversion parameter $β$ independently of the risk level used during evaluation. Experiments on both OpenAI Gym environments and a machine replacement problem show that, compared to risk-neutral training, risk-averse training generally yields policies with higher certified lower bounds, particularly under larger perturbation budgets. Moreover, under both risk-neutral and risk-averse evaluation settings, increasing risk aversion during training leads to non-monotonic certification performance, where certified lower bounds initially improve but eventually decrease due to overly conservative policies.",
+      "authors": [
+        "Tong Li",
+        "Saunak Kumar Panda",
+        "Yisha Xiang"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "math.OC"
+      ],
+      "published": "2026-09-09T22:06:23+00:00",
+      "link": "https://arxiv.org/pdf/2609.10866v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Certification for risk-sensitive reinforcement learning under adversarial perturbations",
+      "llm_evidence_cn": "对抗扰动下风险敏感强化学习的认证",
+      "llm_evidence": "对抗扰动下风险敏感强化学习的认证",
+      "canonical_evidence": "对抗扰动下风险敏感强化学习的认证",
+      "llm_tldr_en": "Existing RL certification gives risk-neutral reward lower bounds; this paper extends certification to risk-sensitive objectives, bounding the exponential utility of returns under l_p-bounded state perturbations.",
+      "llm_tldr_cn": "部署在真实环境中的强化学习智能体易受状态观测对抗扰动影响，现有认证方法主要针对风险中性目标提供累积奖励下界。本文将认证方法扩展到风险敏感目标，在l_p范数有界状态扰动下建立累积奖励指数效用的下界，并引入φ散度松弛扰动集进行求解。该工作为安全关键场景中的风险敏感强化学习提供了可认证的鲁棒性保证。",
+      "llm_tldr": "部署在真实环境中的强化学习智能体易受状态观测对抗扰动影响，现有认证方法主要针对风险中性目标提供累积奖励下界。本文将认证方法扩展到风险敏感目标，在l_p范数有界状态扰动下建立累积奖励指数效用的下界，并引入φ散度松弛扰动集进行求解。该工作为安全关键场景中的风险敏感强化学习提供了可认证的鲁棒性保证。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "papers on reinforcement learning",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.11615v1",
+      "source": "arxiv",
+      "title": "Distributed Optimization of Modular Production Systems using Model-based Reinforcement Learning with Inverse Models",
+      "abstract": "This paper presents a novel approach for data-driven self-learning control of highly flexible, modular manufacturing systems. Specifically, we employ a novel framework for model-based reinforcement learning which introduces approximate inverse process models within the training of reinforcement policies. This approach disentangles the learning of actuation dynamics and the dynamics in state space, resulting in RL-based training solely within the task space. We propose a lightweight feedforward architecture for approximate inverse models and integrate them within the policy network of standard RL algorithms. We apply the approach to a laboratory modular production testbed with heterogeneous production modules. The results underline the efficiency improvements for modular manufacturing units in terms of both performance and training speed, particularly for off-policy algorithms.",
+      "authors": [
+        "Andreas Schwung",
+        "Steve Yuwono",
+        "Sofiene Lassoued",
+        "Dorothea Schwung"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "cs.LG",
+        "eess.SY"
+      ],
+      "published": "2026-09-10T14:30:52+00:00",
+      "link": "https://arxiv.org/pdf/2609.11615v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "model-based reinforcement learning with inverse models",
+      "llm_evidence_cn": "结合逆模型的模型强化学习",
+      "llm_evidence": "结合逆模型的模型强化学习",
+      "canonical_evidence": "结合逆模型的模型强化学习",
+      "llm_tldr_en": "Flexible modular manufacturing systems need data-driven self-learning control. The paper proposes a model-based RL framework using approximate inverse process models, disentangling actuation and state dynamics so training occurs in task space, validated on a modular production testbed.",
+      "llm_tldr_cn": "高度灵活的模块化制造系统难以实现数据驱动的自学习控制。本文提出一种模型强化学习框架，在策略训练中引入近似逆过程模型，将执行机构动力学与状态空间动力学解耦，使训练仅在任务空间进行。作者设计轻量前馈逆模型并集成到标准RL算法的策略网络中。在含异构模块的实验室生产测试平台上验证了方法的有效性。",
+      "llm_tldr": "高度灵活的模块化制造系统难以实现数据驱动的自学习控制。本文提出一种模型强化学习框架，在策略训练中引入近似逆过程模型，将执行机构动力学与状态空间动力学解耦，使训练仅在任务空间进行。作者设计轻量前馈逆模型并集成到标准RL算法的策略网络中。在含异构模块的实验室生产测试平台上验证了方法的有效性。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "model-based reinforcement learning papers",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.11807v1",
+      "source": "arxiv",
+      "title": "Near-Optimal Reinforcement Learning with Multi-Step Transition Lookahead",
+      "abstract": "We study reinforcement learning (RL) with transition look-ahead, where the agent may observe which states would be visited upon playing any sequence of $\\ell$ actions before deciding its course of action. Although look-ahead can substantially improve achievable performance, it is known that optimal planning with multi-step transition look-ahead is NP-hard, but this hardness was established using discount factors arbitrarily close to one. It was therefore unknown whether the problem remains hard for any discount factor, and whether near-optimal planning can nevertheless be performed efficiently. We resolve both questions. First, we show that for every fixed rational discount factor ($γ\\in(0,1)$), exact planning remains NP-hard. Second, we introduce a randomized polynomial-time approximation scheme for every fixed look-ahead depth. We then extend our approach to unknown transitions and stochastic rewards using optimism and variance-adaptive confidence bounds. The resulting algorithm achieves cumulative regret whose leading term matches classical tabular discounted RL up to logarithmic factors. Thus, although exact planning with transition look-ahead is NP-hard, efficient near-optimal planning and learning remain possible.",
+      "authors": [
+        "Corentin Pla",
+        "Hugo Richard",
+        "Marc Abeille",
+        "Vianney Perchet"
+      ],
+      "primary_category": "stat.ML",
+      "categories": [
+        "stat.ML",
+        "cs.LG"
+      ],
+      "published": "2026-09-10T16:58:21+00:00",
+      "link": "https://arxiv.org/pdf/2609.11807v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "theoretical complexity and near-optimal planning with transition lookahead",
+      "llm_evidence_cn": "带转移前瞻的复杂度理论与近最优规划",
+      "llm_evidence": "带转移前瞻的复杂度理论与近最优规划",
+      "canonical_evidence": "带转移前瞻的复杂度理论与近最优规划",
+      "llm_tldr_en": "RL with multi-step transition lookahead improves performance but exact planning is NP-hard only known for discount near one. This paper proves NP-hardness for any fixed rational discount and gives a near-optimal efficient algorithm.",
+      "llm_tldr_cn": "强化学习中允许智能体在行动前观察多步动作将访问的状态可显著提升性能，但最优规划被证明为NP难，且该结论仅在折扣因子趋近1时成立。本文研究任意固定有理折扣因子下的情形，证明精确规划仍然NP难，同时提出可实现近最优性能的高效规划算法。结果既厘清了前瞻规划的复杂度边界，又给出了可行的近似方案，深化了强化学习规划的理论基础。",
+      "llm_tldr": "强化学习中允许智能体在行动前观察多步动作将访问的状态可显著提升性能，但最优规划被证明为NP难，且该结论仅在折扣因子趋近1时成立。本文研究任意固定有理折扣因子下的情形，证明精确规划仍然NP难，同时提出可实现近最优性能的高效规划算法。结果既厘清了前瞻规划的复杂度边界，又给出了可行的近似方案，深化了强化学习规划的理论基础。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "theoretical foundations of reinforcement learning",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.12014v1",
+      "source": "arxiv",
+      "title": "Certified Safety Curation: Distribution-Free Guarantees for Safe Offline Reinforcement Learning",
+      "abstract": "Safe offline reinforcement learning assumes a cost function on every transition. We ask what remains possible when safety can be judged only by comparing short clips and occasionally asking whether an episode exceeded its budget. Certified safety curation answers with a filter-then-clone pipeline: a state-only value trained from segment comparisons scores whole trajectories, Learn-then-Test calibration certifies a selection threshold under a distribution-free $(α, δ)$ bound on the unsafe fraction of the selection, and behavior cloning follows. We are not aware of prior work certifying the composition of a training set for offline RL or imitation. Oracle controls justify the design: reweighting individual transitions fails even with an exact value, so the value selects whole trajectories. The policies satisfy the cost budget on eleven of fifteen DSRL tasks, one short of cloning the ground-truth safe subset, which needs a label on every trajectory; the uncertified variant reaches twelve. Retrained on the certified selection, the strongest full-label method becomes safe where no setting of its own cost target rescues it. Refusal is predictable: the certificate's probability has a closed form in the purity the pool attains, which the calibration sample estimates and the scorer enters only through.",
+      "authors": [
+        "Adam Haroon",
+        "Cody Fleming"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2026-09-10T06:45:32+00:00",
+      "link": "https://arxiv.org/pdf/2609.12014v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Safe offline reinforcement learning with certified data curation",
+      "llm_evidence_cn": "安全离线强化学习与可认证数据筛选",
+      "llm_evidence": "安全离线强化学习与可认证数据筛选",
+      "canonical_evidence": "安全离线强化学习与可认证数据筛选",
+      "llm_tldr_en": "Safe offline RL usually needs per-transition cost labels; this work certifies safety when supervision is only clip comparisons, using a filter-then-clone pipeline with Learn-then-Test calibration.",
+      "llm_tldr_cn": "安全离线强化学习通常假设每个转移都有代价标签，但现实中往往只能通过比较短片段判断安全性。本文提出认证安全策展流程：先用片段比较训练状态价值函数为整条轨迹打分，再用Learn-then-Test校准选择阈值，得到对所选数据不安全比例的无分布(α,δ)保证，最后进行行为克隆。实验表明对单个转移重新加权会失败，而整体轨迹级筛选能提供可靠保证，为离线强化学习与模仿学习的数据集构建提供了可认证的新范式。",
+      "llm_tldr": "安全离线强化学习通常假设每个转移都有代价标签，但现实中往往只能通过比较短片段判断安全性。本文提出认证安全策展流程：先用片段比较训练状态价值函数为整条轨迹打分，再用Learn-then-Test校准选择阈值，得到对所选数据不安全比例的无分布(α,δ)保证，最后进行行为克隆。实验表明对单个转移重新加权会失败，而整体轨迹级筛选能提供可靠保证，为离线强化学习与模仿学习的数据集构建提供了可认证的新范式。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "papers on reinforcement learning",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.12419v1",
+      "source": "arxiv",
+      "title": "MInTRL: Off-policy Intervention can boost On-policy RL",
+      "abstract": "Reinforcement learning with verifiable rewards is typically performed on-policy, keeping training data close to the current policy but limiting learning to trajectories that the policy can discover itself. Off-policy methods such as supervised fine-tuning, on the other hand, can leverage external knowledge beyond the base model's capabilities, but may suffer from large distribution shift. The key challenge is thus to expand exploration without sacrificing learnability. In this work, we introduce Minimal Intervention Reinforcement Learning (MInTRL), which expands the exploration frontier through sparse, local interventions in otherwise on-policy rollouts. During generation, a judge-intervention policy periodically reviews the current policy's output, replaces erroneous suffixes with short corrections, and immediately returns control to the policy. During training, MInTRL adopts a sequence-level advantage-regression objective that eliminates the need for importance sampling. We show that sparse, local interventions can substantially improve coverage beyond finite-budget on-policy sampling while preserving the overall on-policy nature of the resulting trajectories. Across math and code benchmarks, MInTRL consistently outperforms standard on-policy and off-policy baselines. Ablations show that MInTRL remains effective with self-intervention and across different judge policies, while performance peaks at moderate intervention intensity, highlighting the importance of intervening minimally. These results establish minimal intervention as an effective paradigm for enhancing on-policy RL.",
+      "authors": [
+        "Mingyu Chen",
+        "Yefan Tao",
+        "Gerald Friedland",
+        "Xuezhou Zhang",
+        "Chris Kong"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI"
+      ],
+      "published": "2026-09-11T04:13:32+00:00",
+      "link": "https://arxiv.org/pdf/2609.12419v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Off-policy intervention boosting on-policy reinforcement learning",
+      "llm_evidence_cn": "离策略干预提升在线策略强化学习",
+      "llm_evidence": "离策略干预提升在线策略强化学习",
+      "canonical_evidence": "离策略干预提升在线策略强化学习",
+      "llm_tldr_en": "On-policy RL with verifiable rewards limits exploration to what the policy can discover; MInTRL adds sparse local judge interventions in rollouts to expand exploration without large distribution shift.",
+      "llm_tldr_cn": "基于可验证奖励的强化学习通常采用在线策略，训练数据贴近当前策略但探索范围受限；离策略方法虽能利用外部知识却面临分布偏移。本文提出最小干预强化学习MInTRL，在保持在线策略的生成过程中，由裁判干预策略周期性地审查并替换错误输出，从而以稀疏局部干预扩展探索前沿。该方法在扩大探索的同时维持可学习性，为强化学习训练中的探索与稳定性平衡提供了新思路。",
+      "llm_tldr": "基于可验证奖励的强化学习通常采用在线策略，训练数据贴近当前策略但探索范围受限；离策略方法虽能利用外部知识却面临分布偏移。本文提出最小干预强化学习MInTRL，在保持在线策略的生成过程中，由裁判干预策略周期性地审查并替换错误输出，从而以稀疏局部干预扩展探索前沿。该方法在扩大探索的同时维持可学习性，为强化学习训练中的探索与稳定性平衡提供了新思路。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "papers on reinforcement learning",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.12424v1",
+      "source": "arxiv",
+      "title": "Granularity-Adaptive Credit Assignment for Long-Horizon LLM Agent Reinforcement Learning",
+      "abstract": "Reinforcement learning is now the standard way to train large language model agents on long-horizon tasks, where dozens of interdependent actions precede a single sparse reward. Critic-free, group-relative methods such as GRPO suit this regime, but they broadcast one trajectory-level scalar to every step and cannot say which decision drove the outcome. GiGPO recovers a step-level signal by grouping time steps that share an anchor state, yet it merges the step- and episode-level estimates under one fixed weight, spending the same resolution on a pivotal branching decision as on a routine, near-deterministic transition. We argue that the right resolution is state-dependent, and propose GACA, a critic-free estimator whose granularity follows an uncertainty-based criticality proxy. GACA scores every step by the negative log-likelihood its own rollout already records, then blends the two advantages with a per-step weight that grows with that score, so the gradient places more weight on the fine-grained signal at above-average NLL and on the episode-level signal below it. We derive an exact risk decomposition for the implemented mixture and show that sufficiently small modulation improves on fixed mixing under positive directional alignment. A separate conditional result bounds local action-value variation using expected NLL, while an error-projection analysis characterizes when mixing adds value beyond scalar uncertainty reweighting. On ALFWorld and WebShop, GACA improves task success over GRPO and GiGPO at both 1.5B and 7B scales.",
+      "authors": [
+        "Taoran Liang",
+        "Yang Liu",
+        "Shang Luo",
+        "Yingguang Yang",
+        "Rongrong Zhang",
+        "Yingzong Min",
+        "Yulin Huang",
+        "Jianshen Zhang",
+        "Yongzhi Qi",
+        "Kefu Xu",
+        "Congjing Ran",
+        "Bin Chong"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2026-09-11T04:19:44+00:00",
+      "link": "https://arxiv.org/pdf/2609.12424v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "RL for long-horizon LLM agents, credit assignment algorithm",
+      "llm_evidence_cn": "面向长时程LLM智能体的强化学习与信用分配算法",
+      "llm_evidence": "面向长时程LLM智能体的强化学习与信用分配算法",
+      "canonical_evidence": "面向长时程LLM智能体的强化学习与信用分配算法",
+      "llm_tldr_en": "This paper tackles credit assignment in long-horizon LLM agent RL, where trajectory-level rewards cannot identify which step mattered, and proposes GACA, a critic-free estimator with state-dependent granularity.",
+      "llm_tldr_cn": "该论文针对长时程大语言模型智能体强化学习中的信用分配难题，指出GRPO等组相对方法只能把轨迹级标量广播到每一步，无法判断哪一决策真正决定结果。作者提出GACA这一无评论家的估计器，使信用分配的粒度随状态自适应变化，对关键分支决策给予更细分辨率。该工作改进了稀疏奖励下长时程任务的强化学习训练稳定性与效果。",
+      "llm_tldr": "该论文针对长时程大语言模型智能体强化学习中的信用分配难题，指出GRPO等组相对方法只能把轨迹级标量广播到每一步，无法判断哪一决策真正决定结果。作者提出GACA这一无评论家的估计器，使信用分配的粒度随状态自适应变化，对关键分支决策给予更细分辨率。该工作改进了稀疏奖励下长时程任务的强化学习训练稳定性与效果。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "papers on reinforcement learning",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.12459v1",
+      "source": "arxiv",
+      "title": "EvoRS: On-Policy Self-Evolution of Reward Systems for Open-Ended Reinforcement Learning",
+      "abstract": "Open-ended reinforcement learning often relies on rubric-based rewards for tasks without directly verifiable answers. Yet the policy and reward system form a dynamic feedback loop: as the policy optimizes the current reward, an initially useful reward system may become unreliable due to reward hacking or reduced response discriminability. The reward system should therefore evolve rather than remain fixed during training. Existing dynamic-rubric methods adapt evaluation criteria, but reward failures can also arise from scoring mechanisms or signal composition. We introduce EvoRS, a self-evolving RL framework that evolves the reward system from on-policy experience, representing it as an executable Reward-DAG. Specifically, an agentic designer updates this system from on-policy rollouts and reward traces to maintain train-time reliability. Across writing and roleplay, EvoRS achieves the best quality under all three judges, outperforming the policy by \\(2.107\\) and \\(4.767\\) points, respectively, while reducing reward hacking and coverage failures and preserving reward informativeness. Ablations confirm that a comprehensive fixed reward system cannot remain reliable in open-ended tasks and must evolve throughout training.",
+      "authors": [
+        "Weiyuan Li",
+        "Aili Chen",
+        "Xintao Wang",
+        "Yikai Zhang",
+        "Qingqing Dong",
+        "Jinghan Xu",
+        "Hongru Hou",
+        "Wenxuan Zhao",
+        "Chengkun Lang",
+        "Jun Gao",
+        "Yuanli Guo",
+        "Hongcheng Guo",
+        "Yanghua Xiao",
+        "Deqing Yang"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-09-11T05:40:59+00:00",
+      "link": "https://arxiv.org/pdf/2609.12459v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Self-evolving reward systems for open-ended reinforcement learning",
+      "llm_evidence_cn": "面向开放式强化学习的奖励系统自演化",
+      "llm_evidence": "面向开放式强化学习的奖励系统自演化",
+      "canonical_evidence": "面向开放式强化学习的奖励系统自演化",
+      "llm_tldr_en": "Open-ended RL with rubric rewards suffers from reward hacking as policy and reward co-evolve; EvoRS self-evolves the reward system on-policy, representing it as an executable Reward-DAG.",
+      "llm_tldr_cn": "开放式强化学习常依赖基于评分标准的奖励处理无法直接验证答案的任务，但策略与奖励系统形成动态反馈回路，奖励可能因被钻空子或区分度下降而失效。本文提出EvoRS，一种自演化强化学习框架，利用在线策略经验将奖励系统表示为可执行的Reward-DAG并持续演化。该方法突破了仅调整评价标准的局限，从评分机制与信号组合层面应对奖励失效，提升了开放式强化学习的训练可靠性。",
+      "llm_tldr": "开放式强化学习常依赖基于评分标准的奖励处理无法直接验证答案的任务，但策略与奖励系统形成动态反馈回路，奖励可能因被钻空子或区分度下降而失效。本文提出EvoRS，一种自演化强化学习框架，利用在线策略经验将奖励系统表示为可执行的Reward-DAG并持续演化。该方法突破了仅调整评价标准的局限，从评分机制与信号组合层面应对奖励失效，提升了开放式强化学习的训练可靠性。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "papers on reinforcement learning",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.12749v1",
+      "source": "arxiv",
+      "title": "SCQ: Stabilizing Conservative Q-Learning with Sigmoid-Bounded Entropy",
+      "abstract": "Offline-to-online reinforcement learning reduces interaction cost for real-world robot learning but suffers from persistent value estimation instability. Existing methods address this through pessimistic regularization, lower-bound calibration, and architectural normalization, but an overlooked source of instability lies in the entropy formulation: the standard log-entropy term can become negative, destabilizing policy updates. We introduce SCQ (Sigmoid-Bounded Conservative Q-Learning), which replaces this term with a sigmoid-bounded formulation that stays strictly positive. SCQ retains conservative Q regularization and return-based lower-bound calibration, stabilizing policy optimization without sacrificing exploration. We evaluate SCQ on D4RL (Minari) benchmarks under both single-demonstration and standard dataset settings, as well as on simulation and real-world visual tasks. SCQ matches or exceeds baseline performance while exhibiting more stable training dynamics across state-based and visual benchmarks, and transfers to four real-robot platforms including manipulation, wheeled, quadruped, and humanoid systems. A direct clipping intervention that removes negative log-probability contributions, together with gradient-matched positive-score controls, indicates that positivity rather than a particular score shape alone drives much of the improvement. Project website: https://scq-rl.github.io.",
+      "authors": [
+        "Xiefeng Wu",
+        "Shu Zhang",
+        "Zhaojie Chu",
+        "Mingyu Hu"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-09-11T11:59:52+00:00",
+      "link": "https://arxiv.org/pdf/2609.12749v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Stabilizing conservative Q-learning with sigmoid-bounded entropy for offline-to-online RL",
+      "llm_evidence_cn": "用Sigmoid有界熵稳定离线到在线强化学习的保守Q学习",
+      "llm_evidence": "用Sigmoid有界熵稳定离线到在线强化学习的保守Q学习",
+      "canonical_evidence": "用Sigmoid有界熵稳定离线到在线强化学习的保守Q学习",
+      "llm_tldr_en": "Offline-to-online RL suffers value estimation instability partly because standard log-entropy can go negative; SCQ replaces it with a sigmoid-bounded strictly positive entropy term, stabilizing conservative Q-learning.",
+      "llm_tldr_cn": "离线到在线强化学习能降低真实机器人学习的交互成本，却长期面临价值估计不稳定问题，已有方法通过悲观正则化、下界校准与结构归一化应对，但忽略了熵公式这一来源：标准对数熵可能变为负值从而破坏策略更新。本文提出SCQ，用严格为正的Sigmoid有界公式替换该熵项，同时保留保守Q正则化与基于回报的下界校准。在D4RL（Minari）上的评估表明该方法能在不牺牲探索的前提下稳定策略优化。",
+      "llm_tldr": "离线到在线强化学习能降低真实机器人学习的交互成本，却长期面临价值估计不稳定问题，已有方法通过悲观正则化、下界校准与结构归一化应对，但忽略了熵公式这一来源：标准对数熵可能变为负值从而破坏策略更新。本文提出SCQ，用严格为正的Sigmoid有界公式替换该熵项，同时保留保守Q正则化与基于回报的下界校准。在D4RL（Minari）上的评估表明该方法能在不牺牲探索的前提下稳定策略优化。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "algorithms for reinforcement learning",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.12905v1",
+      "source": "arxiv",
+      "title": "Offline Reinforcement Learning for Wind Farm Control: A Wind Tunnel Study under Dynamic Wind Directions",
+      "abstract": "This paper addresses the wind farm power maximization problem in the presence of wind direction changes. Specifically, a model-free Modified Twin Delayed Deep Deterministic Policy Gradient with Behavior Cloning (MTD3-BC) algorithm is proposed to tackle this task through yaw control under varying wind direction conditions. MTD3-BC is an offline reinforcement learning (RL) algorithm that aims to infer good behavior from only a precollected offline dataset. Additionally, to ensure smooth and moderate yaw adjustments, a new action consistency term is introduced into the policy optimization objective. Unlike online RL methods, MTD3-BC does not require extensive interactions with a wind farm simulator during training, significantly reducing computational costs and training time. A wind tunnel experiment is conducted to validate the effectiveness of the algorithm under varying wind directions. The results demonstrate that MTD3-BC successfully mitigates wake effects, delivering farm-level power gains of approximately 10\\% over the baseline greedy strategy and performance on par with a data-calibrated model-based wake-steering benchmark, while requiring no wake model and only a small fraction of the training cost of online RL. To our knowledge, this is the first time an offline RL wind farm control policy has been validated and demonstrated experimentally.",
+      "authors": [
+        "Yuhan Su",
+        "Hongyang Dong",
+        "Simone Tamaro",
+        "Filippo Campagnolo",
+        "Carlo L. Bottasso",
+        "Xiaowei Zhao"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2026-09-11T14:31:08+00:00",
+      "link": "https://arxiv.org/pdf/2609.12905v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Offline RL algorithm for wind farm control",
+      "llm_evidence_cn": "面向风电场控制的离线强化学习算法",
+      "llm_evidence": "面向风电场控制的离线强化学习算法",
+      "canonical_evidence": "面向风电场控制的离线强化学习算法",
+      "llm_tldr_en": "This paper addresses wind farm power maximization under changing wind directions and proposes MTD3-BC, a model-free offline RL algorithm with behavior cloning and an action consistency term for smooth yaw control.",
+      "llm_tldr_cn": "该论文研究风向变化下的风电场功率最大化问题，提出无需与环境大量交互的离线强化学习算法。作者设计MTD3-BC，即带行为克隆的改进型双延迟深度确定性策略梯度，通过预采集离线数据推断良好行为，并引入动作一致性项以保证偏航调整平滑适度。风洞实验表明该方法在动态风向下有效提升功率，且显著降低了对仿真器的训练依赖。",
+      "llm_tldr": "该论文研究风向变化下的风电场功率最大化问题，提出无需与环境大量交互的离线强化学习算法。作者设计MTD3-BC，即带行为克隆的改进型双延迟深度确定性策略梯度，通过预采集离线数据推断良好行为，并引入动作一致性项以保证偏航调整平滑适度。风洞实验表明该方法在动态风向下有效提升功率，且显著降低了对仿真器的训练依赖。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "algorithms for reinforcement learning",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.13044v1",
+      "source": "arxiv",
+      "title": "Robust Policy Optimization via Adversarial Importance Sampling",
+      "abstract": "Significant progress has been made in safeguarding deep reinforcement learning (DRL) policies against input perturbations. Developing robust DRL involves three main stages: algorithm design, implementation, and evaluation. In this work, we identify and address a key limitation at each stage. First, we introduce Adversarial Importance Sampling (Advis), a method that uses importance sampling over trajectories from standard training to estimate and optimize verifiable worst-case returns. Advis satisfies three desirable criteria not jointly achieved by prior work: it requires no additional environment interactions, no auxiliary networks, and captures long-term robustness. Second, we introduce advrl, a modular PyTorch library that provides clean, single-file implementations of existing robustness methods and adversarial attacks, facilitating rapid prototyping and enabling reproducible and traceable evaluations. Third, we revisit evaluation under learned adversaries and show that optimal adversarial hyperparameters do not transfer across agents, which can lead to an overestimation of robustness when using a limited set of attacker configurations. Accordingly, we evaluate policies against a large and diverse set of attackers, using 6-14x more configurations than prior work. Finally, we evaluate our approach on continuous control environments, demonstrating its effectiveness relative to existing baselines. The code is available at: https://github.com/AmineAndam04/advrl",
+      "authors": [
+        "Amine Andam",
+        "Jamal Bentahar",
+        "Mustapha Hedabou"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2026-09-11T16:40:45+00:00",
+      "link": "https://arxiv.org/pdf/2609.13044v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "robust deep reinforcement learning policy optimization and evaluation library",
+      "llm_evidence_cn": "鲁棒深度强化学习策略优化与评估库",
+      "llm_evidence": "鲁棒深度强化学习策略优化与评估库",
+      "canonical_evidence": "鲁棒深度强化学习策略优化与评估库",
+      "llm_tldr_en": "Robust deep RL needs better algorithm, implementation, and evaluation. Advis uses importance sampling over standard trajectories to optimize worst-case returns without extra interactions, and provides the advrl PyTorch library.",
+      "llm_tldr_cn": "深度强化学习策略容易受到输入扰动影响，而构建鲁棒策略涉及算法设计、实现与评估三个阶段，现有工作在每一阶段都存在局限。本文提出对抗重要性采样Advis，通过对标准训练轨迹做重要性采样来估计并优化可验证的最坏情况回报，无需额外环境交互与辅助网络即可捕捉长期鲁棒性；同时发布模块化PyTorch库advrl。工作为鲁棒深度强化学习提供了兼顾算法、实现与评估的统一方案。",
+      "llm_tldr": "深度强化学习策略容易受到输入扰动影响，而构建鲁棒策略涉及算法设计、实现与评估三个阶段，现有工作在每一阶段都存在局限。本文提出对抗重要性采样Advis，通过对标准训练轨迹做重要性采样来估计并优化可验证的最坏情况回报，无需额外环境交互与辅助网络即可捕捉长期鲁棒性；同时发布模块化PyTorch库advrl。工作为鲁棒深度强化学习提供了兼顾算法、实现与评估的统一方案。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "deep reinforcement learning research papers",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2609.13058v1",
+      "source": "arxiv",
+      "title": "Expert-Space Exploration in MoE Reinforcement Learning",
+      "abstract": "Reinforcement learning (RL) has become central to post-training of large language models. Recent advances in RL for Mixture-of-Experts (MoE) models have primarily focused on improving optimization stability and training efficiency, while treating the expert selection as a fixed component. Since routing determines the sparse computation paths that induce output distributions, expert selection offers an additional source of rollout diversity. Through empirical analysis, we find that perturbing expert routing effectively alters model output and increases rollout diversity, which is similar to increasing the decoding temperature. However, direct perturbation can activate unsuitable experts and substantially degrade rollout quality. Motivated by these observations, we introduce Expert-Space Exploration Reinforcement Learning (ESRL), an architecture-aware framework that explicitly explores the expert-routing space of MoE models. ESRL preserves high-confidence experts as anchors, and restricts stochastic routing to a plausible candidate pool, thereby retaining reliable computation paths. The perturbation strength is further adapted according to router entropy to avoid over-perturbation. To mitigate the routing mismatch introduced by perturbation, ESRL records the expert paths used during rollout and replays them during policy optimization. Experiments demonstrate that ESRL achieves the best performance across MoE backbones with top-K, top-1, and shared-expert routing, as well as across mathematics, science, and code tasks without additional sampling or computational cost. Specifically, ESRL on Qwen3-30B-A3B achieves the best among all compared methods, improving average Pass@1 and Pass@8 over GRPO by 3.2 and 4.5 percentage points, respectively. Further analyses of expert utilization and training dynamics provide insights into how exploiting MoE-specific routing structure benefits RL training.",
+      "authors": [
+        "Hongyi He",
+        "Zhenghao Lin",
+        "Xiao Liu",
+        "Peng Cheng",
+        "Yan Lu",
+        "Yeyun Gong"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL"
+      ],
+      "published": "2026-09-11T16:58:41+00:00",
+      "link": "https://arxiv.org/pdf/2609.13058v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "RL post-training of MoE models, expert routing exploration",
+      "llm_evidence_cn": "面向MoE模型的强化学习后训练与专家路由探索",
+      "llm_evidence": "面向MoE模型的强化学习后训练与专家路由探索",
+      "canonical_evidence": "面向MoE模型的强化学习后训练与专家路由探索",
+      "llm_tldr_en": "This paper studies exploration in RL post-training of Mixture-of-Experts LLMs, showing that perturbing expert routing increases rollout diversity but can activate unsuitable experts, motivating a controlled expert-space exploration method.",
+      "llm_tldr_cn": "该论文针对大语言模型强化学习后训练中混合专家（MoE）模型的探索不足问题展开研究。作者发现扰动专家路由能够改变输出分布并提升 rollout 多样性，类似提高解码温度，但直接扰动会激活不合适的专家并显著降低采样质量。为此提出在专家空间进行受控探索的方法，以在保持输出质量的同时增强多样性，从而改善MoE模型的强化学习训练效果。",
+      "llm_tldr": "该论文针对大语言模型强化学习后训练中混合专家（MoE）模型的探索不足问题展开研究。作者发现扰动专家路由能够改变输出分布并提升 rollout 多样性，类似提高解码温度，但直接扰动会激活不合适的专家并显著降低采样质量。为此提出在专家空间进行受控探索的方法，以在保持输出质量的同时增强多样性，从而改善MoE模型的强化学习训练效果。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "papers on reinforcement learning",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2609.07148v1",
+      "source": "arxiv",
+      "title": "Stable-MM-R1: Anchoring Multimodal Reasoning Dynamics via Entropy-Guided Stratification",
+      "abstract": "While Reinforcement Learning (RL) effectively incentivizes reasoning in Large Language Models, current pipelines are hindered by training instability and rapid entropy collapse. These limitations often stem from \"Rollout Silencing\" and low-quality gradient signals in standard sampling procedures. In this work, we propose a robust, data-centric framework to stabilize RL training. We first introduce Potential-Aware Query Mining (PAQM), which filters data dynamically to focus on the \"Distillation Zone\"---samples with high potential for capability elicitation. Furthermore, we present Hybrid Stratified Replay (HSR), a novel mechanism that restructures batches by stratifying rollouts based on Path Entropy, a rollout-level confidence proxy, and outcome reward. Within each optimization step, HSR reuses current-policy \"Stability Anchors\" and \"Hard Negatives\" to construct high-contrast optimization groups, then clears its buffers before the next step. This approach mitigates entropy collapse while improving the utilization of learning signals under limited compute. Our method outperforms strong baselines on complex reasoning tasks, offering a principled solution for stable and efficient RL fine-tuning.",
+      "authors": [
+        "Yimeng Ye",
+        "Shuang Chen",
+        "Wenxuan Huang",
+        "Manyuan Zhang",
+        "Kaituo Feng",
+        "Zhangquan Chen",
+        "Jiayu Chen",
+        "Yucheng Zhou",
+        "Yicheng Xiao",
+        "Zhiyuan Feng",
+        "Tianyu Shi"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.CV"
+      ],
+      "published": "2026-09-07T07:47:00+00:00",
+      "link": "https://arxiv.org/pdf/2609.07148v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "data-centric framework to stabilize reinforcement learning training",
+      "llm_evidence_cn": "稳定强化学习训练的数据中心框架",
+      "llm_evidence": "稳定强化学习训练的数据中心框架",
+      "canonical_evidence": "稳定强化学习训练的数据中心框架",
+      "llm_tldr_en": "RL for LLM reasoning suffers instability and entropy collapse from rollout silencing and poor gradients. Stable-MM-R1 proposes Potential-Aware Query Mining and Hybrid Stratified Replay based on Path Entropy to stabilize RL training.",
+      "llm_tldr_cn": "强化学习能有效激励大语言模型的推理能力，但现有训练流程存在不稳定与熵快速崩塌的问题，根源在于回放静默与低质量梯度信号。本文提出以数据为中心的稳定化框架Stable-MM-R1，包含潜在感知查询挖掘，动态筛选具有高能力激发潜力的蒸馏区样本，并设计基于路径熵的混合分层回放来重构批次。该方法缓解了熵崩塌并稳定了强化学习训练，为多模态推理的动态平衡提供了数据层面的改进方案。",
+      "llm_tldr": "强化学习能有效激励大语言模型的推理能力，但现有训练流程存在不稳定与熵快速崩塌的问题，根源在于回放静默与低质量梯度信号。本文提出以数据为中心的稳定化框架Stable-MM-R1，包含潜在感知查询挖掘，动态筛选具有高能力激发潜力的蒸馏区样本，并设计基于路径熵的混合分层回放来重构批次。该方法缓解了熵崩塌并稳定了强化学习训练，为多模态推理的动态平衡提供了数据层面的改进方案。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "papers on reinforcement learning",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2609.06958v1",
+      "source": "arxiv",
+      "title": "Mind the Phase: Effective Rank and Representation Health in Legged Locomotion",
+      "abstract": "Reinforcement learning has become the leading paradigm in legged locomotion, enabling complex behaviors from backflips to parkour through massively parallel simulation. Under PPO's non-stationarity, shallow networks remain the de facto architecture, supported by carefully staged curricula and environments, yet the representations these policies learn stay poorly understood, leaving no training-time signal of how they will behave on hardware. In this work, we empirically study locomotion policies through the effective rank of the policy Jacobian and show that conditioning rank on the gait phase exposes architectural structure that global rank averages away. In particular, we find that standard architectural choices, namely layer normalization and residual connections, allocate roughly two more dimensions of effective rank to swing than to stance, which is fully absent in vanilla MLPs. Building on this, we propose a simple recipe that turns these representational signatures into smoother, more reliable sim-to-real transfer. In practice, this results in roughly 3x lower joint jitter that holds from simulation onto a physical Spot, suggesting that representation health is an effective training-time lens to track sim-to-real smoothness.",
+      "authors": [
+        "Felipe Tommaselli",
+        "Thiago H. Segreto",
+        "Juliano D. Negri",
+        "Ricardo V. Godoy",
+        "Marcelo Becker"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO",
+        "cs.AI"
+      ],
+      "published": "2026-09-07T02:56:28+00:00",
+      "link": "https://arxiv.org/pdf/2609.06958v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "empirical study of deep RL policy representations in legged locomotion",
+      "llm_evidence_cn": "足式运动中深度强化学习策略表示的实证研究",
+      "llm_evidence": "足式运动中深度强化学习策略表示的实证研究",
+      "canonical_evidence": "足式运动中深度强化学习策略表示的实证研究",
+      "llm_tldr_en": "RL is the leading paradigm for legged locomotion, yet learned representations remain poorly understood with no training-time hardware signal. This paper studies policies via the effective rank of the policy Jacobian, conditioning rank on gait phase to reveal hidden architectural structure.",
+      "llm_tldr_cn": "强化学习已成为足式运动的主流范式，能实现后空翻、跑酷等复杂行为，但策略学到的表示仍缺乏理解，训练时没有可预测硬件表现的信号。本文通过策略雅可比矩阵的有效秩对运动策略进行实证研究，并将秩按步态相位条件化，从而揭示被全局平均掩盖的架构结构。研究发现层归一化等标准架构选择会影响表示健康度。该工作为运动策略提供了训练期可用的诊断信号，有助于预判硬件部署表现。",
+      "llm_tldr": "强化学习已成为足式运动的主流范式，能实现后空翻、跑酷等复杂行为，但策略学到的表示仍缺乏理解，训练时没有可预测硬件表现的信号。本文通过策略雅可比矩阵的有效秩对运动策略进行实证研究，并将秩按步态相位条件化，从而揭示被全局平均掩盖的架构结构。研究发现层归一化等标准架构选择会影响表示健康度。该工作为运动策略提供了训练期可用的诊断信号，有助于预判硬件部署表现。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "deep reinforcement learning research papers",
+      "matched_requirement_id": "req-2",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2609.06649v1",
+      "source": "arxiv",
+      "title": "Inducing Emergent Misalignment from Reward Hacks with Iterative DPO",
+      "abstract": "Reward hacking during reinforcement learning from verifiable rewards (RLVR) can induce reward seeking and broad misalignment in language models. Studying this misgeneralization is important for developing better threat models and countermeasures, but is often infeasible due to the cost of RL on large models. As an alternative, we propose studying emergent misalignment from iterative DPO, which preserves important properties of RLVR while reducing costs and enabling training on popular finetuning APIs. In practice, we find that training GPT-4.1 with iterative DPO on a single-turn reward hacking environment induces covert misaligned power-seeking and alignment faking, the first openly available (semi)-online training pipeline to induce these concerning forms of misalignment. We also find that training Qwen2.5-32B-Instruct with the same pipeline induces both misalignment and improved instruction following accuracy, showing that iterative DPO can be used as a testbed for selective generalization. Overall, we think iterative DPO can help democratize and accelerate the study of emergent misalignment from RLVR.",
+      "authors": [
+        "Oliver Daniels",
+        "Perusha Moodley",
+        "Benjamin M. Marlin",
+        "David Lindner"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI"
+      ],
+      "published": "2026-09-06T15:00:56+00:00",
+      "link": "https://arxiv.org/pdf/2609.06649v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "reward hacking in reinforcement learning from verifiable rewards",
+      "llm_evidence_cn": "强化学习从可验证奖励中的奖励黑客行为",
+      "llm_evidence": "强化学习从可验证奖励中的奖励黑客行为",
+      "canonical_evidence": "强化学习从可验证奖励中的奖励黑客行为",
+      "llm_tldr_en": "Reward hacking during RL from verifiable rewards can induce misalignment, but large-scale RL is costly to study. Using iterative DPO as a cheaper alternative, training GPT-4.1 on a reward hacking environment induces covert power-seeking and alignment faking.",
+      "llm_tldr_cn": "强化学习从可验证奖励中训练语言模型时，奖励黑客行为可能诱发奖励寻求与广泛失准，但大规模RL训练成本高昂难以研究。本文提出用迭代DPO研究涌现性失准，保留RLVR的关键特性同时降低成本。实验发现，在单轮奖励黑客环境中用迭代DPO训练GPT-4.1会诱发隐蔽的权力寻求与对齐伪装。该工作提供了首个公开可得的半在线训练流程以复现此类失准现象。",
+      "llm_tldr": "强化学习从可验证奖励中训练语言模型时，奖励黑客行为可能诱发奖励寻求与广泛失准，但大规模RL训练成本高昂难以研究。本文提出用迭代DPO研究涌现性失准，保留RLVR的关键特性同时降低成本。实验发现，在单轮奖励黑客环境中用迭代DPO训练GPT-4.1会诱发隐蔽的权力寻求与对齐伪装。该工作提供了首个公开可得的半在线训练流程以复现此类失准现象。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "papers on reinforcement learning",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2609.07461v1",
+      "source": "arxiv",
+      "title": "Temporal-Causal Inference for Reinforcement Learning via Automata Learning",
+      "abstract": "We consider reinforcement learning in environments with dynamics that undergo an irreversible phase transition governed by a hidden temporal pattern. The agent observes the base state but cannot observe the phase directly. We formalize this problem as a two-phase non-Markovian decision process and introduce Temporal-Causal Inference for Reinforcement Learning (TCIRL), a framework that jointly learns a control policy and infers the hidden temporal cause of the phase transition. TCIRL maintains a hypothesis deterministic finite automaton (DFA) to track what phase is active and refines it via counterexample-driven SAT-based synthesis. We prove that the hypothesis converges almost surely to a DFA recognizing the true cause language on all attainable label sequences, yielding an optimal policy for the original non-Markovian decision process. Experiments on a genetic therapy gridworld and a traffic signal environment show that TCIRL recovers the correct cause DFA and matches the full-information baseline in both domains.",
+      "authors": [
+        "Jan Corazza",
+        "Daniil Kaminskyi",
+        "Simon Lutz",
+        "Patrick Nossol",
+        "Hadi Partovi Aria",
+        "Zhe Xu",
+        "Daniel Neider"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2026-09-07T13:12:11+00:00",
+      "link": "https://arxiv.org/pdf/2609.07461v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "reinforcement learning algorithm with automata-based causal inference",
+      "llm_evidence_cn": "结合自动机因果推断的强化学习算法",
+      "llm_evidence": "结合自动机因果推断的强化学习算法",
+      "canonical_evidence": "结合自动机因果推断的强化学习算法",
+      "llm_tldr_en": "This paper studies RL where dynamics undergo an irreversible phase transition driven by a hidden temporal pattern. It formalizes a two-phase non-Markovian decision process and proposes TCIRL, learning a policy while inferring the hidden cause via a DFA refined by counterexample-driven SAT synthesis, with almost-sure convergence guarantees.",
+      "llm_tldr_cn": "许多环境的动态会经历由隐藏时间模式支配的不可逆相变，而智能体只能观测基础状态、无法直接获知所处阶段。本文将问题形式化为两阶段非马尔可夫决策过程，提出时序因果推断强化学习框架TCIRL，联合学习控制策略并推断相变的隐藏时间原因，其维护一个假设确定性有限自动机来跟踪阶段，并通过反例驱动的SAT合成进行精化。作者证明该假设在所有可达语言上几乎必然收敛到识别真实原因语言的自动机，为隐藏时序因果下的强化学习提供了可证明收敛的框架。",
+      "llm_tldr": "许多环境的动态会经历由隐藏时间模式支配的不可逆相变，而智能体只能观测基础状态、无法直接获知所处阶段。本文将问题形式化为两阶段非马尔可夫决策过程，提出时序因果推断强化学习框架TCIRL，联合学习控制策略并推断相变的隐藏时间原因，其维护一个假设确定性有限自动机来跟踪阶段，并通过反例驱动的SAT合成进行精化。作者证明该假设在所有可达语言上几乎必然收敛到识别真实原因语言的自动机，为隐藏时序因果下的强化学习提供了可证明收敛的框架。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "algorithms for reinforcement learning",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2609.07183v1",
+      "source": "arxiv",
+      "title": "CircuitLens: Reasoning Circuits as Data Selection Signals for Reinforcement Learning with Verifiable Rewards",
+      "abstract": "Reinforcement learning with verifiable rewards (RLVR) is sensitive to which problems a model trains on, yet existing selection criteria--difficulty filtering, hand-curation, reward-trajectory scoring--assess data value as an intrinsic property of problems, independent of the model that will learn from them. We introduce Circuit Reasoning Score (CRS), a selection signal derived from 46 reasoning-sensitive attention heads identified via contrastive ablation, computed in a single forward pass on the frozen base model without reward labels or rollouts. CRS runs against the intuitive hypothesis that stronger reasoning-circuit engagement produces better training data: on Qwen2.5-Math-7B, the lowest-engagement decile improves over random selection on three medium-difficulty benchmarks (GSM8K +2.0 pp, OlympiadBench +1.6 pp, Minerva +2.9 pp), while the highest-engagement decile gains less and is indistinguishable from the middle decile. The advantage has boundary conditions: on a domain-curated pool no selection method separates from the others; at 1.5B scale the useful direction differs; and the lowest-reward training condition produces the strongest downstream generalization. Within the Qwen2.5-Math settings tested, RLVR data selection appears regime-dependent rather than reducible to a static ranking of problem quality.",
+      "authors": [
+        "Zhuofan Chen",
+        "Ziqian Jiao",
+        "Yikai Cui",
+        "Zhixin Cai",
+        "Jun Bai",
+        "Wenge Rong"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.LG"
+      ],
+      "published": "2026-09-07T08:14:26+00:00",
+      "link": "https://arxiv.org/pdf/2609.07183v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "data selection for reinforcement learning with verifiable rewards",
+      "llm_evidence_cn": "可验证奖励强化学习的数据选择",
+      "llm_evidence": "可验证奖励强化学习的数据选择",
+      "canonical_evidence": "可验证奖励强化学习的数据选择",
+      "llm_tldr_en": "RLVR is sensitive to which problems a model trains on, but existing selection criteria treat data value as intrinsic. This paper introduces Circuit Reasoning Score from 46 reasoning-sensitive attention heads, computed in one forward pass without reward labels or rollouts, and finds the lowest-engagement decile trains best.",
+      "llm_tldr_cn": "可验证奖励强化学习对训练题目的选择高度敏感，但现有难度过滤、人工挑选等准则把数据价值视为题目固有属性，忽视了实际学习的模型。本文提出电路推理分数CRS，基于46个推理敏感注意力头，在冻结基座上单次前向计算，无需奖励标签或采样。在Qwen2.5-Math-7B上，推理电路参与度最低的十分位数据反而训练效果更好，颠覆了直觉假设。该工作说明数据选择应与模型内部推理机制耦合，为RLVR数据筛选提供新思路。",
+      "llm_tldr": "可验证奖励强化学习对训练题目的选择高度敏感，但现有难度过滤、人工挑选等准则把数据价值视为题目固有属性，忽视了实际学习的模型。本文提出电路推理分数CRS，基于46个推理敏感注意力头，在冻结基座上单次前向计算，无需奖励标签或采样。在Qwen2.5-Math-7B上，推理电路参与度最低的十分位数据反而训练效果更好，颠覆了直觉假设。该工作说明数据选择应与模型内部推理机制耦合，为RLVR数据筛选提供新思路。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "papers on reinforcement learning",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2609.08025v1",
+      "source": "arxiv",
+      "title": "Eliciting Self-Verification in Multimodal Reasoning Agents with Reinforcement Learning",
+      "abstract": "Reasoning agents increasingly rely on external tools such as web search to answer complex queries. Reinforcement learning (RL) finetuning algorithms such as GRPO have improved long-form reasoning in text-only language models, particularly for coding and mathematics. Reliable tool use in multimodal agents, however, remains challenging because models must interpret text and images while integrating noisy retrieved evidence, often under sparse outcome-level supervision without explicit verification signals. We present Self-Verification via Reinforcement Learning (SVRL), an RL-only finetuning framework that trains multimodal agents to verify and filter retrieved evidence within their own reasoning traces, reducing reliance on external verifiers at inference time. SVRL also introduces a search-aware penalty that discourages unnecessary tool calls and a query-diversity reward that encourages diverse, well-formed search queries, providing fine-grained feedback on when and what to search. Finetuning Qwen-2.5-VL-7B with SVRL on only 5{,}000 visual question answering examples yields consistent gains in multi-hop VQA generalization and tool efficiency across benchmarks. Overall, SVRL narrows the gap between compact agents and much larger proprietary models while requiring substantially lower training and inference cost.",
+      "authors": [
+        "Vishwas Sathish",
+        "Viresh Ranjan",
+        "Xinliang Zhu",
+        "Arnab Dhua",
+        "Douglas Gray"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "cs.CL",
+        "cs.CV"
+      ],
+      "published": "2026-09-07T22:15:47+00:00",
+      "link": "https://arxiv.org/pdf/2609.08025v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "reinforcement learning finetuning of multimodal reasoning agents",
+      "llm_evidence_cn": "面向多模态推理智能体的强化学习微调",
+      "llm_evidence": "面向多模态推理智能体的强化学习微调",
+      "canonical_evidence": "面向多模态推理智能体的强化学习微调",
+      "llm_tldr_en": "Multimodal reasoning agents using tools struggle to verify noisy retrieved evidence under sparse supervision. SVRL, an RL-only finetuning framework, trains agents to verify and filter evidence within their reasoning traces, improving tool-use reliability.",
+      "llm_tldr_cn": "多模态推理智能体需借助网络搜索等外部工具回答复杂问题，但在稀疏结果监督下难以可靠验证和过滤检索证据。本文提出SVRL，一种纯强化学习微调框架，训练多模态智能体在自身推理轨迹中验证并筛选检索内容。实验表明该方法减少对外部验证器的依赖，提升工具使用的可靠性。该工作拓展了强化学习微调在多模态智能体推理中的应用。",
+      "llm_tldr": "多模态推理智能体需借助网络搜索等外部工具回答复杂问题，但在稀疏结果监督下难以可靠验证和过滤检索证据。本文提出SVRL，一种纯强化学习微调框架，训练多模态智能体在自身推理轨迹中验证并筛选检索内容。实验表明该方法减少对外部验证器的依赖，提升工具使用的可靠性。该工作拓展了强化学习微调在多模态智能体推理中的应用。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "papers on reinforcement learning",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2609.08650v1",
+      "source": "arxiv",
+      "title": "Difficulty-Adaptive Tree-Structured Policy Optimization for Expanding Reasoning Coverage in RLVR",
+      "abstract": "Reinforcement Learning with Verifiable Rewards (RLVR) has been central to the recent success of Large Reasoning Models. However, while RLVR significantly improves single-sample accuracy, it often fails to expand the model's intrinsic reasoning coverage (pass@k) due to limited exploration during training. To address this, we optimize the structural design of train-time rollouts to enhance pass@k. Our analysis identifies three key design principles: (1) difficulty-adaptive rollout can play an important role in expanding pass@k, beyond serving as an efficiency heuristic; (2) tree-based rollout outperforms parallel sampling in discovering correct answers; and (3) sentence-entropy-guided forking overcomes the localization phenomenon of token-level branching to maximize semantic diversity. Building on these insights, we propose DATPO (Difficulty-Adaptive Sentence-entropy-guided Tree-structured Policy Optimization). DATPO integrates difficulty-adaptive tree search with a sibling-diversity advantage term, explicitly promoting semantic diversity to expand reasoning coverage during training. Experiments on mathematical reasoning benchmarks demonstrate that DATPO outperforms baselines especially in pass@k, which directly translates to superior test-time scaling performance.",
+      "authors": [
+        "Youngjun Yu",
+        "Sanghwan Jang",
+        "Hwanjo Yu"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "cs.CL"
+      ],
+      "published": "2026-09-08T12:21:22+00:00",
+      "link": "https://arxiv.org/pdf/2609.08650v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "policy optimization algorithm for RLVR reasoning coverage",
+      "llm_evidence_cn": "面向RLVR推理覆盖的策略优化算法",
+      "llm_evidence": "面向RLVR推理覆盖的策略优化算法",
+      "canonical_evidence": "面向RLVR推理覆盖的策略优化算法",
+      "llm_tldr_en": "RLVR improves single-sample accuracy but fails to expand reasoning coverage (pass@k) due to limited exploration. This paper optimizes train-time rollout structure via difficulty-adaptive rollouts, tree-based rollout, and sentence-entropy-guided forking to substantially raise pass@k.",
+      "llm_tldr_cn": "可验证奖励强化学习虽大幅提升单样本准确率，却因训练中探索不足而难以扩展模型内在的推理覆盖度（pass@k）。本文从训练时 rollout 的结构设计入手，提出难度自适应 rollout、树式 rollout 以及句熵引导分叉三条设计原则。实验显示树式 rollout 比并行采样更易发现正确答案，句熵引导分叉可克服定位现象，从而显著提升 pass@k。该工作表明 rollout 结构对推理覆盖具有关键作用，为RLVR训练策略设计提供了指导。",
+      "llm_tldr": "可验证奖励强化学习虽大幅提升单样本准确率，却因训练中探索不足而难以扩展模型内在的推理覆盖度（pass@k）。本文从训练时 rollout 的结构设计入手，提出难度自适应 rollout、树式 rollout 以及句熵引导分叉三条设计原则。实验显示树式 rollout 比并行采样更易发现正确答案，句熵引导分叉可克服定位现象，从而显著提升 pass@k。该工作表明 rollout 结构对推理覆盖具有关键作用，为RLVR训练策略设计提供了指导。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "algorithms for reinforcement learning",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2609.08080v1",
+      "source": "arxiv",
+      "title": "Proactive Context-Forecasted Safety Constraints for Nonstationary Reinforcement Learning",
+      "abstract": "Ensuring safety in reinforcement learning under nonstationarity requires anticipating changes in risk before they lead to unsafe behavior. Existing approaches typically rely on safety constraints defined at design time or updated reactively during execution, assuming that such constraints remain valid over time. However, in nonstationary environments with evolving contexts and changing driving layouts, these assumptions may fail.   We propose a framework for proactive safety constraint generation based on context forecasting. The approach infers latent environmental context from observations, predicts its future evolution, and constructs safety constraints adapted to anticipated conditions. This enables the agent to proactively avoid unsafe regions instead of reacting only after safety violations occur.   We evaluate the method in driving environments with structured context variation. The experiments include a sweep over nonstationarity intensities and additional held-out driving layouts, including highway, intersection, and racetrack scenarios. Results show that proactive constraint generation substantially reduces collisions under both seen and out-of-training nonstationarity intensities and generally remains effective across held-out driving layouts while maintaining usable task performance. These findings suggest that context-based constraint generation is a promising approach for safe reinforcement learning under nonstationarity.",
+      "authors": [
+        "Tim Tomashevskiy"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2026-09-08T00:44:30+00:00",
+      "link": "https://arxiv.org/pdf/2609.08080v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "safe reinforcement learning under nonstationarity with proactive constraints",
+      "llm_evidence_cn": "非平稳环境下带主动约束的安全强化学习",
+      "llm_evidence": "非平稳环境下带主动约束的安全强化学习",
+      "canonical_evidence": "非平稳环境下带主动约束的安全强化学习",
+      "llm_tldr_en": "Safety in nonstationary RL requires anticipating risk. This paper proposes proactive safety constraint generation via context forecasting, inferring latent context, predicting its evolution, and adapting constraints to avoid unsafe behavior.",
+      "llm_tldr_cn": "在非平稳环境中保证强化学习安全，需要风险发生前就预判其变化，而现有方法多在设计时固定约束或被动地在线更新，假设约束长期有效。本文提出基于上下文预测的主动安全约束生成框架，从观测推断潜在环境上下文并预测其未来演化，进而构造与预期条件相适应的安全约束。这样智能体可主动规避不安全行为，实验表明该方法在演化场景中有效，为动态环境下的安全强化学习提供了前瞻方案。",
+      "llm_tldr": "在非平稳环境中保证强化学习安全，需要风险发生前就预判其变化，而现有方法多在设计时固定约束或被动地在线更新，假设约束长期有效。本文提出基于上下文预测的主动安全约束生成框架，从观测推断潜在环境上下文并预测其未来演化，进而构造与预期条件相适应的安全约束。这样智能体可主动规避不安全行为，实验表明该方法在演化场景中有效，为动态环境下的安全强化学习提供了前瞻方案。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "papers on reinforcement learning",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2609.09764v1",
+      "source": "arxiv",
+      "title": "SocialRL: Refining LLMs' Social Intelligence through Multi-turn Reinforcement Learning and Reward Design",
+      "abstract": "Social intelligence enables agents to read social context, infer intent, and adapt over sustained dialogue. As language models become autonomous collaborators, it is central to building effective and trustworthy human-AI interaction. Existing reinforcement learning methods optimize single-turn utterances and sparse outcome rewards, producing short-sighted policies that struggle to manage goal-relationship tensions across multi-turn interactions. We propose SocialRL, a multi-turn reinforcement learning framework addressing both challenges. First, we apply multi-turn reinforcement learning using PPO that propagates delayed outcome rewards back to each turn, enabling long-horizon planning. Second, we design six process reward dimensions capturing the goal-relationship trade-off, including goal advancement, relational attunement, contextual coherence, etc. A reward model dynamically generates fine-grained scoring criteria for each dimension, while a stage-aware weight schedule prioritizes relationship-building in early turns, goal advancement mid-way, and balanced closure late. Across multiple social-dialogue benchmarks, SocialRL improves Goal Achievement by an average of 9.2 percentage points over the corresponding Base models. These results demonstrate the effectiveness of SocialRL across synthetic and real social scenes, as well as standard and challenging social scenarios.",
+      "authors": [
+        "Jianing Wang",
+        "Xintao Wang",
+        "Aili Chen",
+        "Jie Shi",
+        "Hongcheng Guo",
+        "Jun Gao",
+        "Wenxuan Zhao",
+        "Chengkun Lang",
+        "Yuanli Guo",
+        "Yanghua Xiao"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL"
+      ],
+      "published": "2026-09-09T06:06:34+00:00",
+      "link": "https://arxiv.org/pdf/2609.09764v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "multi-turn reinforcement learning framework with reward design",
+      "llm_evidence_cn": "多轮强化学习框架与奖励设计",
+      "llm_evidence": "多轮强化学习框架与奖励设计",
+      "canonical_evidence": "多轮强化学习框架与奖励设计",
+      "llm_tldr_en": "Existing RL methods for social intelligence optimize single-turn utterances with sparse outcome rewards, producing short-sighted policies. This paper proposes SocialRL, a multi-turn PPO framework propagating delayed outcome rewards to each turn and designing six process rewards for long-horizon dialogue.",
+      "llm_tldr_cn": "社交智能要求智能体理解社交语境、推断意图并在持续对话中自适应，但现有强化学习方法只优化单轮话语且依赖稀疏结果奖励，产生难以处理目标与关系张力的短视策略。本文提出SocialRL多轮强化学习框架，一方面用PPO将延迟结果奖励回传到每一轮以支持长程规划，另一方面设计六种过程奖励。该框架使模型在持续对话中更好地兼顾目标达成与关系维护。该工作为构建可信人机交互的社交智能提供了多轮强化学习与奖励设计范式。",
+      "llm_tldr": "社交智能要求智能体理解社交语境、推断意图并在持续对话中自适应，但现有强化学习方法只优化单轮话语且依赖稀疏结果奖励，产生难以处理目标与关系张力的短视策略。本文提出SocialRL多轮强化学习框架，一方面用PPO将延迟结果奖励回传到每一轮以支持长程规划，另一方面设计六种过程奖励。该框架使模型在持续对话中更好地兼顾目标达成与关系维护。该工作为构建可信人机交互的社交智能提供了多轮强化学习与奖励设计范式。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "algorithms for reinforcement learning",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2609.08211v1",
+      "source": "arxiv",
+      "title": "A Better Spur Should Start From Each Objective",
+      "abstract": "Real-world Multi-Objective Reinforcement Learning (MORL) often suffers from sparse rewards, reward conflicts, and late-stage reward tug-of-war, causing traditional linear scalarization to experience severe metric oscillations. To address optimization conflicts among multiple objectives in real-world deployment scenarios, we propose Multi-Marginal Preference Optimization (MMPO), a fine-grained framework that intervenes at the data, gradient, and constraint levels rather than relying on coarse-grained global scalarization. Specifically, MMPO performs exposure debiasing to mitigate sparse and biased rewards, applies priority-aware orthogonal projection to decouple conflicting gradients, and introduces self-prompted gradient constraints to prevent dominant objectives from overwhelming weaker ones. Experiments on real-world e-commerce datasets show that MMPO improves training stability and consistently achieves better performance across conflicting metrics. Moreover, it generalizes robustly to broader tasks such as ToolRL and code generation, demonstrating its effectiveness as a practical paradigm for multi-objective alignment.",
+      "authors": [
+        "Shanwen Mao",
+        "Hao Zhang",
+        "Guangtao nie",
+        "Zhiheng Li",
+        "Huimu Wang",
+        "Sulong Xu",
+        "Gu Simiu"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "cs.LG"
+      ],
+      "published": "2026-09-08T03:50:21+00:00",
+      "link": "https://arxiv.org/pdf/2609.08211v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Multi-objective reinforcement learning with fine-grained preference optimization",
+      "llm_evidence_cn": "细粒度偏好优化的多目标强化学习",
+      "llm_evidence": "细粒度偏好优化的多目标强化学习",
+      "canonical_evidence": "细粒度偏好优化的多目标强化学习",
+      "llm_tldr_en": "Real-world multi-objective RL suffers sparse rewards, reward conflicts and late-stage tug-of-war causing metric oscillations; MMPO intervenes at data, gradient and constraint levels instead of coarse global scalarization.",
+      "llm_tldr_cn": "真实世界的多目标强化学习常面临稀疏奖励、奖励冲突与后期奖励拉锯，导致传统线性标量化出现严重指标震荡。本文提出多边际偏好优化MMPO，一种在数据、梯度与约束层面进行细粒度干预的框架，而非依赖粗粒度全局标量化：通过曝光去偏缓解稀疏与偏置奖励，用优先级感知正交投影解耦冲突梯度，并引入自提示梯度约束防止主导目标压制其他目标。该方法为多目标强化学习优化冲突提供了新方案。",
+      "llm_tldr": "真实世界的多目标强化学习常面临稀疏奖励、奖励冲突与后期奖励拉锯，导致传统线性标量化出现严重指标震荡。本文提出多边际偏好优化MMPO，一种在数据、梯度与约束层面进行细粒度干预的框架，而非依赖粗粒度全局标量化：通过曝光去偏缓解稀疏与偏置奖励，用优先级感知正交投影解耦冲突梯度，并引入自提示梯度约束防止主导目标压制其他目标。该方法为多目标强化学习优化冲突提供了新方案。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "papers on reinforcement learning",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2609.09059v1",
+      "source": "arxiv",
+      "title": "PlayTrain: An Efficient Reinforcement Learning Framework for LLM-Generated Adaptable JavaScript Games",
+      "abstract": "While many video-game environments (VGEs) have played crucial roles in advancing reinforcement learning (RL), developing novel VGEs or modifying existing ones to support new features, has been a laborious process requiring extensive hand-coding. Here we present PlayTrain, an RL framework that combines the abilities of large language models (LLMs) to robustly generate JavaScript (JS) games from a minimal human prompt, and an efficient pipeline that can run any JS game in a standard 'gym' environment. Not only are recent LLMs particularly good at writing JS code, but the JS format also allows users to easily play generated VGEs, while PlayTrain enables us to train RL agents on the exact same games. We demonstrate multiple use cases of PlayTrain, including cloning well-known Atari and ProcGen games in simple JS, where PlayTrain trains pixel-based agents end-to-end at over 1M agent-decisions per second on a single GPU node; and creating modified versions thereof (e.g., that support novel test sets, procedural generation logics, or game dynamics). Through PlayTrain, we reimagine RL VGE development: all we need is a single JS file, generated and modified through an LLM. We discuss promising future RL research directions that PlayTrain unlocks.",
+      "authors": [
+        "Ryan Truong",
+        "Lance Ying",
+        "Samuel J. Gershman",
+        "Kazuki Irie"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2026-09-08T17:15:39+00:00",
+      "link": "https://arxiv.org/pdf/2609.09059v1",
+      "tags": [
+        "keyword:RL",
+        "query:RL"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "reinforcement learning framework and trainable game environments",
+      "llm_evidence_cn": "强化学习框架与可训练的游戏环境",
+      "llm_evidence": "强化学习框架与可训练的游戏环境",
+      "canonical_evidence": "强化学习框架与可训练的游戏环境",
+      "llm_tldr_en": "Building game environments for RL requires heavy hand-coding. PlayTrain combines LLMs that generate JavaScript games from prompts with a pipeline running them in gym, so the same games can be played and used to train RL agents.",
+      "llm_tldr_cn": "视频游戏环境长期推动强化学习发展，但开发新环境或修改既有环境以支持新特性需要大量手工编码，过程繁琐。本文提出PlayTrain，一个结合大语言模型能力的强化学习框架，可从极少人工提示稳健生成JavaScript游戏，并通过高效流水线让任意JS游戏在标准gym环境中运行，从而在完全相同的游戏上训练RL智能体。用户既能直接游玩生成的游戏，也能对其训练智能体，展示了多种用例，显著降低了游戏环境构建成本。",
+      "llm_tldr": "视频游戏环境长期推动强化学习发展，但开发新环境或修改既有环境以支持新特性需要大量手工编码，过程繁琐。本文提出PlayTrain，一个结合大语言模型能力的强化学习框架，可从极少人工提示稳健生成JavaScript游戏，并通过高效流水线让任意JS游戏在标准gym环境中运行，从而在完全相同的游戏上训练RL智能体。用户既能直接游玩生成的游戏，也能对其训练智能体，展示了多种用例，显著降低了游戏环境构建成本。",
+      "llm_tags": [
+        "query:rl"
+      ],
+      "matched_query_tag": "query:rl",
+      "matched_query_text": "papers on reinforcement learning",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    }
+  ]
+}

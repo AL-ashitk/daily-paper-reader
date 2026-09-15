@@ -1,0 +1,2269 @@
+SUN: Reaching for Novelty in Reinforcement Learning
+Wenyan Yang
+Aalto University
+wenyan.yang@aalto.fi
+Arsenii Mustafin
+Aalto University
+arsenii.mustafin@aalto.fi
+Dominik Baumann
+Aalto University
+dominik.baumann@aalto.fi
+Joni Pajarinen
+Aalto University
+joni.pajarinen@aalto.fi
+Simone Parisi
+Tampere University
+simone.parisi@tuni.fi
+Abstract
+Exploration in reinforcement learning (RL) remains a fundamental challenge.
+Recent goal-conditioned RL strategies (which select goals to encourage broader
+state coverage) have shown promising results, but none scores a goal by novelty
+and reachability jointly: the two signals are traded off by hand, applied in sequence,
+or one is neglected outright. In this paper, we introduce a reachability-aware goal-
+selection framework that explicitly integrates these two aspects, and that can be
+seamlessly incorporated into any off-policy RL algorithm. To this aim, we propose
+SUccessor-to-Novelty (SUN), an indicator derived from successor value functions to
+identify goals that are both novel and reachable. We prove that SUN recovers count-
+based bonuses in the limit, bounds short-horizon hitting probabilities, and provably
+rejects unreachable goals. We further present an adaptive goal-selection strategy
+that leverages these properties, and an accurate yet lightweight pseudocount to
+avoid the overhead of classic methods. We back up all our claims with thorough
+benchmarks: SUN consistently outperforms state-of-the-art methods in standard
+and novel environments with unreachable or hard-to-reach states, irreversible
+transitions, obstacles, mazes, and unbounded spaces.
+1
+Introduction
+Exploration is fundamental to reinforcement learning (RL): without effective exploration, agents
+collect uninformative data and fail to learn. Classical dithering schemes, such as ε-greedy and entropy
+regularization, ignore environment structure and are sample-inefficient. Provably efficient algorithms
+[Auer et al., 2002, Strehl and Littman, 2008, Jaksch et al., 2010] offer strong guarantees but do not
+scale to large state spaces. Intrinsic motivation methods [Pathak et al., 2017, Burda et al., 2019, Parisi
+et al., 2021] require careful tuning and are non-stationary by construction: as the agent explores, the
+intrinsic reward shifts beneath the policy trained on it, destabilizing learning [Burda et al., 2019].
+A more recent family casts exploration as goal-conditioned RL (GCRL) [Liu et al., 2022, Colas
+et al., 2022], where the agent follows a goal-conditioned policy trained on a stationary goal-reaching
+objective. Different goal-selection mechanisms lead to different exploration strategies, but most
+of the existing work captures only half the picture. Density-based methods such as MEGA [Pitis
+et al., 2020], Skew-Fit [Pong et al., 2020], GoalGAN [Florensa et al., 2018], and Hindsight Goal
+Generation [Ren et al., 2019] score goals by novelty, committing to rare goals that may be unreachable.
+Conversely, methods based on distances or success probabilities [Schaul et al., 2015, Hartikainen
+et al., 2016] optimize reachability alone, neglecting rare but achievable goals. Neither extreme
+captures the right intuition: a useful exploration goal is one that is novel and reachable. Figure 1
+summarizes this problem. In this paper, we address this gap with the following contributions.
+(1) We present a GCRL exploration framework with a goal-selection mechanism to identify goals
+19th European Workshop on Reinforcement Learning (EWRL 2026).
+arXiv:2609.08642v1  [cs.LG]  8 Sep 2026
+
+
+Figure 1:
+Reachability or novelty are not
+enough. At every episode, the agent spawns in
+one of two isolated rooms. After exploring for
+some time, the second room has been rarely vis-
+ited due to its lower spawning rate. Heatmaps
+show the score assigned to each tile by different
+goal-selection scores when the agent is in the top-
+left corner (red boxes mark the selected goal). Novelty alone (e.g., visit counts inverse) picks tiles
+in the second room, which the agent cannot reach. Reachability alone (e.g., distance) picks the
+agent’s current tile, leading to no exploration. Only novelty and reachability combined selects the
+least-visited tile within reach. While simple, this example shows the importance of considering both
+reachability and novelty in exploration, and raises the central question of this paper: how to encode,
+learn, and combine reachability and novelty? Our SUN indicator provides principled answers.
+that are both novel and reachable. Its core is the SUccessor-to-Novelty (SUN) indicator: reachability
+is estimated via successor value functions [Dayan, 1993], and novelty via pseudocounts. SUN is
+compatible with any off-policy RL algorithm; in this paper, we instantiate it with DQN [Mnih et al.,
+2015] and TD3 [Fujimoto et al., 2018].
+(2) We present an accurate yet lightweight pseudocount that avoids the overhead of density-based
+methods, enabling efficient exploration with O(1) query cost.
+(3) We show that SUN is the value of a goal-conditioned count-bonus reward, gives a closed-form
+lower bound on the short-horizon hitting probability, and provably suppresses unreachable goals.
+(4) We introduce new benchmarking environments with unreachable states and irreversible transitions
+that directly stress-test reachability-aware exploration, and show that SUN consistently outperforms
+state-of-the-art methods on these and standard benchmarks.
+Together, these contributions establish SUN as a principled and practical solution to the long-
+standing tension between novelty and reachability in exploration.
+SUN exploration fits in the field of reward-free exploration and goal-conditioned RL, and is especially
+close to the work of Tarbouriech et al. [2022] (AdaGoal) and Diaz-Bone et al. [2025] (DISCOVER)
+in its use of successor value functions to drive exploration. Both also balance novelty and reachability,
+but estimate novelty through critic-ensemble disagreement, which is computationally expensive and,
+as we show, leaves both methods poorly calibrated between the two signals. SUN sidesteps these
+issues with a lightweight pseudocount and a novel goal-selection strategy (Section 3). Across all our
+benchmarks, it consistently and substantially outperforms both methods.
+2
+Problem Setting
+Optimal exploration. A reward-free Markov Decision Process (MDP) is defined by the tuple
+⟨S, A, P, p0⟩, where S is the state space, A is the action space, P(s′ |s, a) is the transition function,
+and p0 is the initial state distribution. The objective is to explore the state space “optimally” without
+any task-specific reward. Two main lines of work formalize this notion of optimality differently.
+The first line targets the state-visitation distribution: the goal is to learn a policy whose induced
+distribution maximizes a desired criterion, typically the entropy [Hazan et al., 2019, Lee et al., 2019,
+Mutti et al., 2021, Zhang et al., 2021, Jain et al., 2023, Adamczyk et al., 2026]. A maximum-entropy
+state-visitation distribution corresponds to uniform coverage of the state space, and provably efficient
+algorithms exist for this objective in tabular MDPs.
+The second line frames exploration as goal-conditioned RL (GCRL) and the agent learns goal-
+conditioned policies π(a|s, g) [Lim and Auer, 2012, Tarbouriech et al., 2020, 2022]. The goal g ∈G
+may be a subset of the state, of the joint state-action, or of a learned representation thereof.1 A goal g
+is said to be reachable from a reference state s0 if there exists a policy π that reaches g from s0 in
+bounded expected time. The objective is then to learn policies that can visit every goal reachable
+given different reference states. This formulation directly captures the intuition that exploration
+1The goal space is environment-dependent. For example, discrete actions may highlight relevant dynamics
+(e.g., “pick” or “push” may terminate the episode) and exploration should explicitly consider them. On the
+contrary, the state alone may be sufficient if it carries all information (e.g., agent pose in control tasks).
+2
+
+
+should focus on states the agent can actually reach, but does not specify a target visitation distribution.
+Both objectives are principled but solving them exactly requires machinery — e.g., Frank-Wolfe
+schemes for max-entropy [Hazan et al., 2019], PAC-style algorithms for reachable coverage [Tar-
+bouriech et al., 2020, 2022] — that does not scale to deep RL. Practical methods therefore approximate
+these objectives with greedy or local heuristics: thanks to careful goal-selection mechanisms, follow-
+ing π(a|s, g) induces a state-visitation distribution with broad and uniform state coverage. Our work
+follows this pragmatic line: we design a goal-selection rule that, at each step, prefers goals that are
+both underrepresented in the agent’s current visitation distribution and reachable.
+Successor Value Functions. In GCRL literature, reachability is often encoded with the successor
+value function (SVF) [Dayan, 1993, Kulkarni et al., 2016, Blier et al., 2021, Eysenbach et al., 2022,
+Zheng et al., 2024], which generalizes the value function and represents the cumulative γ-discounted
+occurrence of a goal g under a policy π, i.e.,
+V π(st, g) = E
+hX∞
+k=tγk−t1{sk=g}
+ π, P, st
+i
+,
+(1)
+where γ ∈[0, 1) and 1{sk=g} is the reward function returning 1 if sk = g and 0 otherwise. The state-
+action analogue Qπ(st, at, g) is defined likewise, and both admit a Bellman recursion as in standard
+value functions, with V π(st, g) = maxa Qπ(st, a, g). Similarly to classic value functions, SVFs
+are often approximated with parameterized functions V θ(st, g), and training them is a well-studied
+problem. In this paper, we rely on Hindsight Experience Replay (HER) [Andrychowicz et al., 2017].
+In GCRL, once the goal is given (e.g., a desired robot pose or an environment coordinate), greedily
+following the SVF leads the agent to it, as the value increases the fewer steps are needed to reach the
+goal.2 This same mechanism extends naturally to reward-free exploration: select a goal appropriately
+— unlike in GCRL, the goal is not given by the task — and then follow the SVF to reach it. The
+goal-selection is what determines whether exploration is optimal: a well-designed mechanism would
+guarantee coverage and uniformity over the goal space G ⊆S×A.
+With these tools in hand, our method must address three concrete subproblems. First, how to
+combine the reachability and novelty signals into a single indicator. Second, how to design an
+effective goal-selection strategy given the above indicator. Third, how to compute a novelty
+signal that is both accurate and cheap enough to query at scale.
+3
+Exploration via SUN
+We present our answer to the three subproblems above: SUN (SUccessor-to-Novelty), a goal-selection
+indicator that combines an SVF-based reachability signal with a novelty signal in a single score.
+SUN(g|s) ≜V π(s, g) · ν(g),
+gt = arg max
+g∈G
+SUN(g|st),
+(2)
+where V π(st, g) is the SVF estimating reachability of g from st under the goal-conditioned policy,
+and ν(g) is a novelty signal. Computing the arg max in Eq. (2) is not feasible in continuous or large
+goal spaces, so we restrict it to a finite candidate set Ct ⊂G sampled from a replay buffer. This
+choice pairs naturally with off-policy algorithms, which already maintain a buffer for training.
+The rest of this section is organized as follows. Section 3.1 presents properties that justify the indicator;
+Section 3.2 describes a novel goal-selection strategy that leverages these properties; Section 3.3
+introduces our novelty estimator; and Section 3.4 summarizes SUN and its relation to prior work.
+3.1
+The Indicator and Its Properties
+We informally describe three properties of SUN that justify Eq. (2) and that we will invoke in
+subsequent sections; proofs are in Appendix A.
+(a) Count-bonus equivalence. If ν(g) = 1/ng where ng is the goal visit count, SUN equals the value
+function of a reward inversely proportional to ng, i.e., E[P
+k=t γk−t1{sk=g}/ng]. Thus SUN is
+not simply a product of two signals, but the value of a count-bonus objective.
+2This holds because goals are terminal: reaching g ends the episode, so Eq. (1) reduces to V π(st, g) =
+Eπ[γτg] ∈[0, 1], where τg is the hitting time of g. The SVF is thus a discounted reachability score.
+3
+
+
+(b) Reachability guarantee. The reachability factor V π(s, g) controls hitting time: a high SVF value
+implies a high probability of reaching g within a short horizon, Prπg[τg ≤n] ≥V πg(s, g)−γn+1,
+where τg is the hitting time. The horizon scales as O(log(1/V )/(1 −γ)).
+(c) Unreachable goals are suppressed. If no policy in the agent’s class can reach g, then V π(s, g) = 0
+for all such policies, and SUN(g|s) = 0 regardless of ν(g). This is the formal counterpart of
+Figure 1: novelty alone selects unreachable goals, while SUN does not.
+Why not an additive indicator? Common exploration strategies combine reachability and novelty
+additively [Diaz-Bone et al., 2025]. Indeed, SUN’s indicator could equally be defined additively as
+V π(s, g) + ν(g), which admits standard UCB-style confidence bounds and PAC guarantees when ν
+is based on visit counts (see Appendix K). However, additive formulations are sensitive to the relative
+scale of the two terms and typically require a tuning coefficient to balance them, especially if the
+SVF is approximated as in V θ. The multiplicative form removes the need to calibrate the two terms
+against each other: they share a common “zero” (an unreachable or already-saturated goal scores
+zero on either factor and is rejected regardless of the other) and a common, known scale (both are
+non-negative and bounded by one). The trade-off is not thereby eliminated — in log-space it is set by
+κ = −log γ (Appendix A.5) — but it is fixed and inherited from the discount used for value learning,
+rather than being a free coefficient that must be re-tuned whenever the scale of the novelty signal
+changes (see Section 3.4). In Section 4.2 we compare SUN against an additive UCB-style variant and
+show that the multiplicative indicator performs significantly better.
+3.2
+When Should The Agent Select A Goal? Adaptive Goal-Selection Strategy
+If V θ were exact, acting greedily with respect to it would be optimal — the best goal would be
+selected and reached in finite time (Appendix A.7). Thus, episodic goal-selection — selecting the
+goal at the start of an episode and keeping it fixed until reached — would be optimal. However, V θ is
+learned and approximate, and the agent may commit to unreachable goals, potentially not exploring
+at all. Similarly, under stochastic transitions the agent may suddenly find itself in states where
+the previously-selected goal is no longer reachable. The opposite strategy, per-step goal-selection,
+compares the current goal against a fresh candidate set at every timestep to find a potentially better one.
+This can prevent commitment to unreachable goals, e.g., after a wrong action or a noisy transition.
+However, this strategy can be too unstable: as V θ is being learned, goal values shift quickly and the
+agent may pick different goals at every timestep, acting near-randomly.
+For these reasons, we propose a novel adaptive strategy, inspired by the theoretical properties of
+the SVF. Under deterministic dynamics, the true value at the current state should be monotonically
+non-decreasing along the trajectory toward the selected goal: as the agent moves closer, V π(st, g)
+grows. Thus, a drop in V θ(st, g) signals that the goal is either unreachable from the current state,
+or that the approximate SVF was inaccurate at the time of selection — in either case, the goal is no
+longer a reliable target. Concretely, at each step t we compare the current value against the value at
+selection time tsel: if V θ(st, g) < V θ(stsel, g), the current goal is discarded and a new one is selected
+from a freshly sampled candidate set; otherwise, the current goal is kept.3
+This adaptive strategy preserves the stability of episodic commitment, and inherits per-step
+reselection’s ability to escape bad commitments — but only if the SVF changes frequently
+(because it is still being learned) or if it signals that something has gone wrong (e.g., due to
+environment noise). Section 4.2 empirically validates our strategy.
+3.3
+Novelty Via Lightweight Pseudocounts
+SUN combines two signals: reachability via SVFs and novelty. The reachability side is handled by
+learning V π with HER [Andrychowicz et al., 2017] (see Appendix C). The novelty signal ν(g) in
+Eq. (2) can be instantiated in many ways [Pathak et al., 2017, Burda et al., 2019]. A principled choice
+is visit counts or density estimates [Bellemare et al., 2016, Tang et al., 2017], so that rarely-visited
+goals receive a high novelty score: ν(g) = 1/ng, where ng is the number of times g has been visited.
+In continuous spaces ng cannot be tracked exactly and must be approximated by a pseudocount.
+Since we query ν(g) against many candidate goals Ct multiple times per episode, the pseudocount
+must be lightweight to compute — standard approaches such as kernel density estimation (KDE)
+3Note that under exact V θ and deterministic dynamics, all three strategies coincide (Appendix A.7).
+4
+
+
+3
+2
+4
+2
+1
+2
+1
+3
+3
+4
+3
+1
+2
+1
+3
+ρ
+Insert
+Figure 2: Pseudocount via replay buffer neighbors. Each
+buffer entry stores a count of its neighbors within radius ρ (in
+standardized feature space). When a new sample is inserted,
+its count is set to the number of neighbors within ρ plus one
+(for itself), and each neighbor’s count is incremented.
+or neural density models do not satisfy this requirement. We instead propose a pseudocount that
+amortizes its cost into buffer insertion: counts are precomputed and stored alongside each buffer
+entry, making queries cheap.
+For each entry in the replay buffer at index i, we store a count ni of entries within a neighborhood of
+radius ρ of si in standardized feature space. When a new sample is inserted, we compute its count
+(number of neighbors plus one for itself) and increment the neighbors’ counts. Figure 2 illustrates
+the procedure; Appendix B gives the standardization scheme and implementation details. This is a
+fixed-radius nearest-neighbor density estimator with the cost moved from query time to insertion
+time. Its benefits are the following.
+• The radius ρ is a single hyperparameter, applied in standardized space. Standardization makes a
+single scalar radius meaningful across features: without it, a separate radius would be needed for
+each feature dimension to account for differences in native scale.
+• By incrementing the count of every neighbor of the new sample, the stored counts are maintained
+across the entire buffer without ever recomputing them from scratch. At query time, the novelty of
+a candidate goal g is read directly from the replay buffer: ν(g) = 1/ng. This has cost O(1).
+• The insertion cost is O(N·M) in the buffer size N and goal dimensionality M. Classic KDE costs
+O(N·M·B) per step for B candidate goals, and neural density models can be even more expensive.
+When goals may be reselected at any step, classic methods are prohibitively expensive while
+our pseudocount remains tractable. By moving the cost from query to insertion time and
+standardizing across features, we obtain a novelty estimator that is accurate yet lightweight. We
+validate its accuracy in Appendix H and report wall-clock costs in Appendix E.
+3.4
+Summary and Related Work
+Algorithm 1: SUN Exploration
+(During One Episode)
+1 Function SelectGoal(st, D):
+2
+stsel ←st
+3
+Ct ∼D
+4
+return arg maxg∈Ct SUN(g|st)
+5 for t = 0 . . . T do
+6
+begin ←t = 0
+7
+reached ←∥st −gt∥< η
+8
+adapt ←V θ(st, gt) < V θ(stsel, gt)
+9
+if begin or reached or adapt then
+10
+gt ←SelectGoal(st, D)
+11
+else
+12
+gt ←gt−1
+13
+at ∼π(· | st, gt)
+14
+st+1 ∼P(· | st, at)
+15
+Update(D, st, at, st+1)
+Algorithm 1 summarizes SUN exploration. At the
+beginning of an episode, the agent selects the goal
+g0 according to Eq. (2), with candidates (and their
+pseudocounts) sampled from the replay buffer. The
+initial state s0 is saved as stsel (state at selection time).
+At every timestep, if V θ(st, gt) < V θ(stsel, gt) or if
+the agent has reached the current goal, a new goal
+gt is selected from a fresh batch of candidates and
+stsel is updated; if not, gt is kept. Then, the agent
+acts to explore with at ∼π(·|st, gt), the new sample
+is inserted into the replay buffer, and pseudocounts
+are updated. The policy and the SVF are trained
+with any off-policy algorithm and goal relabeling
+[Andrychowicz et al., 2017] (Appendix C).
+This scheme can be applied to classic reward-driven
+RL: the goal-conditioned policy drives exploration to
+collect environment rewards, and task-specific value
+function and policy are trained off-policy.
+AdaGoal and DISCOVER. Throughout Sections 2–3, we have discussed how SUN relates to prior
+work along several axes: reward-free exploration [Hazan et al., 2019, Tarbouriech et al., 2020, 2022],
+GCRL [Schaul et al., 2015], hindsight relabeling [Andrychowicz et al., 2017, Eysenbach et al., 2022,
+Zheng et al., 2024], and count- or density-based novelty [Bellemare et al., 2016, Pong et al., 2020,
+Pitis et al., 2020, Burda et al., 2019]. Here, we focus on the two methods closest in spirit to SUN:
+AdaGoal [Tarbouriech et al., 2022] and DISCOVER [Diaz-Bone et al., 2025]. Both select goals using
+an ensemble of SVFs {V θ1, . . . , V θK}, with mean µ(s, g) and standard deviation σ(s, g). Formally,
+5
+
+
+3Room
+4RoomStuck
+GridMaze
+L.Lander
+M.Car
+Pendulum
+Acrobot
+C.Pole
+P.Maze-S
+P.Maze-H
+A.Maze-S
+A.Maze-H
+A.Push-H
+?
+?
+?
+Figure 3: Environments. Control tasks are standard benchmarks. Gridworlds are a novel contribution
+of this paper. Blue tiles mark starting positions and green tiles mark terminal states. Tiles with a
+yellow ? have a 50% chance of triggering a random movement; tiles with red arrows admit only the
+corresponding movement. In FourRoomStuck, this creates a trap: the agent can accidentally enter
+the bottom-left room, where any action that does not match the red arrow leaves the agent in place.
+gt = arg max
+g∈Ct
+V θ(st, g) / ng
+|
+{z
+}
+SUN
+gt = arg max
+g∈C0
+µ(s0, g) + β σ(s0, g)
+|
+{z
+}
+DISCOVER4
+gt = arg max
+g∈C0
+σ(s0, g)
+|
+{z
+}
+AdaGoal5
+The mean µ serves as a reachability signal, and the disagreement σ as an epistemic-uncertainty signal
+(goals on which the ensemble disagrees are those the agent cannot reliably reach). AdaGoal explicitly
+frames this as “selecting uncertain goals” and proves PAC guarantees; DISCOVER frames the same
+quantity as “novelty” since uncertainty correlates with under-exploration.
+Two main differences distinguish SUN from this line of work. First, AdaGoal and DISCOVER select
+the goal once at the beginning of the episode (gt is selected once from C0). SUN instead continuously
+monitors the value of the current goal, and reselects it from a freshly-resampled candidate set Ct if
+needed. Second, SUN replaces the ensemble with a lightweight pseudocount, removing the cost of
+training and querying K critics, and introduces an effective balance between reachability and novelty.
+Section 4 shows these differences matter: episodic commitment fails when goals become unreachable
+mid-episode, DISCOVER is sensitive to β, and AdaGoal has no effective reachability proxy.
+Proto-Goals. Bagaria et al. [2023] also combine novelty and reachability, but sequentially: first,
+goal candidates are sampled proportionally to a count-based novelty; then, the one with highest
+SVF is pursued. Thus, reachability cannot recover from a novelty draw that misses, and novelty
+cannot override a reachability arg max. The authors report that local reachability hurt performance
+by biasing selection toward easy goals, until an additional timescale-stratification mechanism was
+introduced — exactly the bias our multiplicative indicator avoids (Section 4.2). Similarly, their
+goal is selected once per episode and pursued until achieved, and the authors list finer-grained goal
+switching [Pislar et al., 2022] as future work, which is precisely what our adaptive strategy provides.
+Directed Exploration. Closest to our pseudocount is the episodic novelty module of NGU [Badia
+et al., 2020], which also estimates counts with a nearest-neighbor density estimator. Two differences
+matter. First, its memory is cleared at every episode, so its counts measure within-episode novelty,
+while SUN leverages lifetime novelty. Second, it recomputes the kernel sum at query time, which is
+affordable only for a memory at most one episode long.
+4
+Experiments
+We select benchmarks that illustrate three challenges in RL exploration: (a) unreachable states
+or irreversible transitions, (b) large or unbounded goal spaces, and (c) hard exploration (hard-to-
+reach states, obstacles, mazes). Goal dimensionality ranges from two (most environments) to eight
+(LunarLander(Full)). Details are in Figure 3 and Appendix D.
+• Gridworlds (a, c): ThreeRoom is a larger variant of Figure 1; the agent spawns in a random
+isolated room, with higher spawn rate in the first two. In FourRoomStuck, the bottom-left room
+cannot be exited or traversed freely, and some transitions are stochastic. GridMaze features a
+narrow passage near the agent’s starting state.
+• Classic control [Towers et al., 2024] (a, b, c): MountainCar is a well-known hard-exploration
+benchmark. In CartPole, episodes terminate quickly when the pole falls, making the corners
+of the state space hard to reach. LunarLander has an unbounded state space (the agent can fly
+arbitrarily high). Acrobot has unreachable configurations, and Pendulum hard-to-reach ones.
+4This is the pure-exploration variant of DISCOVER (referred to as “achievability + novelty” in its paper). Its
+full objective, designed for GCRL, additionally combines this with a direction term toward a task-specific goal.
+5This is the deep-RL variant of AdaGoal, where σ approximates a prediction-error. The tabular version
+constrains the arg max to the expected hitting time as a proxy for reachability, but the deep-RL variant does not.
+6
+
+
+SUN
+AdaGoal
+DISCOVER
+Random
+Means (thick lines) with 95% confidence intervals (shaded
+areas) across 20 seeds; the x-axis shows training steps (thou-
+sands).
+Figure 4: Main results. SUN outperforms all baselines in all environments. Note that full coverage
+is easy in Gridworlds, but uniform exploration (high entropy) is not.
+• GCRL control [Bortkiewicz et al., 2025] (b, c): PointMaze-S/H and AntMaze-S/H are loco-
+motion environments of increasing difficulty featuring corridors and dead-ends. ArmPush-H is a
+manipulation task where a Franka Panda pushes a cube on an unbounded plane.
+Evaluations. First, we compare SUN against a random uniform exploration baseline, AdaGoal [Tar-
+bouriech et al., 2022] and DISCOVER [Diaz-Bone et al., 2025]. Not only are these two close to SUN,
+but they have achieved state-of-the-art performance and outperformed algorithms like MEGA [Pitis
+et al., 2020]. SUN, AdaGoal, and DISCOVER all use HER [Andrychowicz et al., 2017] to learn their
+SVFs. Second, we ablate SUN components, i.e., its indicator and goal-selection strategy. Finally, we
+analyze why AdaGoal, DISCOVER, and non-adaptive goal-selection fail.
+We evaluate two metrics over the goal space: coverage (fraction of goal space visited) and
+Shannon entropy of goal visit counts normalized to [0, 1]. We also report heatmaps for a
+qualitative analysis. In continuous spaces, we discretize the space into 50 bins per dimension
+(only for computing these metrics, not for learning). In LunarLander(Full), where the goal
+is eight-dimensional, we report only the entropy approximated via Kozachenko-Leonenko k-NN.
+More details are in Appendix D. All results are averaged across 20 seeds.
+4.1
+SUN vs Baselines
+Quantitative results. Figure 4 shows that the two metrics are complementary: coverage measures
+whether a state has been visited at least once, while entropy measures how uniformly visits are
+distributed. A method can saturate coverage while still concentrating most of its visits in small
+regions of the state space, which is what happens in Gridworlds: all methods reach perfect coverage,
+yet their entropy values differ substantially, with SUN at the top. Indeed, Gridworlds are challenging
+due to their non-uniform initial-state distributions and unreachable goals (ThreeRoom), stochastic
+transitions and irreversible traps (FourRoomStuck), and bottlenecks that must be traversed to reach
+the rest of the grid (GridMaze). Coverage alone hides these difficulties; entropy reveals them.
+Continuous-control environments further strengthen SUN’s advantage: its curves rise faster and
+plateau only at (near-)full coverage. One interesting exception is Pendulum, the only environment
+where SUN’s entropy actually decreases. The reason is structural: reaching some configurations
+requires passing through the same intermediate states repeatedly. For example, reaching certain angles
+at a specific velocity requires accumulating momentum through many swings, which means the agent
+must revisit the same low-momentum positions over and over. Rare states are therefore rare precisely
+because they can only be reached by re-traversing common ones many times; visiting the tail of the
+distribution comes at the cost of re-visiting the mode. This explains why SUN entropy decreases
+even though its coverage keeps increasing. Importantly, SUN also attains the best performance on
+LunarLander(Full), despite its higher dimensionality. This supports the proposed pseudocount as
+an effective tool for estimating visits and encoding novelty.
+7
+
+
+Figure 5: Log-scale visitation heatmaps at the end of training (first seed). In Pendulum and
+Acrobot, the sine/cosine coordinates are combined into the angle for visualization. Axes denote po-
+sitional coordinates (e.g., the lander position), except in MountainCar, Pendulum, and CartPole,
+where they denote position (x-axis) and velocity (y-axis). PointMaze-H goal space is actually 3D,
+and the heatmaps show only the planar position. SUN is the only algorithm not clustering its visits,
+except in the regions corresponding to the episode’s starting state (that are naturally visited more).
+Goal visits
+Goal selections
+Figure 6: Goal-selection ablation. Episodic selection fails when goals become unreachable mid-
+episode (as in FourRoomStuck). Per-step selection avoids this failure mode, but its reselection rate
+never drops to zero, undermining overall performance. In contrast, the reselection rate of adaptive
+selection drops to zero over training, indicating that the agent has learned to reach the goals it selects.
+Qualitative results. Figure 5 provides a qualitative view of the visitation distributions at the end of
+training (black regions are unvisited or unreachable). Across all environments, SUN covers a broader
+portion of the goal space and produces smoother visitation patterns, while AdaGoal and DISCOVER
+concentrate their visits in narrow regions. For example, in FourRoomStuck their visits are highly
+non-uniform inside the bottom-left room; in GridMaze they cluster near the bottom-left corner and
+rarely pass through the narrow passage into the rest of the maze; in control environments they fail to
+explore far from the initial state. This confirms visually the entropy ranking of Figure 4: methods can
+cover many goals while still over-concentrating their visits.
+4.2
+SUN Ablations
+SUN is made of three components: the multiplicative indicator, the adaptive goal-selection, and the
+pseudocounts. Figure 6 ablates goal-selection and validates the importance of adaptive selection,
+highlighting the shortcomings of episodic6 and per-step7 strategies. Figure 7 ablates indicators,
+and reinforces the main motivation of this paper: exploration is ineffective when guided by either
+reachability or novelty alone; both must be considered. All plots and heatmaps are in Appendix G
+and I. Ablation on pseudocounts is in Appendix H.
+6More specifically, we implement DISCOVER’s episodic goal-selection, where the agent enters a “random
+exploration phase” if the goal is reached before the end of the episode [Diaz-Bone et al., 2025]. The rationale is
+that a goal selected for its high novelty is itself a point of interest, so nearby states are likely to be novel as well.
+7In per-step selection, a fresh batch of candidates is sampled at every step, and the goal changes whenever
+the batch contains a candidate with a higher SUN score (Eq. (2)) than the current one.
+8
+
+
+Goal visits
+Goal selections
+Figure 7: Indicator ablation. If driven by reachability
+only, the agent barely explores — the most reachable
+state is the current one. Novelty-only performs well if
+goals are always reachable (MountainCar), but fails
+otherwise (Gridworlds). The additive indicator can satu-
+rate: as counts increase, the novelty bonus vanishes and
+the indicator reduces to pure reachability; the entropy
+thus drops, and goals and visits begin to cluster near the
+starting states — this is clearly visible in MountainCar,
+and to a lesser extent in Gridworlds. The multiplicative
+indicator does not display these failure modes.
+4.3
+Why AdaGoal and DISCOVER Fail
+The results so far are clear: SUN attains the best entropy and coverage, as confirmed visually by
+the visitation heatmaps, and the ablations validate the importance of its components. Yet another
+result stands out (Figure 8): all SUN versions attain better coverage than AdaGoal and DISCOVER,
+and all multiplicative versions also attain better entropy — strong evidence that SUN’s advantage
+comes from the indicator itself rather than from the goal-selection strategy. The additive version is
+the exception on entropy, consistent with the saturation failure mode of Figure 7. To understand
+this better, Figure 9 shows the goals selected by all SUN versions, AdaGoal, and DISCOVER over
+training in MountainCar.
+Figure 9: Goal selections over training in M.Car.
+DISCOVER (last row) is biased toward reachabil-
+ity: it starts by selecting goals near the starting
+state and barely expands beyond them. This may
+stem from its coefficient β, which must balance
+the scales of the reachability and novelty terms.
+SUN is unaffected by this issue, except slightly
+in its Additive version (fourth row), which starts
+selecting easy-to-reach goals late in training, once
+the novelty bonus begins to vanish.
+AdaGoal (fifth row), conversely, is biased toward
+novelty at the expense of reachability. Already
+at 20% of training it selects goals progressively
+further from the starting state — yet at that stage the SVFs are still inaccurate and the agent does not
+know how to reach them. This is not unexpected. As noted in Section 3.4, we evaluate the deep-RL
+variant of AdaGoal, which — unlike the tabular version — does not constrain goal selection by
+Coverage AUC
+Entropy AUC
+Coverage
+Entropy
+Ada
+Disc
+Rand
+Ada
+Disc
+Rand
+SUN (Adaptive, Multipl.) +15.1% +21.0% +67.1% +7.6% +9.2% +26.5%
+SUN (Adaptive, Additive)
++2.5%
++7.9%
++48.9% -5.0%
+-3.5% +11.7%
+SUN (Per-Step, Multipl.)
++8.8%
++14.4% +57.9% +2.8% +4.4% +20.9%
+SUN (Episodic, Multipl.)
++10.6% +16.3% +60.6% +4.6% +6.2% +23.0%
+Figure 8: (Left) Area under the curve (AUC) for entropy and coverage across all baselines and SUN
+versions, averaged over all environments (excluding LunarLander(Full)). (Right) Relative AUC
+improvement of each SUN version over AdaGoal, DISCOVER, and Random.
+9
+
+
+the estimated goal-hitting time. Tarbouriech et al. argue that this is approximated implicitly by the
+disagreement of the value ensemble. Our results suggest that this does not hold in more complex
+environments. Novelty alone is a reasonable signal for goals the agent can actually reach, since
+visiting them resolves the disagreement at little cost. Unreachable goals, however, resolve only after
+enough failed attempts for every ensemble member to recognize them as such, and each of those
+attempts is an episode spent without useful experience. The rule cannot distinguish the two cases,
+and where the reachable set is a small fraction of the goal space the latter dominates — precisely the
+behavior the reachability constraint was meant to prevent.
+All SUN versions (first three rows) instead progressively select goals that are further away. This
+natural progression provides the best balance between reachability and novelty, and holds for SUN
+Episodic as well (third row). Thus, this progression is intrinsic to the indicator rather than a product
+of reselection — AdaGoal and DISCOVER both use episodic selection too, yet show no such trend.
+The results in this section validate our claims. (1) SUN attains the best entropy and coverage
+across all environments, visiting the goal space significantly more uniformly than every baseline.
+(2) Its pseudocount effectively approximates novelty even in high-dimensional goal spaces. (3)
+Its multiplicative indicator does not vanish and selects goals that are both reachable and novel,
+and its adaptive goal-selection outperforms the baselines’ episodic strategy.
+5
+Discussion
+In this paper, we tackled the challenge of exploration in RL via goal-conditioned policies, focusing on
+the selection of goals that are simultaneously novel and reachable. We argued that existing methods
+cannot fully capture the tension between the two and end up neglecting one or the other. We thus
+proposed SUN, a unified and principled indicator and goal-selection rule grounded in SVFs and
+counts. We further introduced a lightweight pseudocount that scales to per-step goal-selection in
+continuous spaces. Finally, we validated SUN on standard and new benchmarks, where it consistently
+outperforms state-of-the-art methods AdaGoal and DISCOVER.
+Strengths. The strength of SUN lies in its principled and modular design. Its score admits a natural
+interpretation as the optimal value of a count-bonus exploration objective, driving the agent toward
+rarely-visited states within reach. This is made possible by our lightweight pseudocount, which avoids
+the overhead of classical pseudocount and density-based approaches while preserving their accuracy.
+Our results confirm this: AdaGoal and DISCOVER, which instead score goals by critic-ensemble
+disagreement, fail to balance the two signals and collapse toward one or the other.
+Limitations and Future Work. First, although principled, count-based novelty is ineffective in large
+spaces, such as image observations, regardless of their pseudocount approximations. Since most
+observed states are effectively unique, counts become nearly uniform across the buffer and do not
+provide a useful novelty signal. In such regimes, exploration likely requires richer signals, such as
+learned curiosity [Raileanu and Rocktäschel, 2020, Parisi et al., 2021] or mutual information between
+trajectories and learned latents [Eysenbach et al., 2019, Sharma et al., 2020]. Combining these signals
+with SUN’s reachability factor is a promising direction.
+Second, SUN selects the goal greedily based on the SUN score of the candidate alone, without
+accounting for the states traversed to reach it. A longer path through many novel states may be
+preferable to a shorter path to a marginally rarer goal — a distinction the current formulation cannot
+make. Extending SUN indicator to a cumulative form would more directly target a maximum-entropy
+state distribution [Hazan et al., 2019, Mutti et al., 2021]. We see this as a natural next step.
+Finally, SUN draws candidate goals from the replay buffer, which means it can only propose goals
+it has already encountered. A natural way to relax this is to exploit the geometry of the goal
+space. Recent work on temporal distances and quasimetric value functions [Wang et al., 2023,
+Myers et al., 2024] learns goal-space metrics that generalize beyond observed pairs, Laplacian-style
+representations [Shehmar et al., 2026] provide a similar latent geometry, and studies on out-of-
+distribution generalization in goal-conditioned RL [Yang et al., 2023] characterize design choices
+that enable extrapolation to unseen goals. Combining SUN’s reachability factor with such learned
+metrics or generalization-aware training — sampling goals as points in a continuous metric space
+rather than from the buffer — is a promising direction for unblocking the buffer-manifold limitation.
+10
+
+
+Acknowledgments
+This research was supported by grants from the European Laboratory for Learning and Intelligent
+Systems (ELLIS) and Finnish IT Center for Science (CSC).
+References
+J. Adamczyk, A. Kamoski, and R. V. Kulkarni. Maximum entropy exploration without the rollouts.
+arXiv:2603.12325, 2026.
+M. Andrychowicz, F. Wolski, A. Ray, J. Schneider, R. Fong, P. Welinder, B. McGrew, J. Tobin,
+O. Pieter Abbeel, and W. Zaremba. Hindsight experience replay. In Advances in Neural Information
+Processing Systems (NeurIPS), 2017.
+P. Auer, N. Cesa-Bianchi, and P. Fischer. Finite-time analysis of the multiarmed bandit problem.
+Machine Learning, 47(2-3):235–256, 2002.
+M. G. Azar, I. Osband, and R. Munos. Minimax regret bounds for reinforcement learning. In
+International Conference on Machine Learning (ICML), 2017.
+A. P. Badia, P. Sprechmann, A. Vitvitskyi, Z. D. Guo, B. Piot, S. Kapturowski, O. Tieleman,
+M. Arjovsky, A. Pritzel, A. Bolt, and C. Blundell. Never give up: Learning directed exploration
+strategies (2020). In International Conference on Learning Representations (ICLR), 2020.
+A. Bagaria, R. Jiang, R. Kumar, and T. Schaul. Scaling goal-based exploration via pruning proto-goals.
+In International Joint Conference on Artificial Intelligence (IJCAI), 2023.
+M. G. Bellemare, S. Srinivasan, G. Ostrovski, T. Schaul, D. Saxton, and R. Munos. Unifying
+count-based exploration and intrinsic motivation. In Advances in Neural Information Processing
+Systems (NeurIPS), 2016.
+L. Blier, C. Tallec, and Y. Ollivier. Learning successor states and goal-dependent values: A mathe-
+matical viewpoint. arXiv:2101.07123, 2021.
+M. Bortkiewicz, W. Pałucki, V. Myers, T. Dziarmaga, T. Arczewski, Ł. Kuci´nski, and B. Eysenbach.
+Accelerating goal-conditioned reinforcement learning algorithms and research. In International
+Conference on Learning Representations (ICLR), 2025.
+Y. Burda, H. Edwards, A. Storkey, and O. Klimov. Exploration by random network distillation. In
+International Conference on Learning Representations (ICLR), 2019.
+C. Colas, T. Karch, O. Sigaud, and P.-Y. Oudeyer. Autotelic agents with intrinsically motivated
+goal-conditioned reinforcement learning: a short survey. Journal of Artificial Intelligence Research
+(JAIR), 74:1159–1199, 2022.
+P. Dayan. Improving generalization for temporal difference learning: The successor representation.
+Neural Computation, 5(4):613–624, 1993.
+L. Diaz-Bone, M. Bagatella, J. Hübotter, and A. Krause. DISCOVER: Automated curricula for
+sparse-reward reinforcement learning. In Advances in Neural Information Processing Systems
+(NeurIPS), 2025.
+B. Eysenbach, A. Gupta, J. Ibarz, and S. Levine. Diversity is all you need: Learning skills without a
+reward function. In International Conference on Learning Representations (ICLR), 2019.
+B. Eysenbach, T. Zhang, S. Levine, and R. R. Salakhutdinov. Contrastive learning as goal-conditioned
+reinforcement learning. In Advances in Neural Information Processing Systems (NeurIPS), 2022.
+C. Florensa, D. Held, X. Geng, and P. Abbeel. Automatic goal generation for reinforcement learning
+agents. In International Conference on Machine Learning (ICML), 2018.
+S. Fujimoto, H. van Hoof, and D. Meger. Addressing function approximation error in Actor-Critic
+methods. In International Conference on Machine Learning (ICML), 2018.
+I. Goodfellow, D. Warde-Farley, M. Mirza, A. Courville, and Y. Bengio. Maxout networks. In
+International Conference on Machine Learning (ICML), 2013.
+11
+
+
+K. Hartikainen, X. Geng, T. Haarnoja, and S. Levine. Dynamical distance learning for semi-supervised
+and unsupervised skill discovery. In International Conference on Learning Representations (ICLR),
+2016.
+E. Hazan, S. Kakade, K. Singh, and A. Van Soest. Provably efficient maximum entropy exploration.
+In International Conference on Machine Learning (ICML), 2019.
+A. K. Jain, L. Lehnert, I. Rish, and G. Berseth. Maximum state entropy exploration using predecessor
+and successor representations. Advances in Neural Information Processing Systems (NeurIPS),
+2023.
+T. Jaksch, R. Ortner, and P. Auer. Near-optimal regret bounds for reinforcement learning. Journal of
+Machine Learning Research (JMLR), 11:1563–1600, 2010.
+L. F. Kozachenko and N. N. Leonenko. Sample estimate of the entropy of a random vector. Problems
+of Information Transmission, 23(2):9–16, 1987.
+T. D. Kulkarni, A. Saeedi, S. Gautam, and S. J. Gershman. Deep successor reinforcement learning.
+arXiv:1606.02396, 2016.
+L. Lee, B. Eysenbach, E. Parisotto, E. Xing, S. Levine, and R. Salakhutdinov. Efficient exploration
+via state marginal matching. arXiv:1906.05274, 2019.
+S. H. Lim and P. Auer. Autonomous exploration for navigating in MDPs. In Conference on Learning
+Theory, 2012.
+M. Liu, M. Zhu, and W. Zhang. Goal-conditioned reinforcement learning: Problems and solutions.
+In International Joint Conference on Artificial Intelligence (IJCAI), 2022.
+V. Mnih, K. Kavukcuoglu, D. Silver, A. A. Rusu, J. Veness, M. G. Bellemare, A. Graves, M. Ried-
+miller, A. K. Fidjeland, G. Ostrovski, et al. Human-level control through deep reinforcement
+learning. Nature, 518(7540):529–533, 2015.
+M. Mutti, L. Pratissoli, and M. Restelli. Task-agnostic exploration via policy gradient of a non-
+parametric state entropy estimate. In AAAI Conference on Artificial Intelligence, 2021.
+V. Myers, C. Zheng, A. Dragan, S. Levine, and B. Eysenbach. Learning temporal distances: Con-
+trastive successor features can provide a metric structure for decision-making. In International
+Conference on Machine Learning (ICML), 2024.
+S. Parisi, V. Dean, D. Pathak, and A. Gupta. Interesting object, curious agent: Learning task-agnostic
+exploration. In Advances in Neural Information Processing Systems (NeurIPS), 2021.
+D. Pathak, P. Agrawal, A. A. Efros, and T. Darrell. Curiosity-driven exploration by self-supervised
+prediction. In International Conference on Machine Learning (ICML), 2017.
+M. Pislar, D. Szepesvari, G. Ostrovski, D. Borsa, and T. Schaul. When should agents explore? In
+International Conference on Learning Representations (ICLR), 2022.
+S. Pitis, H. Chan, S. Zhao, B. Stadie, and J. Ba. Maximum entropy gain exploration for long horizon
+multi-goal reinforcement learning. In International Conference on Machine Learning (ICML),
+2020.
+T. Poggio and F. Girosi. Networks for approximation and learning. Proceedings of the IEEE, 78(9):
+1481–1497, 1990.
+V. Pong, M. Dalal, S. Lin, A. Nair, S. Bahl, and S. Levine. Skew-Fit: State-covering self-supervised
+reinforcement learning. In International Conference on Machine Learning (ICML), 2020.
+R. Raileanu and T. Rocktäschel. RIDE: Rewarding Impact-Driven Exploration for Procedurally-
+Generated Environments. In International Conference on Learning Representations (ICLR),
+2020.
+Z. Ren, K. Dong, Y. Zhou, Q. Liu, and J. Peng. Exploration via hindsight goal generation. In
+Advances in Neural Information Processing Systems (NeurIPS), 2019.
+T. Schaul, D. Horgan, K. Gregor, and D. Silver. Universal value function approximators. In
+International Conference on Machine learning (ICML), 2015.
+12
+
+
+A. Sharma, S. Gu, S. Levine, V. Kumar, and K. Hausman. Dynamics-aware unsupervised discovery
+of skills. In International Conference on Learning Representations (ICLR), 2020.
+D. Shehmar, M. Schlegel, M. E. Taylor, and M. C. Machado. Laplacian representations for decision-
+time planning. In International Conference on Machine Learning (ICML), 2026.
+A. L. Strehl and M. L. Littman. An analysis of model-based interval estimation for Markov decision
+processes. Journal of Computer and System Sciences (JCSS), 74(8):1309–1331, 2008.
+R. S. Sutton, D. Precup, and S. Singh. Between MDPs and semi-MDPs: A framework for temporal
+abstraction in reinforcement learning. Artificial intelligence, 112(1-2):181–211, 1999.
+H. Tang, R. Houthooft, D. Foote, A. Stooke, O. X. Chen, Y. Duan, J. Schulman, F. DeTurck, and
+P. Abbeel. #Exploration: A study of count-based exploration for deep reinforcement learning. In
+Advances in Neural Information Processing Systems (NeurIPS), 2017.
+J. Tarbouriech, M. Pirotta, M. Valko, and A. Lazaric. Improved sample complexity for incremen-
+tal autonomous exploration in MDPs. In Advances in Neural Information Processing Systems
+(NeurIPS), 2020.
+J. Tarbouriech, O. D. Domingues, P. Ménard, M. Pirotta, M. Valko, and A. Lazaric. Adaptive multi-
+goal exploration. In International Conference on Artificial Intelligence and Statistics (AISTATS),
+2022.
+M. Towers, A. Kwiatkowski, J. Terry, J. U. Balis, G. De Cola, T. Deleu, M. Goulão, A. Kallinteris,
+M. Krimmel, A. KG, et al. Gymnasium: A standard interface for reinforcement learning environ-
+ments. arXiv:2407.17032, 2024.
+H. van Hasselt. Double Q-learning. In Advances in Neural Information Processing Systems (NeurIPS),
+2010.
+T. Wang, A. Torralba, P. Isola, and A. Zhang. Optimal goal-reaching reinforcement learning via
+quasimetric learning. In International Conference on Machine Learning (ICML), 2023.
+C. J. Watkins and P. Dayan. Q-learning. Machine Learning, 8(3-4):279–292, 1992.
+R. Yang, Y. Lin, X. Ma, H. Hu, C. Zhang, and T. Zhang.
+What is essential for unseen goal
+generalization of offline goal-conditioned RL? In International Conference on Machine Learning
+(ICML), 2023.
+C. Zhang, Y. Cai, L. Huang, and J. Li. Exploration by maximizing Renyi entropy for reward-free RL
+framework. In AAAI Conference on Artificial Intelligence, 2021.
+C. Zheng, R. Salakhutdinov, and B. Eysenbach. Contrastive difference predictive coding. In
+International Conference on Learning Representations (ICLR), 2024.
+13
+
+
+Appendices
+A Theoretical Properties
+15
+A.1
+Setup and Notation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+15
+A.2
+Count-Bonus Equivalence
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+15
+A.3
+Hitting-Probability Bound
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+16
+A.4
+Rejection of Unreachable Goals
+. . . . . . . . . . . . . . . . . . . . . . . . . . .
+17
+A.5
+Log-space Decomposition and Connections to Prior Work . . . . . . . . . . . . . .
+17
+A.6
+Extension to Stochastic Dynamics . . . . . . . . . . . . . . . . . . . . . . . . . .
+17
+A.7 Adaptive Goal-Selection: Theoretical Consistency and Practical Motivation . . . .
+18
+B
+Pseudocount Radius and Standardization
+19
+C Practical Notes
+19
+D Environment Details
+20
+E
+Source Code, Compute Details, and Runtimes
+22
+F
+Training Hyperparameters
+24
+F.1
+Gridworlds and Classic Control . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+25
+F.2
+GCRL Control
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+25
+F.3
+Networks Architecture
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+26
+G Indicator and Goal-Selection Ablations
+28
+H Pseudocounts Ablation
+28
+I
+Detailed Analysis Of All Environments
+29
+J
+Successor Value Function Visualization
+34
+K SUN-UCB: A Structural Connection to PAC Analysis
+36
+K.1
+Setup
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+36
+K.2
+SUN-UCB Algorithm . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+36
+K.3
+Conjectured Sample Complexity . . . . . . . . . . . . . . . . . . . . . . . . . . .
+37
+K.4
+Partial Analysis . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+37
+K.5
+Discussion . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+39
+K.6 Additive vs. Multiplicative SUN . . . . . . . . . . . . . . . . . . . . . . . . . . .
+39
+14
+
+
+A
+Theoretical Properties
+This section analyzes the SUN selection rule under an oracle: the SVF V π(s, g) and the count ng are
+exact, the replay buffer is frozen, and the goal-conditioned policy π acts to reach g. The analysis is
+structural — it characterizes what SUN does given perfect estimates, not what it learns from samples.
+Within this scope, we establish three properties (Sections A.2–A.4) that together formalize how SUN
+balances novelty and reachability, and we draw connections to existing methods through a log-space
+decomposition (Section A.5).
+A.1
+Setup and Notation
+Let µ(g) denote the replay marginal over goals — the empirical distribution of states stored in the
+buffer. The pseudocount ng from Section 3.3 is a finite-sample estimate of µ(g) up to a normalization
+constant; under the oracle, we treat ng as exact and µ(g) > 0 for every candidate. We define the
+log-rarity potential
+Φ(g) ≜log µ(g),
+(3)
+which is monotone in ng: small ng corresponds to small µ(g), hence small (very negative) Φ(g). The
+SUN novelty score ν(g) = 1/ng in Section 3 therefore corresponds to −Φ(g) in log-space, up to a
+constant.
+Throughout the analysis, π denotes the goal-conditioned policy targeting g, and τg ≜inf{t ≥0 :
+st = g} is its (random) hitting time of g from a starting state s. The SVF (Eq. 1) under π admits the
+equivalent form
+V π(s, g) = Eπ[γτg 1{τg<∞}] ,
+(4)
+when g is terminal (i.e., once reached, the episode is considered ended). This identity will be used
+repeatedly.
+Assumption 1 (Oracle setting). From now on, we assume the following conditions are true.
+(C1) The state space S is finite.
+(C2) Transitions are deterministic.
+(C3) The replay marginal µ, the SVF V π, and the count ng are frozen during the analysis.
+(C4) Under π, if g is reachable the trajectory hits it after kπ(s, g) −1 ∈{0, 1, 2, . . . } steps, where
+kπ(s, g) counts the states on the path from s to g inclusive (so kπ(g, g) = 1), and the episode is
+considered ended at the first hit (i.e., goal-reaching transitions are terminal). If g is unreachable,
+kπ(s, g) = ∞. We further assume π is optimal for its own goal, i.e. kπ(s, g) = minπ′ kπ′(s, g)
+for all s; this is what licenses the shortest-path inequality in the proof of Proposition 1(ii).
+Assumption 1 mirrors the structural setup used in the autonomous-exploration literature [Lim and
+Auer, 2012, Tarbouriech et al., 2020, 2022]. Section A.6 relaxes (C2)–(C3) to stochastic dynamics
+with almost-sure hitting.
+A.2
+Count-Bonus Equivalence
+The first result links SUN to the count-based intrinsic motivation literature [Bellemare et al., 2016]:
+SUN is exactly the value of a goal-specific count-bonus reward.
+Theorem 1 (Count-bonus equivalence). Under Assumption 1, for any goal g and any policy π, define
+the goal-specific reward rg
+t ≜1{st=g}/ng, where ng is the (frozen) count from Assumption 1(C4).
+Then
+Eπ
+
+X
+t≥0
+γt rg
+t
+ s0 = s
+
+= V π(s, g)
+ng
+= SUN(g|s).
+(5)
+15
+
+
+Proof. By Assumption 1(C4), ng is frozen during the analysis and therefore independent of the
+trajectory. It thus factors out of the expectation:
+Eπ
+
+X
+t≥0
+γt rg
+t
+ s0 = s
+
+= Eπ
+
+X
+t≥0
+γt 1{st=g}
+ng
+ s0 = s
+
+
+(6)
+=
+1
+ng
+Eπ
+
+X
+t≥0
+γt 1{st=g}
+ s0 = s
+
+
+(7)
+= V π(s, g)
+ng
+= SUN(g|s),
+(8)
+where the last equality uses the definition of the SVF (Eq. 1) and the SUN score (Eq. 2).
+This identity is the simplest interpretation of SUN: maximizing SUN(g|s) over g is equivalent
+to acting greedily with respect to the optimal value of an exploration reward that pays inversely
+proportional to how often g has been visited. SUN is therefore not just a heuristic combination of
+two signals — it is the value of a single, principled exploration objective.
+Remark 1 (Frozen vs. online counts). The equivalence holds when ng is treated as fixed during
+the trajectory — the standard frozen-replay setting (C4). When counts are updated online (as in
+our practical algorithm and in the standard count-bonus literature), the surrogate reward becomes
+non-stationary and the equivalence holds only approximately, with the size of the gap controlled by
+how much ng changes over the trajectory.
+Remark 2 (Form vs. exponent). Theorem 1 holds for any ν(g) = f(ng), since ng is frozen and
+factors out of the expectation. It therefore justifies the multiplicative form but not the exponent:
+ν(g) = 1/ng is a choice, with 1/√ng [Bellemare et al., 2016] the natural alternative.
+A.3
+Hitting-Probability Bound
+The SVF V π(s, g) is a discounted occupancy, but the property we ultimately care about is whether
+the agent reaches g from s within a reasonable horizon. The next theorem connects the two for the
+goal-conditioned policy π, under the terminal-goal assumption (C4) of Assumption 1: once the agent
+reaches g, it stays. In this setting, V π(s, g) = E[γτg1{τg<∞}] ≤1 (Section A.1), and a high SVF
+guarantees a high hitting probability over a short horizon.
+Theorem 2 (Short-horizon hitting bound). Under Assumption 1 with (C2) relaxed to stochastic
+transitions (Section A.6), for every horizon n ≥0,
+Pr
+π [τg ≤n] ≥V π(s, g) −γn+1.
+(9)
+In particular, choosing n such that γn+1 ≤V π(s, g)/2 gives Prπ[τg ≤n] ≥V π(s, g)/2. This
+horizon is n = O(log(1/V π)/(1 −γ)).
+Proof. Under Assumption (C4), V π(s, g) admits the equivalent form V π(s, g) = E[γτg1{τg<∞}]
+derived in Section A.1. We split the expectation by hitting horizon:
+V π(s, g) = E[γτg 1{τg<∞}]
+(10)
+= E[γτg 1{τg≤n}] + E[γτg 1{n<τg<∞}] .
+(11)
+We bound each term separately.
+For the first term, γτg ≤1 when τg ≤n, so
+E[γτg 1{τg≤n}] ≤E[1{τg≤n}] = Pr
+π [τg ≤n].
+(12)
+For the second term, γτg ≤γn+1 when τg > n, so
+E[γτg 1{n<τg<∞}] ≤γn+1 Pr
+π [τg > n] ≤γn+1.
+(13)
+Combining the two bounds gives V π(s, g) ≤Prπ[τg ≤n] + γn+1, and rearranging yields
+Pr
+π [τg ≤n] ≥V π(s, g) −γn+1.
+(14)
+For the horizon claim, set γn+1 ≤V π/2 and solve: n + 1 ≥log(2/V π)/ log(1/γ), which gives
+n = O(log(1/V π)/(1 −γ)) since log(1/γ) ≥1 −γ for γ ∈(0, 1).
+16
+
+
+The horizon scales logarithmically in 1/V π and inversely in 1 −γ: high-SVF goals are hit quickly
+with high probability, while low-SVF goals require long horizons. This is the formal version of the
+intuition that the SVF is a reachability signal.
+A.4
+Rejection of Unreachable Goals
+The third result is the dual of Theorem 2: goals that no policy can reach receive zero score, so SUN
+never selects them.
+Theorem 3 (Unreachability rejection). Let Π be any class of policies. If g is unreachable from s
+under every π ∈Π — that is, Prπ[τg < ∞] = 0 for all π ∈Π — then
+sup
+π∈Π
+V π(s, g) = 0,
+SUN(g|s) = 0,
+(15)
+regardless of ng.
+Proof. For any π ∈Π, the unreachability hypothesis Prπ[τg < ∞] = 0 means the reward 1{τg<∞}
+is zero with probability one. Hence
+V π(s, g) = Eπ[γτg 1{τg<∞}] = 0,
+(16)
+and SUN(g|s) = 0/ng = 0.
+This property fails for novelty-only scores (1/ng alone), which assign maximal value to never-visited
+unreachable goals — exactly the failure mode shown in Figure 1. SUN is therefore guaranteed to
+ignore goals that the agent cannot reach, regardless of how rare they are.
+A.5
+Log-space Decomposition and Connections to Prior Work
+A useful consequence of the count-bonus form is that log SUN decomposes additively:
+log SUN(g|s) = log V π(s, g) −Φ(g).
+(17)
+Under Assumption 1, V π(s, g) = γkπ(s,g)−1 for reachable g, so the score takes the closed form
+log SUN(g|s) = −
+ kπ(s, g) −1
+
+κ −Φ(g),
+κ ≜−log γ > 0.
+(18)
+SUN therefore takes the form of a soft Lagrangian: −Φ(g) is the rarity reward, (kπ −1)κ is the
+discounted distance cost, and κ is derived from the discount γ rather than introduced as a separate
+hyperparameter. This is structurally similar to AdaGoal [Tarbouriech et al., 2022], which solves a
+hard-constrained version with a user-specified radius. The two are not equivalent — AdaGoal uses
+sample-variance epistemic uncertainty as its novelty signal, while SUN uses distributional rarity —
+but both balance the same two ingredients.
+The log-space form also yields a state-dependent admissibility condition: a goal g is preferred over
+staying at s if and only if
+kπ(s, g) < 1 + Φ(s) −Φ(g)
+κ
+.
+(19)
+A goal that is no rarer than the current state (Φ(g) ≥Φ(s)) is never preferred, and the maximum
+admissible distance scales with the rarity gap Φ(s) −Φ(g). This is a tighter analogue of the ”neither
+too easy nor too hard“ intuition behind AdaGoal and DISCOVER [Diaz-Bone et al., 2025], with the
+trade-off automatically calibrated by the discount.
+A.6
+Extension to Stochastic Dynamics
+Theorems 1 and 3 hold beyond deterministic dynamics (Theorem 2 is already stated in that setting).
+Replacing (C2)–(C3) with stochastic transitions and the assumption that τg is almost-surely finite
+for reachable g, the equivalent SVF form V π(s, g) = E[γτg] continues to hold, and both theorems
+transfer verbatim. The closed-form V π = γkπ−1 in Eq. 18 no longer holds in general — kπ becomes
+a random hitting time — but the log-space decomposition (Eq. 17) is unchanged.
+17
+
+
+A.7
+Adaptive Goal-Selection: Theoretical Consistency and Practical Motivation
+A natural concern with the SUN formulation is that the SVF V π(s, g) is defined under a policy π that
+pursues g for the entire trajectory, while SUN’s adaptive strategy may reselect the goal mid-episode
+based on a value-consistency check. We show that this concern dissolves in two ways. In the
+deterministic, oracle setting, the SUN indicator is monotone along any trajectory that pursues its own
+arg max: the value never decreases, so the adaptive check never fires, and the goal remains fixed for
+the entire episode (Proposition 1). In stochastic or approximate settings, monotonicity can fail — but
+this failure is precisely what the adaptive check is designed to detect.
+Proposition 1 (Value monotonicity and goal stability under deterministic dynamics). Under Assump-
+tion 1 (deterministic dynamics, known V π and ng, frozen replay), if SUN selects g∗
+t at state st and
+the agent takes one step under πg∗
+t to reach st+1, then:
+(i) the value along the pursued goal is non-decreasing: V π(st+1, g∗
+t ) ≥V π(st, g∗
+t );
+(ii) g∗
+t remains the SUN arg max at st+1:
+g∗
+t = arg max
+g∈G
+V π(st+1, g)
+ng
+.
+(20)
+By (i), the adaptive check V π(st, g∗
+t ) < V π(stsel, g∗
+t ) never fires; by (ii), the argmax is stable. By
+induction, the same goal is pursued throughout the episode until g∗
+t is reached.
+Proof. Let kg ≜kπ(st, g). Under deterministic dynamics, one step along the optimal path to g∗
+t
+reduces its hitting time by exactly one: kπ(st+1, g∗
+t ) = kg∗
+t −1. Applying V π(s, g) = γkπ(s,g)−1
+gives V π(st+1, g∗
+t ) = γ−1V π(st, g∗
+t ) ≥V π(st, g∗
+t ) (since γ ∈(0, 1]), proving (i).
+For (ii), for any other goal g, the triangle inequality on hitting times (a one-step transition can increase
+the distance to g by at most one) gives kπ(st+1, g) ≥kg −1, hence V π(st+1, g) ≤γ−1V π(st, g).
+By Assumption 1(C4), µ is frozen, so the counts ng do not change between t and t + 1. (Even outside
+this assumption, ng∗
+t would not increment within an episode since g∗
+t has not yet been reached.)
+Therefore
+V π(st+1, g∗
+t )
+ng∗
+t
+= γ−1 V π(st, g∗
+t )
+ng∗
+t
+,
+V π(st+1, g)
+ng
+≤γ−1 V π(st, g)
+ng
+∀g.
+By the optimality of g∗
+t at st, the ordering is preserved at st+1. Theorem 3 ensures unreachable goals
+remain excluded.
+Proposition 1 shows that, in the oracle setting, the adaptive check never fires, so adaptive selection,
+per-step selection, and fixed-goal commitment produce the same trajectory. The fixed-goal semantics
+of V π and the adaptive semantics of SUN are therefore consistent.
+Stochastic dynamics. Under stochastic transitions, the next state st+1 is random. The hitting-time
+identity kπ(st+1, g∗
+t ) = kπ(st, g∗
+t ) −1 holds only in expectation, and a realized transition may push
+the agent to a state where V π(st+1, g∗
+t ) < V π(stsel, g∗
+t ) — exactly the condition the adaptive check
+flags for reselection. A fixed-goal policy would continue pursuing g∗
+t regardless; per-step reselection
+would reselect at every step, discarding stable information. The adaptive check reselects only when
+the SVF signals a value drop, which under stochastic dynamics corresponds to a transition into a
+genuinely less favorable region.
+Approximate V θ. The same argument applies when V θ is learned rather than exact. Errors in V θ
+can cause monotonicity to fail even under deterministic dynamics: if V θ(st, g∗
+t ) was overestimated
+at selection time, the true value at st+1 may be lower. The adaptive check detects this and triggers
+reselection, effectively withdrawing commitment when the SVF’s estimates are proved unreliable by
+their own subsequent values.
+18
+
+
+SUN’s adaptive strategy is therefore the right choice in both regimes. When V θ is exact and
+dynamics are deterministic, Proposition 1 shows that the check never fires and the agent commits
+to a single goal per episode — matching fixed-goal commitment and inheriting its optimality.
+When V θ is inaccurate or dynamics are stochastic, the check acts as an SVF-driven trigger: it
+withdraws commitment precisely when the SVF’s own subsequent values signal that the current
+goal is no longer reliable.
+B
+Pseudocount Radius and Standardization
+The pseudocount of Section 3.3 relies on a single scalar radius ρ in standardized feature space. We
+elaborate on the standardization step here.
+Standardization. Let σm denote the standard deviation of feature m across all currently stored buffer
+entries. Naively dividing each feature by its σm scales all features to unit variance, so that a single
+radius ρ has the same meaning across features. However, this fails when a feature is nearly constant:
+a small σm in the denominator amplifies tiny variations in that feature, so two points that are almost
+identical in dimension m end up far apart in the standardized space.
+To prevent this amplification, we floor σm at the median standard deviation across features:
+˜σm = max(σm, medianm′(σm′)) ,
+(21)
+and standardize using ˜σm rather than σm. As a safeguard, if ˜σm = 0 (the feature is constant across
+the buffer), we fall back to ˜σm = 1. The squared distance used by the pseudocount then becomes
+∥s −s′∥2
+/˜σ =
+X
+m
+(sm −s′
+m)2
+˜σ2m
+.
+(22)
+Note that the standard deviation {σm} is recomputed on each insertion from the current buffer. In
+our experiments, this added negligible overhead since the dominant cost is the pairwise distance
+computation. For very large buffers, σm can be recomputed less frequently (e.g., every few thousand
+insertions).
+C
+Practical Notes
+SVF reward. In RL literature, the reward in Eq. (1) is sometimes replaced by alternatives that target
+the same quantity through different reward shapings. For example, returning −1 until si is reached
+and 0 thereafter recovers a negative-distance interpretation [Schaul et al., 2015, Andrychowicz et al.,
+2017]. However, those rewards performed worse in our experiments.
+Goal relabeling. Training the SVF is a self-supervised process: given tuples (st, at, gt, st+1), V π
+can be trained with TD learning using the reward in Eq. (1), i.e., rt = 1{st=g}. Effective training
+requires tuples in which the agent both reaches and fails to reach the goal, i.e., positive and negative
+samples. Early in training, however, the agent rarely reaches its commanded goal gt, so the replay
+buffer contains almost exclusively negatives. Hindsight Experience Replay (HER) [Andrychowicz
+et al., 2017] addresses this imbalance by relabeling gt with a state from the trajectory itself: the
+selected state fires the reward and yields positive samples. We adopt HER’s “future” strategy: given
+a trajectory of T steps, gt is sampled from {st, st+1, . . . , sT }. Figure 10 illustrates the procedure.
+Note that training is off-policy by construction: the relabeled goal is not the goal under which the
+trajectory was collected.
+s1
+s2
+s3
+s4
+s5 · · ·
+g
+s1
+s2
+s3
+s4
+s2
+s3
+s3
+s4
+s5
+s4
+s5
+Figure 10: Example of HER “future” relabeling. The
+agent explores states s1 . . . s5 (top row, black arrows)
+while trying to reach goal g (red). To provide positive
+rewards, each state st is assigned a goal gt (blue) among
+future states within the same trajectory. For example,
+s1 is assigned g1 ←s4. TD targets for st are then
+computed according to the sub-trajectory from st to gt
+(gray downwards arrows).
+19
+
+
+Action-level noise. Ideally, the exploration policy would act greedily with respect to the SVF
+(Algorithm 1:15). However, since V θ is inaccurate early in training, it may be appropriate to inject a
+small amount of noise into π(a|st, gt). More details are in Appendix F.
+Replay buffer eviction. If the buffer is large enough (as in our experiments), no data eviction occurs
+when new samples are inserted (Algorithm 1:17). If eviction happens (e.g. in a fixed-size FIFO
+buffer), the principled option is to decrement the counts of the evicted sample’s neighbors, preserving
+exactness at the same per-step cost as insertion. A simpler approximation is to leave counts as-is, but
+this introduces an upward bias on the evicted sample’s neighbors — their stored counts no longer
+reflect the current buffer.
+D
+Environment Details
+Gridworlds. Novel environments shown in Figure 11. The observation is a one-hot encoding of the
+agent’s tile. The goal space is S×A, i.e., the agent should do every action in all states.
+• ThreeRoom: three rooms separated by walls. The agent spawns non-uniformly across three
+positions (cyan tiles): 47.5% chance in the first room, 47.5% in the second, 5% in the third. There
+are four actions: left, right, up, down. Episode horizon: 100 steps.
+• FourRoomStuck: a variation of the classic four-room [Sutton et al., 1999]. The bottom-left room
+can be entered but not exited, and cannot be traversed freely due to one-way tiles. There are four
+actions: left, right, up, down. Episode horizon: 200 steps. Episodes also end in the green tile.
+• GridMaze: maze with nine actions (left, right, up, down, up-left, down-left, up-right, down-right,
+stay). Exploration is hard due to the narrow passage near the starting position, that can be traversed
+only with “up-right”. Episode horizon: 200 steps. Episodes end on action “stay” in the green tile.
+Classic control. Open-sourced classic RL benchmarks [Towers et al., 2024] shown in Figure 12. The
+goal space is ˜S×A, where ˜S is a subset of the state space that depends on the environment.8
+• LunarLander: the (x, y) coordinate of the lander, in [−1, 1] × [−0.59, ∞] (unbounded).
+• LunarLander(Full): full eight-dimensional state space.
+• MountainCar: the position x ∈[−1.2, 0.6] and the velocity ˙x ∈[−0.07, 0.07].
+• Pendulum: the whole state space, i.e., the sine and cosine of the pendulum angle (both bounded in
+[−1, 1]) and its angular velocity (bounded in [−8, 8]).
+• Acrobot: the sine and cosine of the joint angles, for a total of four dimensions bounded in [−1, 1].
+• CartPole: the x coordinate of the cart and the angle of the pole, in [−2.4, 2.4] × [−12◦, 12◦].
+(a) ThreeRoom
+?
+?
+?
+(b) FourRoomStuck
+(c) GridMaze
+Figure 11: Gridworlds. Black tiles are
+empty; gray tiles are walls; cyan tiles
+are starting positions; green tiles are ter-
+minal positions where the episode ends.
+Red arrows mark one-way tiles where
+only the action matching the arrow suc-
+ceeds. In yellow ? tiles, movement is
+randomized with 50% probability.
+(a) LunarLander
+(b) MountainCar
+(c) Pendulum
+(d) Acrobot
+(e) CartPole
+Figure 12: Classic control environments with continuous states and discrete actions. The original
+Pendulum has a continuous one-dimensional action; here we discretize it into eight actions.
+8Gymnasium’s [Towers et al., 2024] documented bounds are “advisory” and do not correspond to the actual
+region the agent can visit. For example, CartPole’s documented bounds are [−4.8, 4.8] and [−24◦, 24◦], but
+episodes terminate if the cart leaves [−2.4, 2.4] or the pole falls outside [−12◦, 12◦]. Similarly, LunarLander
+episodes terminate if x leaves [−1, 1], despite documented bounds of [−2.5, 2.5].
+20
+
+
+(a) PointMaze-S
+(b) PointMaze-H
+(c) AntMaze-S
+(d) AntMaze-H
+(e) ArmPush-H
+Figure 13: GCRL environments with continuous states and actions.The pointmaze-h pic is not
+correct, should be a 2D projecttion of 4D maze
+GCRL Control. Open-sourced GCRL benchmarks [Bortkiewicz et al., 2025] shown in Figure 13.
+The goal space is ˜S; the action is continuous and not part of the goal space.
+• PointMaze-S: a point-mass agent navigates a maze. The goal space is its (x, y) planar position,
+bounded by the maze layout, i.e., x ∈[−11, 12], y ∈[−11, 12].
+• PointMaze-H: the area (and the goal space) the agent navigates is four-dimensional, i.e., [−6, 7]4.
+Its heatmaps only show the first two dimensions.
+• AntMaze-S/H: like PointMaze-S, but the agent is an ant-like quadruped. Goal bounds are
+x ∈[−17.5, 17.5], y ∈[−17.5, 17.5] (S) and x ∈[−27.5, 27.5], y ∈[−27.5, 27.5] (H).
+• ArmPush-H: a Franka Panda pushes a green cube on a plane. The goal space is the cube’s
+planar (x, y) unbounded position. The blue/red region of the plane in Figure 13, located at
+x ∈[−0.45, −0.35], y ∈[0.60, 0.70], is where the cube spawns at the beginning of an episode.
+Evaluation metrics. In Gridworlds, Shannon entropy and coverage can be computed exactly, since
+the set of visitable states is finite and known. In control tasks, we discretize the continuous goal space
+into 50 bins per dimension, which gives accurate estimates of both metrics. These estimates can be
+conservative, though: Acrobot and MountainCar, for example, have unreachable position-velocity
+configurations, yet we normalize entropy and coverage as if the entire binned space were visitable.
+Also note that the goal spaces of LunarLander and ArmPush-H are unbounded. In the former, the
+y position has no upper limit, and we compute metrics using [−0.25, 10] as its bounds. In the latter,
+both x, y are unbounded, and we compute metrics using [−1.00, 1.00] × [0.15, 1.15] as its bounds.
+For LunarLander(Full), the goal space is eight-dimensional: the first six coordinates are continu-
+ous, and the last two are binary. Binning the six continuous dimensions is challenging: fine binning
+is computationally expensive, whereas coarse binning is inaccurate. For example, Figure 15 shows
+coverage and entropy when the first six coordinates are discretized into twelve bins. Coverage is
+extremely low (below 0.0002%), so entropy is largely determined by the number of occupied cells
+when they carry comparable mass. Consequently, an algorithm with slightly higher coverage (even as
+little as <0.0002%, as in DISCOVER) over clustered bins may exhibit higher entropy than one with
+slightly lower coverage over more dispersed bins (such as SUN). Figure 14 illustrates this issue.
+This is why in Figure 4 (and again below in Figure 15) we report approximate continuous differential
+entropy via the Kozachenko-Leonenko k-NN estimator [Kozachenko and Leonenko, 1987]. This
+estimator does not suffer from the binning issue: it measures the continuous density around each
+sample, so it keeps tracking how the buffer redistributes throughout training and separates methods
+cleanly. This too must be approximated, however: brute-force computation of the k-NN entropy on
+0.2
+0.4
+0.6
+0.8
+goal dim 1
+0.1
+0.2
+0.3
+0.4
+0.5
+0.6
+0.7
+0.8
+0.9
+goal dim 2
+tight fill  (σ = 0.0004)
+one cell
+0.2
+0.4
+0.6
+0.8
+goal dim 1
+0.1
+0.2
+0.3
+0.4
+0.5
+0.6
+0.7
+0.8
+0.9
+wide fill  (σ = 0.002)
+one cell
+σ (spread)
+HShannon
+Hk-NN
+tight fill
+0.0004
+2.1972
+−10.6512
+wide fill
+0.0020
+2.1972
+−7.4323
+Figure 14: Two distributions occupying the same nine bins with equal counts. The insets zoom into
+one bin to reveal the tight vs. wide fill. Shannon entropy is identical (log 9); k-NN differential entropy
+differs by >3 nats. Note that differential entropy can be negative, unlike discrete Shannon entropy.
+21
+
+
+Figure 15: Coverage (left) and entropy
+(center) with bins vs. k-NN differen-
+tial entropy from Eq. (23) (right).
+the full buffer costs O(N 2d), where d is the goal dimensionality and N the buffer size, which is
+infeasible as the buffer grows. We therefore average the estimator over nrep = 5 random subsamples
+of size nsub = 104, making the cost independent of N. On each subsample,
+ˆH = d
+m
+m
+X
+i=1
+log ρk(i) + log(m −1) −ψ(k) + log cd,
+(23)
+where ρk(i) is the Euclidean distance from si to its k-th nearest neighbour (k = 3), ψ is the digamma
+function, and cd = πd/2/Γ(d/2 + 1) is the volume of the unit ball in Rd. Observations are min-
+max normalized to [0, 1]d using the observation-space bounds, so that no dimension dominates the
+Euclidean metric; the correction Pd
+j=1 log(uj −ℓj) recovers the entropy in the original units. For
+discrete actions, we report the joint entropy ˆH(s, a) = ˆH(a) + P
+a ˆp(a) ˆH(s | a), estimating each
+conditional ˆH(s | a) on the corresponding action subset.
+E
+Source Code, Compute Details, and Runtimes
+We ran experiments on SLURM-based clusters, always saving all data and statistics available (e.g.,
+visit and goal counts maps). Runs were parallelized whenever possible. For Gridworlds and Classic
+control, code is in PyTorch and ran on AMD Turin 9965 CPUs. For GCRL control, code is in JAX
+and ran on a mix of NVIDIA V100 (32 GB), A100 (80 GB) and GH200 (96 GB) GPUs. Operations
+are JIT-compiled and execute on a single GPU per run. Source code available at link soon.
+Wall-clock time per run varies with environment dimensionality and training steps. Note that the
+comparison is not like-for-like: AdaGoal and DISCOVER select a goal once per episode, whereas
+SUN scores a candidate batch whenever its adaptive check fires — often early in training, and
+progressively less as the agent is trained (Section 4.2). Table 1 below therefore compare SUN under a
+heavier selection workload against baselines under a lighter one. On Gridworlds and Classic control,
+SUN is nonetheless on average 3.54× faster than AdaGoal and 3.43× faster than DISCOVER (2.41×
+on LunarLander(Full)), because both call four critics at every update and action-selection step
+(see Appendix F.1). On GCRL environments the three are comparable, for two reasons. First,
+AdaGoal and DISCOVER use a single actor, so their four critics are called only at update time and
+not at action-selection (see Appendix F.2). Second, JAX parallelizes the critic updates. Even here
+SUN is no slower on average despite its more frequent selection, which is further evidence that the
+pseudocount adds negligible overhead.
+22
+
+
+Table 1: Average wall-clock runtime, in minutes.
+Environment
+SUN
+AdaGoal
+DISCOVER
+Random
+ThreeRoom
+56.6
+192.1
+190.5
+1.0
+FourRoomStuck
+108.9
+469.5
+405.8
+1.7
+GridMaze
+205.9
+665.5
+690.6
+1.1
+MountainCar
+151.6
+464.1
+494.4
+0.8
+Pendulum
+77.8
+261.9
+267.3
+0.6
+LunarLander
+229.6
+866.1
+867.4
+1.3
+LunarLander(Full)
+1294.5
+3116.0
+3,120.0
+51.0
+Acrobot
+81.2
+323.7
+277.1
+1.0
+CartPole
+157.0
+506.6
+489.6
+0.8
+PointMaze-S
+55.7
+42.7
+42.4
+24.9
+PointMaze-H
+54.4
+41.0
+40.7
+24.5
+AntMaze-H
+49.9
+42.8
+42.7
+32.4
+AntMaze-H
+63.3
+78.5
+78.3
+43.7
+ArmPush-H
+180.9
+181.0
+180.3
+140.8
+23
+
+
+F
+Training Hyperparameters
+Hyperparameters have not been tuned, with the exception of the pseudocount radius ρ (see
+below). For GCRL control, we used the official implementation of DISCOVER (TD3). For
+Gridworlds and Classic control, we implemented a simple version of DQN and used common
+hyperparameters without any tuning.
+Replay buffer. Before training starts, the replay buffer is “warmed up” with data collected with
+a random-action policy. For Gridworlds and Classic control, we collect 10,000 samples (except
+ThreeRoom, where we collect 5,000). For GCRL control, we collect 1,000. The replay buffer then
+stores all samples collected until the end of training, i.e., no data is ever evicted.
+Goal-selection. Algorithms draw a pool of candidates from the replay buffer. For Gridworlds and
+Classic control, episodic algorithms (SUN Episodic, DISCOVER, AdaGoal) sample 2500 candidates
+(once at the beginning of the episode), others 256 (possibly multiple times per episode).
+Goal-reached. In GCRL tasks, the threshold η in Algorithm 1:7 is given by the environment. In
+Classic control, we reuse the pseudocount radius, i.e. a goal is reached if it falls within ρ of st in the
+standardized feature space (Appendix B). Gridworlds states are discrete and no threshold is needed.
+Algorithm-specific. SUN’s pseudocounts are computed using ρ = 0.1, except on PointMaze-H
+(ρ = 0.5) and ArmPush-H (ρ = 0.01). DISCOVER’s novelty coefficient is β = 10 (for Gridworlds
+and Classic control) and β = 1 (for GCRL control).
+Table 2: Hyperparameters used in our experiments.
+Gridworlds and Classic control
+Discount factor γ
+0.99
+Trace factor λ
+0.95
+Target network copy frequency
+1
+Target network Polyak coefficient
+0.001
+Minibatch size
+16
+TD(λ) horizon T
+16
+Update frequency
+1 step
+Updates per step
+1
+Clip reward
+False
+Optimizer
+AdamW
+Learning rate
+10−3
+Loss
+Huber
+Gradient norm clipped at
+1.0
+GCRL control
+Discount factor γ
+0.99
+Trace factor λ
+0.95
+Target network Polyak coefficient (critic)
+0.005
+Target network Polyak coefficient (actor)
+5×10−7
+Target networks copy frequency
+2
+Policy delay
+2
+Minibatch size
+256
+TD(λ) horizon T
+3
+Update frequency
+1 step
+Updates per step
+1
+Target-policy smoothing std
+0.2
+Target-action noise clip
+0.5
+Optimizer
+AdamW
+Learning rate
+10−3
+Critic loss
+MSE
+Gradient norm clipped at
+—
+24
+
+
+s0
+s1
+s2
+s3
+s4
+s5
+s6
+· · ·
+g
+s2
+s4
+s6
+Figure 16: Example of HER “segmented future”
+relabeling. The trajectory is split into contiguous
+segments: a future cut timestep k is sampled, its
+state sk (blue) is assigned as the goal to all timesteps
+in the segment, and the next segment starts at k + 1.
+In this example the cuts fall at 2, 4, 6.
+F.1
+Gridworlds and Classic Control
+The goal is composed of a state component gs (environment-specific, see Section D), and an action
+component ga. That is, we explicitly learn SVFs whose goal is to perform specific actions in specific
+states. Because actions are discrete, we learn Qθ(s, a, gs, ga): the Q-network takes state and the
+goal-state as input, and outputs the action-value for every goal-action.
+Qθ is trained with Double DQN [van Hasselt, 2010] with TD(λ) using Watkins’s cutting traces
+[Watkins and Dayan, 1992] with two practical modifications motivated by the bounded scale
+of the SVFs, i.e., Qπ ∈[0, 1].9 First, to mitigate overestimation bias, in TD targets we clip
+maxa Qθ(s′, a, gs, ga) to 1. Second, we relax the strict arg max used by Watkins’s cutting: an action
+is considered greedy if its Q-value lies within 1−γ of the maximum. This tolerance matches the
+natural scale of one-step Bellman backups, and prevents traces from being cut too aggressively by
+neural-network approximation error, to which a strict arg max is overly sensitive.
+The policy in Algorithm 1 is ε-greedy with respect to Qθ, with ε = 0.1. Action-level noise is needed
+with neural-network approximators, and is aligned with DISCOVER official implementation (with
+built-in noise via Gaussian perturbations on the actor’s output, see below).
+AdaGoal and DISCOVER use an ensemble of four critics, each with its own target network (DQN-
+style). They are trained with different random batches, and TD targets from one of the target networks
+randomly selected. Their policy is ε-greedy with respect to arg maxa arg mini Qθ
+i (st, a, gs, ga).
+For training, we uniformly sample 16 batches from the replay buffer, and append all the following
+T −1 samples, for a total of 256 samples. These sequences may have samples from different
+consecutive trajectories, but are kept separate thanks to truncation flags. Then, we relabel goals with
+HER (Section C) with one modification. The original HER “future” strategy assigns each timestep
+its own future goal, yielding T sub-sequences of varying length. For more efficient batch training,
+we implement a “segmented” variant: we concatenate contiguous sub-sequences (each with its own
+future goal) so that their total length matches the original T (Figure 16). Relabeling is repeated 4
+times per sequence, so each state is trained against 4 future goals. These samples are all positives; to
+balance them, we draw 4 random negatives from the replay buffer (one per full sequence of length
+T = 16). As a result, each DQN update uses 16×16×4×2 = 2, 048 data points.
+F.2
+GCRL Control
+We build on DISCOVER official implementation, and learn V θ(s, gs) and a goal-conditioned policy
+π(a|s, gs). The action (continuous) is not part of the goal. V θ is trained with TD3 [Fujimoto et al.,
+2018] with TD(λ) targets without Watkins’s cutting traces (with continuous actions, arg max is
+infeasible) and without clipping V θ(s′, gs) to 1. Once the goal is selected, the policy explores with
+noise N(0, 0.4) added to the action, as in the official DISCOVER implementation.
+AdaGoal and DISCOVER use an ensemble of four critics, each with its own target network (DQN-
+style). They are trained with different random batches, and with TD targets from its own target
+network. There is one policy π, trained against the average value returned by all critics.
+All algorithms relabel goals with HER (Section C), without modification. At each update, a batch of
+256 samples is drawn uniformly from the replay buffer. For a randomly selected half, we sample
+a future goal from within the next Tmax = 50 steps of the original trajectory (or until termination,
+whichever comes first) and compute TD(λ) targets up to that goal. For the other half, we sample the
+relabel goal uniformly from the environment and compute one-step TD targets.10 Note that, unlike in
+DQN, the intermediate steps between a batch point and its relabeled goal are used only to compute
+the TD(λ) target, not for gradient updates. Each TD3 update therefore uses exactly 256 data points.
+9When (gs, ga) = (s, a) the reward in Eq. (1) is 1 and the transition is terminal, otherwise the reward is 0.
+10The original DISCOVER implementation uses one-step TD targets rather than TD(λ). In our experiments,
+however, eligibility traces improved the performance of all algorithms.
+25
+
+
+F.3
+Networks Architecture
+Qθ, V θ and π are neural networks with architectures shown in Figure 17 and 18.
+Encoder. Gridworlds do not need an encoder because their observation is already appropriate (one-
+hot encoding of the agent’s position). For continuous control, the state and state-goal encoders are
+a radial basis function layer [Poggio and Girosi, 1990]. The layer places C tile centers µ1, . . . , µC
+per input dimension, initialized uniformly between vmin and vmax, and learns both the centers and
+per-tile bandwidths hc > 0 end-to-end via gradient descent, jointly with the rest of the network. For
+each scalar input x, the layer computes Gaussian activations φc(x) = exp(−0.5((x −µc)/hc)2). To
+prevent vanishing gradients for inputs outside [vmin, vmax], we add a linear leak to the boundary tiles,
+so that the activation grows linearly with distance once x falls below µ1 or above µC. The output is
+normalized to sum to one along the tile dimension, yielding a vector in [0, 1]C per input unit. We use
+C = 20 tiles initialized with vmin = −1, vmax = 1. Environment raw observations are standardized
+using running mean and standard deviation tracked with Welford’s online algorithm.
+We observed that the Gaussian encoding significantly improved performance for all algorithms
+on LunarLander, while neither helping nor hurting performance on the other Classic control
+environments. We suspect this is due to LunarLander’s distinctive observation space: some
+observations are unbounded, asymmetric, and have differing scales.
+Feature fusion. We combine the state and goal features by concatenating fs, fg, and their element-
+wise product fs ⊙fg. The element-wise product provides a multiplicative interaction term that
+makes pairwise alignment between corresponding components of fs and fg directly available to the
+downstream layers, complementing the information carried by the concatenation of fs and fg alone.
+Maxout. After feature fusion we apply a Maxout unit [Goodfellow et al., 2013], which computes
+K = 4 parallel linear projections of its input and takes the element-wise maximum across them.
+s
+Encoder ϕs
+Linear 64
+LayerNorm
+Dropout 0.1
+SiLU
+gs
+Encoder ϕg
+Linear 64
+LayerNorm
+Dropout 0.1
+SiLU
+h = concat(fs, fg, fs ⊙fg)
+fs
+fg
+Linear 64
+Linear 64
+Linear 64
+Linear 64
+Max
+LayerNorm
+Leaky ReLU
+Linear 64
+LayerNorm
+Leaky ReLU
+Linear
+Figure 17: Architecture of Qθ. All linear layers
+are initialized with weights close to zero (drawn
+from a normal distribution with 0.01 standard
+deviation). All but the last layers have no bias.
+The output size is |A| × |A|.
+(s, a)
+Encoder ϕsa
+Linear 256
+LayerNorm
+Leaky ReLU
+Linear 64
+gs
+Encoder ϕg
+Linear 256
+LayerNorm
+Leaky ReLU
+Linear 64
+h = concat(fsa, fg, fsa ⊙fg)
+fsa
+fg
+Linear 1024
+Linear 1024
+Linear 1024
+Linear 1024
+Max
+LayerNorm
+Leaky ReLU
+Linear 256
+Leaky ReLU
+Linear
+Figure 18: Architecture of V θ and π. V θ out-
+put size is 1, and it applies the softplus operator
+at the end, π applies the softmax operator. The
+two networks do not share any layer.
+26
+
+
+PointMaze-S
+PointMaze-H
+AntMaze-S
+AntMaze-H
+ArmPush-H
+Figure 19: Indicator ablation. Full version of Figure 7.
+PointMaze-S
+PointMaze-H
+AntMaze-S
+AntMaze-H
+ArmPush-H
+Figure 20: Goal-selection ablation. Full version of Figure 6.
+27
+
+
+G
+Indicator and Goal-Selection Ablations
+Figures 19 and 20 report the full training curves and end-of-training visitation heatmaps for the
+ablations discussed in Section 4.2. We exclude LunarLander(Full) due to its computational
+expense. Per-environment goal-selection heatmaps with additional statistics are in Appendix I
+The ablations exhibit the same trends described in the main text. In a few environments in Figure 20,
+Adaptive SUN is not the best, though only by a small margin: Per-Step is slightly better in Acrobot,
+and Episodic in PointMaze-S.
+H
+Pseudocounts Ablation
+Here we evaluate how ρ affects the pseudocount approximation (Section B). Figure 21 shows SUN
+performance for varying ρ against true counts, i.e., counts obtained by discretizing the goal space
+with 50 bins per dimension. Figure 22 shows instead pseudocounts computed on the same data
+(collected while training with true counts). Results show that our pseudocounts closely track the
+coverage and entropy of training with true counts across all environments for most values of ρ, except
+for values that are too small or too large. This is expected: the estimator is a uniform-kernel density
+estimate, and ρ is its bandwidth, so both extremes make ν(g) = 1/ng constant across candidates.
+When ρ is too small, the ball around an inserted sample rarely contains any other buffer entry, so
+most samples end up with small uniform counts. When ρ is too large, the opposite degeneracy occurs:
+the ball contains a large fraction of the buffer for every entry, so counts become comparable across
+the visited set and ν(g) again fails to discriminate. In both cases, the arg max of Eq. (2) reduces
+to an arg max over the SVF alone, which is sensitive to approximation noise when V π is a neural
+network, especially early in training.
+Figure 21: Pseudocounts vs. true counts. Gridworlds are omitted, since there pseudocounts coincide
+with the counts. True counts improve coverage and entropy in almost all environments. One exception
+is Pendulum, where entropy drops sharply, the same behavior discussed in Section 4.1, amplified
+by exact counting. Another is PointMaze-S, where ρ = 0.1 attains the best entropy and the fastest
+coverage growth, although all radii reach the same terminal coverage. We attribute this to the narrow
+corridors of this maze, which make true counts sensitive to the bin discretization.
+PointMaze-S
+PointMaze-H
+AntMaze-S
+AntMaze-H
+ArmPush-H
+Figure 22:
+Log-
+scale pseudocount
+heatmaps.
+The
+top row shows the
+true visit counts at
+the end of training,
+for the first seed.
+The rows below
+show
+pseudo-
+counts
+computed
+on that same data
+at decreasing radii
+ρ.
+All heatmaps
+share
+the
+same
+scale
+within
+an
+environment.
+28
+
+
+Which of the two regimes is harmful depends on the geometry of the support. Where the support
+is broad, a large radius merely over-smooths, and large ρ values remain competitive even though
+the estimated density spreads beyond the boundary of the visited set into never-visited regions. This
+is the case of Classic control environments and PointMaze-H: in Figure 21 entropy and coverage
+degrade as ρ decreases, and the corresponding heatmaps in Figure 22 show large zero-count areas at
+the smallest radii. Performance improves as ρ grows, although ρ = 0.5 is not always the best choice.
+Where the support is compact, on the contrary, large ρ values are fatal: in AntMaze a ball of radius
+0.5 or 0.25 spans most of the visited blob, and both settings plateau within the first few hundred steps
+and do not recover, in coverage and in entropy alike. The same happens in ArmPush-H, where the
+reachable set is a thin arc and large radii replace it with a broad unimodal density over the bounding
+box.
+I
+Detailed Analysis Of All Environments
+For each environment, we report the following goal-related statistics, characterizing the behavior of
+SUN (with adaptive, episodic, and per-step goal-selection), AdaGoal, and DISCOVER.
+• Goals selected and reached, measured at four stages of training (25/50/75/100% of the training
+steps). All heatmaps share the same log-scale color range.
+• Goal success: the ratio of goals reached to goals selected.
+• Steps-to-goal: the average number of steps taken to reach a goal.
+• Goal reselections (SUN Adaptive and Per-Step): the fraction of steps at which gt̸ = gt−1,
+normalized to [0, 1] by the total number of steps. The two variants differ in what triggers a
+reselection. In adaptive SUN, the goal is discarded and a fresh candidate batch is sampled only
+when V θ(st, gt) < V θ(stsel, gt) fires. In per-step SUN, a fresh batch is sampled at every step, and
+the goal changes if the batch has a candidate with a higher SUN score (Eq. (2)) than the current
+one.
+• Random exploration (SUN Episodic, AdaGoal, DISCOVER): the fraction of steps at which the
+agent acts randomly. In episodic goal-selection, this is triggered once the agent reaches its goal,
+following the original DISCOVER implementation.
+The following important trends emerge.
+• Episodic selection fails when goals can become unreachable mid-episode (Figures 23 and 24).
+• In-episode reselection avoids this problem, but Per-Step reselects far more often than Adaptive,
+which hurts performance. In almost all environments, Adaptive’s reselection rate drops to zero over
+training, indicating that the agent has learned to reach the goals it commits to.
+• DISCOVER is biased toward reachability: across all heatmaps it selects far more goals near the
+starting states than the other algorithms, and attains high goal success from the very beginning.
+This may stem from its coefficient β, which must balance the scales of the reachability and novelty
+terms — a problem SUN sidesteps entirely thanks to its multiplicative indicator.
+• AdaGoal is biased toward novelty at the expense of reachability: across all heatmaps it selects
+mostly goals far from the starting states, “skipping” intermediate ones. This is not unexpected. As
+noted in Section 3.4, we evaluate the deep-RL variant of AdaGoal, which — unlike the tabular
+version — does not constrain goal selection by the estimated goal-hitting time. Tarbouriech et al.
+argue that this is approximated implicitly by the disagreement of the value ensemble. Our results
+suggest that this does not hold in more complex environments. Novelty alone is a reasonable signal
+for goals the agent can actually reach, since visiting them resolves the disagreement at little cost.
+Unreachable goals, however, resolve only after enough failed attempts for every ensemble member
+to recognize them as such, and each of those attempts is an episode spent without useful experience.
+The rule cannot distinguish the two cases, and where the reachable set is a small fraction of the
+goal space the latter dominates — precisely the behavior the reachability constraint was meant to
+prevent.
+• In Gridworlds, SUN tends to select short-horizon goals, as shown by steps-to-goal tending to
+one. In control tasks the opposite happens: the metric grows over training, meaning SUN selects
+goals that are progressively further away. This is expected, since control tasks require coherent
+action sequences to reach distant states — in MountainCar, for instance, the agent must build up
+momentum to escape the valley.
+29
+
+
+(a) Goals selected.
+(b) Goals reached.
+(c) Training curves.
+Figure 23: ThreeRoom. This environment shows the superiority of the SUN indicator, and the
+importance of properly trading off novelty and reachability. AdaGoal fails because it frequently
+selects unreachable goals: in (a), it is the only method that does not under-select the bottom room
+(which is often unreachable). DISCOVER, conversely, is biased toward reachability: it selects fewer
+goals far from the starting states (left of the rooms). The curves in (c) confirm this: AdaGoal has the
+lowest success rate, while DISCOVER reaches a high success rate almost immediately — it selects
+easily-reachable goals early on — and therefore spends most of its time exploring randomly. All
+three versions of SUN, in contrast, achieve high entropy: over time they select goals uniformly and
+progressively further to the right (away from starting states). The choice of goal-selection strategy
+matters little here, since the environment is small and occasional poor selections are inconsequential.
+(a) Goals selected.
+(b) Goals reached.
+(c) Training curves.
+Figure 24: FourRoomStuck. SUN Episodic, DISCOVER, and AdaGoal perform poorly: the agent
+can accidentally get trapped in the bottom-left room, at which point the previously selected goal
+becomes unreachable yet stays fixed for the rest of the episode. SUN Adaptive and Per-Step avoid
+this through goal reselection, and both attain high entropy. Per-Step entropy increases more slowly,
+though: it reselects goals far more often than Adaptive, making it unstable early in training.
+30
+
+
+(a) Goals selected.
+(b) Goals reached.
+(c) Training curves.
+Figure 25: GridMaze. Similar trends to Figure 24 emerge, e.g., DISCOVER bias towards easy-to-
+reach goals and Per-Step higher reselection rate.
+(a) Goals selected.
+(b) Goals reached.
+(c) Training curves.
+Figure 26: MountainCar. The main difference from Gridworlds is that SUN’s steps-to-goal increases
+over training. This is expected, as MountainCar requires coherent action sequences to build up the
+momentum needed to escape the valley. Another notable difference is Per-Step’s higher reselection
+rate, likely due to the larger goal space: at every step there is a greater chance that the replay buffer
+yields a better candidate. This environment further highlights DISCOVER’s reachability bias, as
+most of its goals lie close to the agent’s starting position.
+(a) Goals selected.
+(b) Goals reached.
+(c) Training curves.
+Figure 27: Pendulum. As discussed in Section 4, the distinctive trait of this environment is the
+presence of hard-to-reach goals that can only be visited by repeatedly traversing easy-to-reach ones,
+causing entropy to decay even as coverage increases.
+31
+
+
+(a) Goals selected.
+(b) Goals reached.
+(c) Training curves.
+Figure 28: LunarLander. Among the Classic control tasks, this is the most challenging: it has
+harder dynamics, higher dimensionality, and a larger goal space. Here, SUN’s reselection rate does
+not tend to zero. Compared to MountainCar and Pendulum, the gap between SUN Adaptive and
+Per-Step is more evident, both in selected goals, entropy, and coverage. Furthermore, the difference
+between the SUN and AdaGoal/DISCOVER is more apparent here: SUN’s selected goals are spread
+more uniformly across the whole space. DISCOVER selects mostly goals near the starting state,
+whereas AdaGoal spreads them out more but often picks goals too far away for the agent to reach
+(e.g., the isolated goal at the top of its heatmaps), confirming its bias toward novelty.
+(a) Goals selected.
+(b) Goals reached.
+(c) Training curves.
+Figure 29: Acrobot. All trends discussed so far emerge here as well, most notably the different
+spread of goals selected by SUN compared to AdaGoal and DISCOVER.
+(a) Goals selected.
+(b) Goals reached.
+(c) Training curves.
+Figure 30: CartPole. All trends discussed so far emerge here as well.
+32
+
+
+(a) Goals selected.
+(b) Goals reached.
+(c) Training curves.
+Figure 31: PointMaze-S.
+(a) Goals selected.
+(b) Goals reached.
+(c) Training curves.
+Figure 32: PointMaze-H.
+(a) Goals selected.
+(b) Goals reached.
+(c) Training curves.
+Figure 33: AntMaze-S.
+33
+
+
+(a) Goals selected.
+(b) Goals reached.
+(c) Training curves.
+Figure 34: AntMaze-H.
+(a) Goals selected.
+(b) Goals reached.
+(c) Training curves.
+Figure 35: ArmPush-H. Reached goals concentrate near the cube’s start region (the red/blue area in
+Figure 13). To move it, the agent must first make contact with it.
+J
+Successor Value Function Visualization
+In Figure 36, we visualize the SVFs learned by SUN, showing that they are indeed accurate. This
+is possible only for environments with two-dimensional state and goal spaces, and for Pendulum,
+whose sine/cosine state can be transformed into an angle. Note that the agent learns Qθ(s, a, gs, ga),
+and we visualize V θ(s, gs) = maxa,ga Qθ(s, a, gs, ga).
+Each heatmap is composed of many sub-heatmaps, one per goal state. For example, the magnified
+region of FourRoomStuck shows V θ(s, gmiddle), the value of reaching the middle tile from every
+other tile. The pattern is clear: states near the goal have higher value. Zooming in other sub-heatmaps,
+one can see that tiles inside the bottom-left room have zero value for goals outside it, reflecting the
+room’s irreversible transitions. The bottom-right tile also has zero value in all heatmaps, as it is a
+terminal state. Goals corresponding to walls are never visited but occasionally take non-zero value
+due to their proximity to reachable goals.
+Similar patterns appear across all heatmaps.
+34
+
+
+(a) ThreeRoom
+(b) FourRoomStuck
+(c) GridMaze
+(d) MountainCar
+(e) Pendulum
+Figure 36: SVFs V θ learned by SUN. Each figure has many sub-heatmaps, one per goal state (see
+magnified regions). In MountainCar and Pendulum, axes are position (x) and velocity (y).
+35
+
+
+K
+SUN-UCB: A Structural Connection to PAC Analysis
+The structural results in Appendix A characterize SUN’s selection rule under an oracle but do not
+provide sample-complexity guarantees. Here we sketch how a UCB-like variant of SUN (with
+additive reachability and novelty) connects to the PAC framework of Tarbouriech et al. [2022]. We
+state the algorithm, prove its unreachability filter sound, and show that its selection rule requires
+the two terms to be rescaled against each other (Remark 3) — the tabular counterpart of the design
+argument in Section 3.1. We do not claim a complete sample-complexity result. Two components are
+missing. First, the observed-transition filter is sound but not complete: it never selects an unreachable
+goal, but nothing in the algorithm guarantees that every L-reachable goal eventually enters it, and a
+passive filter admits initialization failures in which the reachable set never grows. A rigorous bound
+would require an explicit frontier-expansion mechanism with a discovery guarantee, as in Lim and
+Auer [2012] and Tarbouriech et al. [2020]. Second, our concentration statement bounds the deviation
+of the empirical mean from the average value of the executed policies, which does not by itself certify
+near-optimality of the returned policies. We therefore present the analysis as a structural connection
+rather than a proof, and leave the complete argument to future work.
+K.1
+Setup
+We consider tabular MDPs ⟨S, A, P, s0⟩with finite spaces |S| = S and |A| = A, and stochastic
+transitions P(s′ | s, a). We adopt all assumptions in Assumption 1 except (C2): we relax deterministic
+dynamics to stochastic with almost-sure hitting (as in Section A.6). All counts ng are exact (tabular
+setting). Under first-hit termination (C4), the SVF V π(s, g) = Eπ[γτg1{τg<∞}] ∈[0, 1].
+We use δ ∈(0, 1) as the confidence parameter: the statements below hold with probability at least
+1 −δ/3.
+Let GL ≜{g ∈S : ∃π s.t. Eπ[τg] ≤L} be the set of L-reachable goals, with |GL| ≤S. We set the
+episode length equal to the reachability horizon L, as in AdaGoal, and reset to s0 at the end of each
+episode.
+K.2
+SUN-UCB Algorithm
+Estimators. For each goal g, let nt(g) be the number of episodes up to time t in which g was the
+selected goal, and let ˆVt(s0, g) be the empirical mean of the returns collected in those episodes, with
+ˆVt(s0, g) ≜0 when nt(g) = 0. Define the uncertainty
+Ut(g) ≜min
+(
+1,
+s
+log(SAT/δ)
+nt(g)
+)
+,
+Ut(g) ≜1 when nt(g) = 0.
+(24)
+The cap and the convention at nt(g) = 0 are well defined because V π(s0, g) ∈[0, 1] under first-hit
+termination, so no uncertainty larger than the value range is informative.
+Truncation. An episode targeting g contributes the sample γτg if g is hit at some step τg ≤L, and 0
+otherwise. The return is therefore truncated at the episode horizon, and ˆVt estimates E[γτg1{τg≤L}]
+rather than V π(s0, g), a downward bias of at most γL+1. Taking L ≥log(2/ε)/ log(1/γ) bounds
+this by ε/2, which is absorbed into the accuracy target of Conjecture 1.
+Empirical reachability filter. Let Et ≜{(s, s′) : ∃a s.t. Nt(s, a, s′) > 0} be the set of transitions
+observed up to time t, and let
+Greach
+t
+≜{g ∈S : g is reachable from s0 along edges of Et}.
+(25)
+The filter is computed from observed transitions, not from value estimates. This matters: a filter of
+the form {g : ˆVt(s0, g) > 0} would exclude every goal that has never been hit, not merely every goal
+that is unreachable, and would therefore block exploration toward the frontier. A goal that has been
+observed but never targeted lies in Greach
+t
+and remains selectable.
+At step t, given st and nt(·):
+1. Update ˆVt, nt, and Et from the last episode.
+36
+
+
+2. Compute the filter Greach
+t
+of Eq. (25).
+3. Select
+gt = arg max
+g∈Greach
+t
+ˆVt(s0, g) + β Ut(g),
+β = 2/ε.
+(26)
+4. Run UCBVI [Azar et al., 2017] targeting gt for one episode of length L; record whether gt was
+hit and at which step.
+The filter in step 2 is the algorithmic counterpart of unreachability rejection (Theorem 3). The
+coefficient β in step 3 is not cosmetic: Lemma 3 fails without it, for reasons discussed in Remark 3.
+K.3
+Conjectured Sample Complexity
+Conjecture 1 (Sample complexity of SUN-UCB). Let ε ∈(0, 1) and δ ∈(0, 1). Suppose SUN-UCB
+is augmented with a frontier-expansion mechanism guaranteeing that every g ∈GL enters Greach
+t
+within ˜O(L3SA/ε2) steps. Then, with probability at least 1 −δ, it returns goal-conditioned policies
+ˆπ satisfying V ˆπ(s0, g) ≥V ⋆(s0, g) −ε for all g ∈GL after at most T = ˜O(L3SA/ε2) exploration
+steps.
+K.4
+Partial Analysis
+We prove four components — concentration of ˆV , soundness of the reachability filter, uncertainty of
+the selected goal, and a pigeonhole over goals inside the filter — and then identify what a complete
+argument would additionally require.
+Step 1: Concentration.
+Lemma 1 (Concentration). There exists an event E1 of probability at least 1 −δ/3 on which, for
+every g ∈S and every t with nt(g) ≥1,
+ ˆVt(s0, g) −¯Vt(s0, g)
+ ≤Ut(g),
+(27)
+where ¯Vt(s0, g) is the mean of the truncated values Eˆπj[γτg1{τg≤L}] over the nt(g) episodes j in
+which g was the selected goal.
+Proof. The samples take values in [0, 1], and the j-th sample has conditional mean Eˆπj[γτg1{τg≤L}]
+given the history preceding episode j. The centered samples therefore form a bounded martingale
+difference sequence with respect to the filtration generated by the history, and Azuma–Hoeffding
+gives
+Pr
+"
+ ˆVt(s0, g) −¯Vt(s0, g)
+ >
+s
+log(SAT/δ)
+nt(g)
+#
+≤
+δ
+3ST
+(28)
+for a fixed pair (g, t), after adjusting constants inside the logarithm. A union bound over the at most
+S goals and T steps yields E1. The deviation is also trivially bounded by 1, since both quantities lie
+in [0, 1], which justifies the cap in Eq. (24).
+Note that ¯Vt is a historical average over the policies actually executed, not the optimal value V ⋆(s0, g)
+nor the value of the returned policy. Bridging that difference is one of the two gaps discussed below.
+Step 2: Soundness of the reachability filter.
+Lemma 2 (Filter soundness and monotonicity). Deterministically, for every t:
+(i) Greach
+t
+⊆{g ∈S : g is reachable from s0};
+(ii) Greach
+t
+⊆Greach
+t+1 .
+Proof. (i) Every edge (s, s′) ∈Et was traversed by the agent, so P(s′ | s, a) > 0 for the action a
+that produced it. A path from s0 to g using only edges of Et is therefore a path of positive probability
+in the true MDP, and g is reachable. (ii) Nt(s, a, s′) is non-decreasing in t, hence Et ⊆Et+1 and
+reachability along Et implies reachability along Et+1.
+37
+
+
+SUN-UCB therefore never selects a truly unreachable goal, regardless of how large the bonus
+Ut(g) may be for it — and unlike a value-based filter, this holds deterministically rather than on a
+high-probability event. This is the formal counterpart of Theorem 3 in the learning setting. By (ii),
+no reachable goal is permanently excluded once a path to it has been observed. Note, however, that
+(ii) only preserves what has been discovered; it does not guarantee discovery, which is the first gap
+discussed below.
+Step 3: The selected goal has near-maximal uncertainty.
+Lemma 3 (High-uncertainty selection). On E1, at any step t at which some g ∈GL ∩Greach
+t
+satisfies
+Ut(g) > ε, the selected goal satisfies
+Ut(gt) ≥
+1
+2
+max
+g∈GL∩Greach
+t
+Ut(g).
+(29)
+Proof. Let g⋆
+t ≜arg maxg∈GL∩Greach
+t
+Ut(g), so that Ut(g⋆
+t ) > ε by hypothesis. Both gt and g⋆
+t lie in
+Greach
+t
+, so by optimality of gt in Eq. (26),
+ˆVt(s0, gt) + β Ut(gt) ≥ˆVt(s0, g⋆
+t ) + β Ut(g⋆
+t ).
+(30)
+Bounding ˆVt(s0, gt) ≤1 and ˆVt(s0, g⋆
+t ) ≥0 and rearranging,
+Ut(gt) ≥Ut(g⋆
+t ) −1
+β = Ut(g⋆
+t ) −ε
+2 ≥Ut(g⋆
+t ) −Ut(g⋆
+t )
+2
+= Ut(g⋆
+t )
+2
+,
+(31)
+where the second inequality uses ε < Ut(g⋆
+t ).
+Remark 3 (The additive form requires a scale coefficient). With β = 1 the same argument yields only
+Ut(gt) ≥Ut(g⋆
+t ) −1, which is vacuous because Ut ≤1 by construction — and vacuous precisely in
+the regime of interest, where all uncertainties have already fallen below the range of ˆV . The additive
+rule therefore tracks uncertainty only once its bonus is scaled to dominate that range, with β tied to
+the target accuracy ε. This is the tabular counterpart of the scaling sensitivity discussed in Section 3.1:
+an additive combination of reachability and novelty carries a free coefficient that must be set correctly
+for the rule to work at all, whereas the multiplicative form of Eq. (2) carries none.
+Step 4: Pigeonhole on goal samples. This step bounds the number of episodes needed to drive the
+uncertainty of goals already in the filter below ε; whether every g ∈GL enters the filter is addressed
+separately below. For UT (g) ≤ε it suffices that nT (g) ≥log(SAT/δ)/ε2. Consider any episode
+started at a step t at which some goal in GL ∩Greach
+t
+still has Ut(g) > ε. By Lemma 3, Ut(gt) > ε/2,
+and inverting Eq. (24),
+nt(gt) < 4 log(SAT/δ)
+ε2
+.
+(32)
+Every such episode therefore increments the count of a goal whose count is still strictly below
+4 log(SAT/δ)/ε2. Since at most S distinct goals can ever be selected, at most
+Nep = 4 S log(SAT/δ)
+ε2
+(33)
+such episodes can occur before every g ∈GL ∩Greach
+T
+satisfies UT (g) ≤ε. At L steps per episode,
+this phase costs ˜O(SL/ε2) exploration steps.
+What remains. Two components are needed for a complete result, and neither follows from the steps
+above.
+Discovery. The filter of Eq. (25) is sound but not complete. Nothing in the algorithm guarantees that
+every g ∈GL eventually enters Greach
+t
+, and Lemma 2(ii) only preserves goals already discovered.
+A passive filter admits initialization failures. Consider a two-state deterministic MDP with two
+actions, one moving from s0 to a distinct goal g and one staying at s0, with the identity of each
+unknown. Before any edge is observed, Greach
+0
+= {s0}; selecting s0 triggers first-hit termination at
+time zero, so no new edge is ever observed and the filter never grows. The two MDPs obtained by
+swapping the actions remain indistinguishable. A complete argument therefore requires an explicit
+frontier-expansion mechanism with its own discovery guarantee, as in Lim and Auer [2012] and
+Tarbouriech et al. [2020]; a finite warm-up phase would equally require one.
+38
+
+
+Policy optimality. Lemma 1 bounds the deviation of ˆVt from ¯Vt, the average value of the executed
+policies. Conjecture 1 instead concerns the returned policies ˆπ relative to V ⋆. Closing this requires a
+stopping rule, a specification of which policy is returned for each goal, and an argument bounding its
+suboptimality — none of which is supplied by invoking a finite-horizon regret analysis such as Azar
+et al. [2017], since that analysis addresses a single fixed objective rather than the all-goal scheduling
+problem SUN-UCB poses.
+K.5
+Discussion
+Comparison with AdaGoal. Conjecture 1 targets the same rate as AdaGoal-UCBVI [Tarbouriech
+et al., 2022], but the two address different objectives: AdaGoal’s guarantee concerns expected hitting-
+time accuracy over an incrementally identified reachable set, whereas ours concerns discounted
+first-hit value error. A reduction between the two would be needed before either rate or its associated
+lower bound could be inherited. The two methods do filter unreachable goals through related
+mechanisms: AdaGoal imposes an explicit constraint on the estimated hitting time Dk(g) ≤L, while
+SUN-UCB restricts selection to goals reachable along observed transitions (Lemma 2). Both filters
+are sound — neither can select a goal outside the true reachable set — and both grow monotonically
+as data accumulates. The difference is that AdaGoal pairs its filter with an expansion procedure that
+provably grows the reachable set, which is precisely the component SUN-UCB lacks.
+Role of unreachability rejection. Theorem 3 (proved in the oracle setting in Section A.4) is used
+algorithmically in step 2 of SUN-UCB, and is the load-bearing property in Lemma 2. Without
+a filter, unreachable goals would be selected repeatedly, since the bonus Ut(g) is largest exactly
+where nt(g) = 0, and the pigeonhole of Step 4 would range over the whole of S rather than over
+the reachable set. What this analysis adds to the oracle statement is that the filter must be built
+from observed transitions rather than from value estimates, since the latter cannot distinguish an
+unreachable goal from a reachable one that has not yet been targeted.
+K.6
+Additive vs. Multiplicative SUN
+The analysis above concerns the additive score V + β Ut(g), which differs from the multiplicative
+form V · 1/ng used in our experiments (Section 4). Remark 3 makes the difference concrete: the
+additive rule tracks uncertainty only once β is scaled to the target accuracy, since with β = 1 the
+novelty term is dominated by the range of V . In the tabular setting this is a mild requirement, as ε is
+given and V ∈[0, 1] is known exactly. In deep RL neither holds: V θ is approximate, its effective
+range varies across environments and over training, and there is no target accuracy from which to
+derive β. The coefficient must therefore be tuned — which is precisely the failure mode we observe
+for DISCOVER in Section 4.3. SUN’s multiplicative form carries no such coefficient: the two signals
+share a common “zero” (an unreachable or already-saturated goal scores zero on either factor and is
+rejected regardless of the other) and a common scale (both lie in [0, 1]).
+We already validated this empirically in Section 4.2 (Figure 8) and Appendix G. Note that for the
+sake of simplicity, we used the UCB1-style form
+p
+log Ntot/ng, with Ntot = Σgng, rather than the
+scaled bonus β Ut(g) of Eq. (26).11
+11Both forms decrease in ng and grow logarithmically in the total count, and Σgng = T after T exploration
+steps, so they differ in the placement of ng and in constants rather than in behavior. The UCB1-style coefficient
+does not, however, reproduce the ε-dependent scaling β = 2/ε that Lemma 3 requires, so the additive variant
+we evaluate is the unscaled one — the regime Remark 3 predicts should fail. Its poor entropy in Figure 8 is
+consistent with that prediction.
+39
